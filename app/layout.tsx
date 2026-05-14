@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar"; // <-- Importamos tu nuevo Navbar
+import Navbar from "@/components/Navbar"; // O la ruta donde tengas tu Navbar
+import Footer from "@/components/Footer"; // <--- AÑADE ESTA LÍNEA
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,12 +18,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="scroll-smooth">
-      <body className={inter.className} suppressHydrationWarning>
-        {/* El Navbar se queda fijo arriba de todo */}
+      <body className={`${inter.className} flex flex-col min-h-screen`} suppressHydrationWarning>
         <Navbar />
         
-        {/* 'children' son todas las páginas (/, /funding, etc.) que se inyectan aquí */}
-        {children}
+        {/* Aquí se cargan todas las páginas dinámicamente */}
+        <div className="flex-grow">
+          {children}
+        </div>
+        
+        {/* El Footer pegado al fondo en todas las páginas */}
+        <Footer />
       </body>
     </html>
   );
