@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 // Hemos quitado Instagram, Facebook y Linkedin de aquí
 import { Mail, Phone, MapPin } from "lucide-react";
@@ -10,8 +11,8 @@ export default function Footer() {
           
           {/* Columna 1: Marca de E360 */}
           <div className="md:col-span-1">
-            <Link href="/" className="inline-block mb-6">
-              <img src="/logo.png" alt="E360 Logo" className="h-10 w-auto" />
+            <Link href="/" className="inline-block mb-6 relative h-10 w-32">
+              <Image src="/logo.png" alt="E360 Logo" fill className="object-contain" />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Capacitación de élite para dueños de negocios multiservicios. Domina el negocio del capital y escala tu agencia con tecnología y respaldo real.

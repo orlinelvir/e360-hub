@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -36,11 +37,13 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         
         {/* Logo E360 - Asegúrate que el archivo se llame logo.png en /public */}
-        <Link href="/" className="flex items-center group shrink-0">
-          <img 
+        <Link href="/" className="flex items-center group shrink-0 relative h-10 md:h-12 w-32 md:w-40">
+          <Image 
             src="/logo.png" 
             alt="E360 Logo" 
-            className="h-10 md:h-12 w-auto object-contain transition-transform group-hover:scale-105" 
+            fill
+            priority
+            className="object-contain transition-transform group-hover:scale-105" 
           />
         </Link>
 
@@ -59,12 +62,12 @@ export default function Navbar() {
 
         {/* Botones de Acción */}
         <div className="hidden lg:flex items-center gap-6">
-          <Link href="#" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">
+          <Link href="#" className="text-sm font-medium text-gray-400 hover:text-white active:opacity-70 transition-all">
             Login Portal
           </Link>
           <Link 
             href="#" 
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 text-black px-6 py-2.5 rounded-xl text-sm font-bold hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,224,240,0.3)]"
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 text-black px-6 py-2.5 rounded-xl text-sm font-bold hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,224,240,0.3)]"
           >
             Ser Broker
           </Link>

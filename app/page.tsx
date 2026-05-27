@@ -1,129 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowRight, GraduationCap, Users, Building, PlayCircle } from "lucide-react";
 import Link from "next/link";
-
-// Helper para animar números de 0 al valor final
-function AnimatedNumber({ end, prefix = "", suffix = "", delay = 0 }: any) {
-  const [count, setCount] = useState(0);
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
-
-  useEffect(() => {
-    if (isInView) {
-      let startTime: number;
-      const duration = 2000; // La animación dura 2 segundos
-
-      const animateNumber = (currentTime: number) => {
-        if (!startTime) startTime = currentTime;
-        const elapsedTime = currentTime - startTime;
-
-        if (elapsedTime < delay * 1000) {
-          requestAnimationFrame(animateNumber);
-          return;
-        }
-
-        const adjustedTime = elapsedTime - (delay * 1000);
-        if (adjustedTime < duration) {
-          const progress = adjustedTime / duration;
-          const easeOut = progress * (2 - progress); // Curva suave para que frene al final
-          setCount(Math.floor(easeOut * end));
-          requestAnimationFrame(animateNumber);
-        } else {
-          setCount(end);
-        }
-      };
-      requestAnimationFrame(animateNumber);
-    }
-  }, [isInView, end, delay]);
-
-  return <span ref={ref}>{prefix}{count}{suffix}</span>;
-}
-
-// Componente de Acordeón para el Plan de Estudios
-function WeeklySyllabus() {
-  const [activeWeek, setActiveWeek] = useState<number | null>(0); // La primera semana empieza abierta
-
-  const syllabus = [
-    {
-      week: "Semana 1",
-      title: "Fundamentos y Estructura Corporativa",
-      desc: "Cómo blindar un negocio antes de pedir dinero. Incorporación de LLCs, obtención de EIN, cuentas bancarias comerciales y perfiles en Dun & Bradstreet."
-    },
-    {
-      week: "Semana 2",
-      title: "Dominio de Restauración de Crédito",
-      desc: "Leyes FCRA y FDCPA. Técnicas avanzadas de disputa con burós de crédito para eliminar colecciones, pagos tardíos y bancarrotas."
-    },
-    {
-      week: "Semana 3",
-      title: "Fondeo Comercial y Personal",
-      desc: "Estructuración de expedientes para aprobación garantizada. Cómo acceder a líneas de crédito de alto límite y préstamos a término sin colateral."
-    },
-    {
-      week: "Semana 4",
-      title: "Sistemas, CRM y Escala de Agencia",
-      desc: "Automatización total. Implementación de GoHighLevel, embudos de venta, automatización de citas y cómo cobrar a tus clientes como un verdadero Broker."
-    }
-  ];
-
-  return (
-    <section className="py-32 px-6 relative z-10 w-full bg-[#030812]">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">Hoja de Ruta del <span className="text-cyan-400">Programa</span></h2>
-          <p className="text-gray-400 text-lg">Un proceso intensivo de 4 semanas para transformar tu negocio.</p>
-        </div>
-
-        <div className="space-y-4">
-          {syllabus.map((item, index) => {
-            const isActive = activeWeek === index;
-            return (
-              <div 
-                key={index} 
-                className={`border rounded-2xl overflow-hidden transition-all duration-300 ${isActive ? 'border-cyan-500/50 bg-[#0A182D]' : 'border-gray-800 bg-[#05101F] hover:border-gray-600'}`}
-              >
-                <button 
-                  className="w-full px-8 py-6 flex items-center justify-between text-left focus:outline-none"
-                  onClick={() => setActiveWeek(isActive ? null : index)}
-                >
-                  <div className="flex items-center gap-6">
-                    <span className={`text-sm font-bold uppercase tracking-widest ${isActive ? 'text-cyan-400' : 'text-gray-500'}`}>
-                      {item.week}
-                    </span>
-                    <h3 className={`text-xl md:text-2xl font-semibold ${isActive ? 'text-white' : 'text-gray-300'}`}>
-                      {item.title}
-                    </h3>
-                  </div>
-                  <motion.div 
-                    animate={{ rotate: isActive ? 180 : 0 }} 
-                    transition={{ duration: 0.3 }}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isActive ? 'bg-cyan-500/20 text-cyan-400' : 'bg-gray-800 text-gray-400'}`}
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  </motion.div>
-                </button>
-                
-                <motion.div 
-                  initial={false}
-                  animate={{ height: isActive ? "auto" : 0, opacity: isActive ? 1 : 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-8 pb-6 pt-2 ml-20 text-gray-400 text-lg leading-relaxed border-t border-gray-800/50 mt-2">
-                    {item.desc}
-                  </div>
-                </motion.div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
+import Image from "next/image";
+import AnimatedNumber from "@/components/AnimatedNumber";
+import WeeklySyllabus from "@/components/WeeklySyllabus";
+import BankRollover from "@/components/BankRollover";
+import VideoCard from "@/components/VideoCard";
 
 export default function Home() {
   return (
@@ -131,7 +15,7 @@ export default function Home() {
       
       {/* --- HERO SECTION CINEMÁTICO --- */}
       <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-        {/* Fondo con Video Real - PRUEBA VISUAL */}
+        {/* Fondo con Video Real - AUTORIDAD YAMPIERO */}
         <div className="absolute inset-0 z-0">
           <video 
             autoPlay 
@@ -140,7 +24,8 @@ export default function Home() {
             playsInline
             className="absolute inset-0 w-full h-full object-cover opacity-60" 
           >
-            <source src="/video-academia.mp4" type="video/mp4" />
+            <source src="/IMG_0004.MOV" type="video/quicktime" />
+            <source src="/IMG_0004.MOV" type="video/mp4" />
           </video>
           
           {/* Degradados más suaves para la prueba */}
@@ -172,10 +57,10 @@ export default function Home() {
             {/* Botones de Acción - Psicología High-Ticket */}
             <div className="flex flex-col items-center">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full">
-                <button className="bg-white text-black px-10 py-5 rounded-full font-bold text-lg flex items-center justify-center gap-3 hover:bg-cyan-400 hover:text-black transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.15)] w-full sm:w-auto">
+                <button className="bg-white text-black px-10 py-5 rounded-full font-bold text-lg flex items-center justify-center gap-3 hover:bg-cyan-400 hover:text-black active:scale-95 transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.15)] w-full sm:w-auto">
                   Aplicar a la Academia <ArrowRight size={20} />
                 </button>
-                <button className="px-10 py-5 rounded-full font-semibold border border-gray-600 text-white flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all w-full sm:w-auto backdrop-blur-md">
+                <button className="px-10 py-5 rounded-full font-semibold border border-gray-600 text-white flex items-center justify-center gap-3 hover:bg-white hover:text-black active:scale-95 transition-all w-full sm:w-auto backdrop-blur-md">
                   <PlayCircle size={20} className="text-cyan-400 group-hover:text-black" /> Verificar Disponibilidad
                 </button>
               </div>
@@ -183,9 +68,15 @@ export default function Home() {
               {/* Micro-copy de escasez y autoridad */}
               <div className="mt-8 flex items-center justify-center gap-3 opacity-90">
                 <div className="flex -space-x-3">
-                  <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Aplicante" className="w-8 h-8 rounded-full border-2 border-[#030812] object-cover shadow-lg" />
-                  <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Aplicante" className="w-8 h-8 rounded-full border-2 border-[#030812] object-cover shadow-lg" />
-                  <img src="https://randomuser.me/api/portraits/men/68.jpg" alt="Aplicante" className="w-8 h-8 rounded-full border-2 border-[#030812] object-cover shadow-lg" />
+                  <div className="relative w-8 h-8 rounded-full border-2 border-[#030812] overflow-hidden shadow-lg">
+                    <Image src="https://randomuser.me/api/portraits/men/32.jpg" alt="Estudiante de la Academia E360" fill className="object-cover" />
+                  </div>
+                  <div className="relative w-8 h-8 rounded-full border-2 border-[#030812] overflow-hidden shadow-lg">
+                    <Image src="https://randomuser.me/api/portraits/women/44.jpg" alt="Estudiante de la Academia E360" fill className="object-cover" />
+                  </div>
+                  <div className="relative w-8 h-8 rounded-full border-2 border-[#030812] overflow-hidden shadow-lg">
+                    <Image src="https://randomuser.me/api/portraits/men/68.jpg" alt="Estudiante de la Academia E360" fill className="object-cover" />
+                  </div>
                 </div>
                 <p className="text-sm font-medium tracking-wide text-gray-300">
                   <span className="text-cyan-400 font-bold">Cohorte actual:</span> Selección rigurosa de perfiles.
@@ -241,7 +132,12 @@ export default function Home() {
               transition={{ duration: 1 }}
               className="relative h-[600px] rounded-3xl overflow-hidden border border-gray-800"
             >
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-60" />
+              <Image 
+                src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop" 
+                alt="Sesión de mentoría en E360 Hub" 
+                fill 
+                className="object-cover opacity-60"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-[#05101F] via-transparent to-transparent" />
               
               <div className="absolute bottom-10 left-10 right-10 bg-[#0A182D]/80 backdrop-blur-xl p-8 rounded-2xl border border-gray-700">
@@ -335,12 +231,12 @@ export default function Home() {
               viewport={{ once: true }}
               className="relative lg:w-1/2"
             >
-              <div className="relative z-10 rounded-3xl overflow-hidden border border-gray-800 shadow-2xl">
-                {/* Reemplaza esta URL por una foto profesional de Yampiero */}
-                <img 
-                  src="https://i0.wp.com/disruptmagazine.com/wp-content/uploads/2021/10/WhatsApp-Image-2021-09-30-at-11.41.52-PM.jpeg?w=835&ssl=1" 
-                  alt="Yampiero de Dios" 
-                  className="w-full h-[600px] object-cover grayscale hover:grayscale-0 transition-all duration-700"
+              <div className="relative z-10 rounded-3xl overflow-hidden border border-gray-800 shadow-2xl h-[600px]">
+                <Image 
+                  src="/IMG_0011.JPEG" 
+                  alt="Yampiero de Dios - Fundador de E360 Hub" 
+                  fill
+                  className="object-cover grayscale hover:grayscale-0 transition-all duration-700"
                 />
               </div>
               {/* Elementos decorativos de fondo */}
@@ -478,7 +374,9 @@ export default function Home() {
                 </p>
 
                 <div className="flex items-center gap-4 mt-auto">
-                  <img src={testimonial.img} alt={testimonial.name} className="w-12 h-12 rounded-full border border-gray-600 object-cover" />
+                  <div className="relative w-12 h-12 rounded-full border border-gray-600 overflow-hidden shadow-sm">
+                    <Image src={testimonial.img} alt={testimonial.name} fill className="object-cover" />
+                  </div>
                   <div>
                     <div className="font-bold text-white flex items-center gap-1.5">
                       {testimonial.name}
@@ -488,6 +386,28 @@ export default function Home() {
                   </div>
                 </div>
               </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* --- BANCOS ALIADOS (MARQUEE) --- */}
+      <BankRollover />
+
+      {/* --- EXPERIENCIA EN VIVO --- */}
+      <section className="py-32 px-6 relative z-10 w-full bg-[#030812] border-t border-gray-800/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Experiencia <span className="text-cyan-400">en Vivo</span></h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">Sumérgete en nuestra cultura. Eventos, mentorías y nuestras instalaciones diseñadas para el alto rendimiento.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              "/video-academia.mp4", "/IMG_0005.MOV", "/IMG_0006.MOV",
+              "/IMG_0007.MOV", "/IMG_0008.MOV", "/IMG_0009.MOV"
+            ].map((video, i) => (
+              <VideoCard key={i} src={video} index={i} />
             ))}
           </div>
         </div>
