@@ -1,0 +1,427 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  User, 
+  ShieldCheck, 
+  ExternalLink, 
+  Copy, 
+  Check, 
+  CreditCard, 
+  Building, 
+  Award, 
+  FileCheck, 
+  QrCode, 
+  Save, 
+  CheckCircle2, 
+  RefreshCw, 
+  Lock, 
+  Mail, 
+  Phone, 
+  Globe,
+  Download
+} from "lucide-react";
+import { BrokerProfileData } from "../types";
+
+interface MiPerfilSectionProps {
+  brokerName: string;
+}
+
+const initialProfile: BrokerProfileData = {
+  name: "Yampiero de Dios",
+  email: "ydedios@emprende360.com",
+  phone: "+1 (800) 360-5626",
+  brokerId: "BRK-360-99",
+  ghlLocationId: "LOC-E360-BRK99",
+  ghlSubaccountEmail: "ydedios@subaccount.gohighlevel.com",
+  ghlConnected: true,
+  tier: "Senior Broker",
+  nmlsId: "2049182",
+  licenseNumber: "FL-INS-89104",
+  payoutMethod: "zelle",
+  payoutDetails: {
+    bankName: "Chase Bank",
+    accountNumber: "••••••••4820",
+    routingNumber: "021000021",
+    zellePhoneOrEmail: "ydedios@emprende360.com"
+  },
+  referralSlug: "yampiero-dedios",
+  totalVolumeProcessed: 408500,
+  totalCommissionsPaid: 10750,
+  documentsStatus: {
+    brokerAgreement: true,
+    w9Form: true,
+    directDepositAuth: true
+  }
+};
+
+export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
+  const [profile, setProfile] = useState<BrokerProfileData>(initialProfile);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [isSavedToast, setIsSavedToast] = useState(false);
+  const [isSyncingGHL, setIsSyncingGHL] = useState(false);
+
+  // Form states
+  const [payoutMethod, setPayoutMethod] = useState<"ach" | "zelle" | "wire">(initialProfile.payoutMethod);
+  const [zelleValue, setZelleValue] = useState(initialProfile.payoutDetails.zellePhoneOrEmail || "");
+  const [bankName, setBankName] = useState(initialProfile.payoutDetails.bankName || "");
+  const [accountNum, setAccountNum] = useState(initialProfile.payoutDetails.accountNumber || "");
+  const [routingNum, setRoutingNum] = useState(initialProfile.payoutDetails.routingNumber || "");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("e360_broker_profile");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setProfile(parsed);
+        setPayoutMethod(parsed.payoutMethod || "zelle");
+        setZelleValue(parsed.payoutDetails?.zellePhoneOrEmail || "");
+        setBankName(parsed.payoutDetails?.bankName || "");
+        setAccountNum(parsed.payoutDetails?.accountNumber || "");
+        setRoutingNum(parsed.payoutDetails?.routingNumber || "");
+      } catch (e) {
+        setProfile({ ...initialProfile, name: brokerName || initialProfile.name });
+      }
+    } else {
+      const updated = { ...initialProfile, name: brokerName || initialProfile.name };
+      setProfile(updated);
+      localStorage.setItem("e360_broker_profile", JSON.stringify(updated));
+    }
+  }, [brokerName]);
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    const updated: BrokerProfileData = {
+      ...profile,
+      payoutMethod,
+      payoutDetails: {
+        bankName,
+        accountNumber: accountNum,
+        routingNumber: routingNum,
+        zellePhoneOrEmail: zelleValue
+      }
+    };
+    setProfile(updated);
+    localStorage.setItem("e360_broker_profile", JSON.stringify(updated));
+    setIsSavedToast(true);
+    setTimeout(() => setIsSavedToast(false), 2500);
+  };
+
+  const handleSyncGHL = () => {
+    setIsSyncingGHL(true);
+    setTimeout(() => {
+      setIsSyncingGHL(false);
+    }, 1500);
+  };
+
+  const referralUrl = `https://emprende360.com/ref/${profile.referralSlug}`;
+
+  const copyReferralLink = () => {
+    navigator.clipboard.writeText(referralUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  return (
+    <div className="space-y-8">
+      
+      {/* CARD DE ENCABEZADO DE PERFIL & TIER */}
+      <div className="bg-gradient-to-r from-[#0A182D] via-[#0E2342] to-[#0A182D] border border-gray-800 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none" />
+        
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+          <div className="flex items-center gap-5">
+            <div className="w-20 h-20 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center text-black font-black text-3xl shadow-[0_0_30px_rgba(0,224,240,0.3)] shrink-0">
+              {profile.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                  <Award size={12} />
+                  <span>{profile.tier}</span>
+                </span>
+                <span className="text-xs font-mono text-gray-500">ID: {profile.brokerId}</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-white mt-1">
+                {profile.name}
+              </h2>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 mt-2">
+                <span className="flex items-center gap-1.5">
+                  <Mail size={14} className="text-cyan-500" />
+                  {profile.email}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Phone size={14} className="text-cyan-500" />
+                  {profile.phone}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#05101F]/80 border border-gray-800/80 rounded-2xl p-4 flex items-center gap-6 w-full md:w-auto justify-around">
+            <div className="text-center">
+              <p className="text-[10px] text-gray-500 uppercase font-semibold">Volumen Procesado</p>
+              <p className="text-lg font-extrabold text-white mt-0.5">${profile.totalVolumeProcessed.toLocaleString()}</p>
+            </div>
+            <div className="w-px h-8 bg-gray-800" />
+            <div className="text-center">
+              <p className="text-[10px] text-gray-500 uppercase font-semibold">Comisiones Pagadas</p>
+              <p className="text-lg font-extrabold text-emerald-400 mt-0.5">${profile.totalCommissionsPaid.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ESTADO CONEXIÓN GHL SUBCUENTA */}
+      <div className="bg-[#0A182D]/60 border border-cyan-500/30 rounded-3xl p-6 relative overflow-hidden">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl flex items-center justify-center text-cyan-400 shrink-0">
+              <Globe size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                <h3 className="font-extrabold text-white text-base">Subcuenta GoHighLevel Vinculada</h3>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Location ID: <strong className="text-cyan-400 font-mono">{profile.ghlLocationId}</strong> · Email GHL: <span className="text-gray-300 font-mono">{profile.ghlSubaccountEmail}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={handleSyncGHL}
+              disabled={isSyncingGHL}
+              className="flex-1 md:flex-none px-4 py-2.5 bg-[#05101F] hover:bg-gray-800 border border-gray-800 text-gray-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              <RefreshCw size={14} className={isSyncingGHL ? "animate-spin text-cyan-400" : ""} />
+              <span>Verificar Sync</span>
+            </button>
+            
+            <a
+              href="https://app.gohighlevel.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 md:flex-none px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-2"
+            >
+              <span>Abrir GHL CRM</span>
+              <ExternalLink size={14} />
+            </a>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ENLACE ÚNICO DE REFERIDO Y CODIGO QR */}
+      <div className="bg-[#0A182D]/40 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-4">
+        <div>
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <QrCode size={18} className="text-cyan-400" />
+            <span>Enlace de Captura de Clientes & Código QR</span>
+          </h3>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Cualquier lead que complete tus formularios usando este enlace se asignará automáticamente a tu subcuenta de GHL.
+          </p>
+        </div>
+
+        <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="min-w-0 flex-grow">
+            <p className="text-[10px] text-gray-500 uppercase font-semibold">Tu URL Personal de Referido</p>
+            <p className="text-xs md:text-sm font-mono text-cyan-400 font-bold truncate mt-1">{referralUrl}</p>
+          </div>
+
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={copyReferralLink}
+              className="px-4 py-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+            >
+              {copiedLink ? (
+                <>
+                  <Check size={14} className="text-emerald-400" />
+                  <span className="text-emerald-400">Copiado</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={14} />
+                  <span>Copiar Enlace</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CONFIGURACIÓN DE PAGO DE COMISIONES & DOCUMENTOS (GRID 2 COLS) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* COLUMNA IZQUIERDA: FORMULARIO METODOS DE PAGO */}
+        <div className="bg-[#0A182D]/40 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <CreditCard size={18} className="text-emerald-400" />
+              <span>Configuración de Cobro de Comisiones</span>
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5">Define cómo deseas recibir tus comisiones los días de pago (Viernes)</p>
+          </div>
+
+          <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-gray-300 uppercase mb-2">Método de Pago Preferido</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "zelle", label: "Zelle Instant" },
+                  { id: "ach", label: "Direct Deposit (ACH)" },
+                  { id: "wire", label: "Wire Transfer" }
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setPayoutMethod(m.id as any)}
+                    className={`p-3 rounded-xl border text-xs font-bold transition-all ${
+                      payoutMethod === m.id
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/40 ring-1 ring-emerald-500/30"
+                        : "bg-[#05101F] text-gray-400 border-gray-800 hover:text-white"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {payoutMethod === "zelle" ? (
+              <div>
+                <label className="block font-semibold text-gray-300 uppercase mb-1">Teléfono o Correo Zelle *</label>
+                <input
+                  type="text"
+                  required
+                  value={zelleValue}
+                  onChange={(e) => setZelleValue(e.target.value)}
+                  placeholder="ejemplo@zelle.com o +1 (305) 000-0000"
+                  className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="block font-semibold text-gray-300 uppercase mb-1">Nombre del Banco</label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="Bank of America, Chase, Wells Fargo..."
+                    className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-gray-300 uppercase mb-1">Número de Cuenta</label>
+                    <input
+                      type="text"
+                      value={accountNum}
+                      onChange={(e) => setAccountNum(e.target.value)}
+                      placeholder="••••••••1234"
+                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-gray-300 uppercase mb-1">Número de Ruta (Routing)</label>
+                    <input
+                      type="text"
+                      value={routingNum}
+                      onChange={(e) => setRoutingNum(e.target.value)}
+                      placeholder="021000021"
+                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 flex items-center justify-between">
+              {isSavedToast ? (
+                <span className="text-emerald-400 font-bold flex items-center gap-1.5 animate-pulse">
+                  <CheckCircle2 size={16} /> ¡Datos de Pago Actualizados!
+                </span>
+              ) : <div />}
+
+              <button
+                type="submit"
+                className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-xl text-xs transition-all flex items-center gap-2"
+              >
+                <Save size={14} />
+                <span>Guardar Cambios</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* COLUMNA DERECHA: BÓVEDA DE DOCUMENTOS */}
+        <div className="bg-[#0A182D]/40 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <FileCheck size={18} className="text-cyan-400" />
+              <span>Bóveda de Documentos & Licencias</span>
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5">Estado legal y acuerdos oficiales para operar como broker</p>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            
+            <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white">Acuerdo de Broker E360 (Firmado)</h4>
+                  <p className="text-[10px] text-gray-500">Firmado digitalmente el 15 Enero 2026</p>
+                </div>
+              </div>
+              <button className="p-2 text-gray-400 hover:text-white" title="Descargar Copia">
+                <Download size={16} />
+              </button>
+            </div>
+
+            <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white">Formulario W-9 del IRS</h4>
+                  <p className="text-[10px] text-gray-500">Validado para retención tributaria</p>
+                </div>
+              </div>
+              <button className="p-2 text-gray-400 hover:text-white" title="Descargar Copia">
+                <Download size={16} />
+              </button>
+            </div>
+
+            <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white">Autorización Depósito Directo</h4>
+                  <p className="text-[10px] text-gray-500">Cuenta verificada por E360 Finance Desk</p>
+                </div>
+              </div>
+              <button className="p-2 text-gray-400 hover:text-white" title="Descargar Copia">
+                <Download size={16} />
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}

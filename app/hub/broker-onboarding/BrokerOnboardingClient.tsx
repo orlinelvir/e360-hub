@@ -38,7 +38,7 @@ interface ServiceDetail {
   title: string;
   icon: any;
   category: "financial" | "professional";
-  status: "active" | "delay" | "paused";
+  status: "active" | "delay" | "paused" | "upcoming";
   statusLabel: string;
   description: string;
   requirements: string[];
@@ -78,7 +78,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Aprobación en 24-48 horas. Fondeo en 1 a 3 días hábiles.",
     comission: "Comisión del 3% al 8% del monto financiado (Ej: $1,500 - $4,000 en un préstamo de $50,000).",
-    formLink: "https://app.emprende360.com/forms/business-loan",
+    formLink: "https://api.leadconnectorhq.com/widget/form/tvJ4AjmdXHVnOmm8DyEk?notrack=true",
     supportPhone: "tel:+18003605626",
     supportPhoneFormatted: "+1 (800) 360-5626"
   },
@@ -104,7 +104,33 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Precalificación inmediata. Aprobación y desembolso en 24-48 horas.",
     comission: "Honorario fijo garantizado por referido aprobado y financiado.",
-    formLink: "https://app.emprende360.com/forms/personal-loan",
+    formLink: "https://api.leadconnectorhq.com/widget/form/Qgnp3xRhHOWeUW4dUE63?notrack=true",
+    supportPhone: "tel:+18003605626",
+    supportPhoneFormatted: "+1 (800) 360-5626"
+  },
+  {
+    id: "business-credit-cards",
+    title: "Tarjetas de Crédito de Negocio",
+    icon: CreditCard,
+    category: "financial",
+    status: "active",
+    statusLabel: "Activo",
+    description: "Líneas de crédito rotativas empresariales al 0% de interés introductorio por 12 a 24 meses para capital de trabajo y expansión del negocio sin afectar el crédito personal.",
+    requirements: [
+      "Puntaje de crédito personal de 680+ en los 3 burós de crédito",
+      "Compañía registrada (LLC o Corp) con número EIN activo",
+      "Sin bancarrotas ni pagos atrasados recientes en el reporte",
+      "Uso de tarjetas de crédito actuales por debajo del 30%"
+    ],
+    process: [
+      "Precalificar el reporte de crédito del dueño del negocio.",
+      "Completar la aplicación oficial a través del enlace del widget GHL.",
+      "El equipo procesa las solicitudes estratégicas con múltiples bancos asociados.",
+      "Recepción y activación de las tarjetas de crédito corporativas en 7-14 días."
+    ],
+    timeframe: "Precalificación en 24 horas. Aprobación y entrega en 7 a 14 días.",
+    comission: "Comisión fija sobre el volumen total de crédito aprobado para el negocio.",
+    formLink: "https://api.leadconnectorhq.com/widget/form/rYyJUvwRiMc0bsznMjOd?notrack=true",
     supportPhone: "tel:+18003605626",
     supportPhoneFormatted: "+1 (800) 360-5626"
   },
@@ -193,9 +219,9 @@ const servicesData: ServiceDetail[] = [
     title: "Servicios de Nómina",
     icon: Calculator,
     category: "financial",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Configuración, manejo de payroll y automatización para el pago de empleados y contratistas, asegurando el cumplimiento tributario laboral local y federal.",
+    status: "upcoming",
+    statusLabel: "Próximamente",
+    description: "Configuración, manejo de payroll y automatización para el pago de empleados y contratistas, asegurando el cumplimiento tributario laboral local y federal. Disponible muy pronto.",
     requirements: [
       "EIN (Federal Tax ID) activo y registro estatal de empleador",
       "Cuenta bancaria corporativa para procesar los fondos de nómina",
@@ -206,7 +232,7 @@ const servicesData: ServiceDetail[] = [
       "El equipo especialista de E360 se reúne con el cliente para cotizar y configurar el sistema.",
       "Carga e integración del software de payroll y procesamiento de la primera nómina activa."
     ],
-    timeframe: "Configuración inicial completa de 3 a 5 días hábiles.",
+    timeframe: "Lanzamiento previsto para el próximo mes.",
     comission: "Comisión por cuenta activada y residual recurrente por mes de actividad.",
     formLink: "https://app.emprende360.com/forms/payroll",
     supportPhone: "tel:+18003607297",
@@ -217,9 +243,9 @@ const servicesData: ServiceDetail[] = [
     title: "Servicios de POS",
     icon: CreditCard,
     category: "financial",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Instalación de terminales de pago con tarjeta e integración de procesamiento de merchant account con tarifas garantizadas y soporte técnico local.",
+    status: "upcoming",
+    statusLabel: "Próximamente",
+    description: "Instalación de terminales de pago con tarjeta e integración de procesamiento de merchant account con tarifas garantizadas y soporte técnico local. Disponible muy pronto.",
     requirements: [
       "EIN comercial y registro oficial de la empresa",
       "Cuenta de banco comercial para los depósitos de ventas",
@@ -230,7 +256,7 @@ const servicesData: ServiceDetail[] = [
       "El departamento comercial realiza un estudio comparativo sin costo demostrando ahorros.",
       "Aprobación de la cuenta, configuración y envío/instalación de las terminales físicas."
     ],
-    timeframe: "Aprobación de la cuenta en 24-48 horas. Envío de equipos en 2-3 días.",
+    timeframe: "Lanzamiento previsto para el próximo mes.",
     comission: "Bono único por instalación física + comisión residual mensual de por vida sobre el volumen.",
     formLink: "https://app.emprende360.com/forms/pos",
     supportPhone: "tel:+18003607273",
@@ -289,8 +315,8 @@ const servicesData: ServiceDetail[] = [
     title: "Seguro de Negocio",
     icon: Laptop,
     category: "professional",
-    status: "delay",
-    statusLabel: "Demora",
+    status: "active",
+    statusLabel: "Activo",
     description: "Coberturas de seguros comerciales clave como General Liability, BOP, Commercial Property y Workers Comp para blindar legal y financieramente la operación del negocio.",
     requirements: [
       "EIN y registro de empresa",
@@ -363,8 +389,8 @@ const servicesData: ServiceDetail[] = [
     title: "Seguro de Vida",
     icon: Heart,
     category: "professional",
-    status: "paused",
-    statusLabel: "Pausado temporalmente",
+    status: "active",
+    statusLabel: "Activo",
     description: "Pólizas de seguro de vida individuales a término o permanente para la protección patrimonial y financiera de la familia del tomador.",
     requirements: [
       "Edad, sexo, estado de salud y hábitos del asegurado (condiciones preexistentes)",
@@ -409,18 +435,27 @@ const servicesData: ServiceDetail[] = [
   }
 ];
 
+import MisClientesSection from "./components/MisClientesSection";
+import SoporteSection from "./components/SoporteSection";
+import MiPerfilSection from "./components/MiPerfilSection";
+import { ActiveTab } from "./types";
+
 export default function BrokerOnboardingClient() {
+  const [mounted, setMounted] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [brokerName, setBrokerName] = useState<string>("");
   const [accessCode, setAccessCode] = useState<string>("");
   const [loginError, setLoginError] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("inicio");
   
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedService, setSelectedService] = useState<ServiceDetail | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [checkedServices, setCheckedServices] = useState<Record<string, { reqs: boolean; process: boolean; terms: boolean }>>({});
 
   // Cargar estado de sesión persistido
   useEffect(() => {
+    setMounted(true);
     const savedAuth = localStorage.getItem("e360_broker_auth");
     const savedName = localStorage.getItem("e360_broker_name");
     if (savedAuth === "true" && savedName) {
@@ -478,22 +513,41 @@ export default function BrokerOnboardingClient() {
     setTimeout(() => setCopiedId(null), 2500);
   };
 
+  const toggleCheck = (serviceId: string, field: "reqs" | "process" | "terms") => {
+    setCheckedServices(prev => {
+      const current = prev[serviceId] || { reqs: false, process: false, terms: false };
+      return {
+        ...prev,
+        [serviceId]: {
+          ...current,
+          [field]: !current[field]
+        }
+      };
+    });
+  };
+
   // Determinar color de estatus
-  const getStatusColor = (status: "active" | "delay" | "paused") => {
+  const getStatusColor = (status: "active" | "delay" | "paused" | "upcoming") => {
     switch (status) {
       case "active": return "bg-green-500 shadow-green-500/50";
       case "delay": return "bg-yellow-500 shadow-yellow-500/50";
       case "paused": return "bg-red-500 shadow-red-500/50";
+      case "upcoming": return "bg-purple-500 shadow-purple-500/50";
     }
   };
 
-  const getStatusBadge = (status: "active" | "delay" | "paused") => {
+  const getStatusBadge = (status: "active" | "delay" | "paused" | "upcoming") => {
     switch (status) {
       case "active": return "bg-green-500/10 text-green-400 border-green-500/20";
       case "delay": return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
       case "paused": return "bg-red-500/10 text-red-400 border-red-500/20";
+      case "upcoming": return "bg-purple-500/10 text-purple-300 border-purple-500/20";
     }
   };
+
+  if (!mounted) {
+    return <div className="fixed inset-0 bg-[#030812]" />;
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-[#030812] text-white overflow-y-auto flex flex-col font-sans">
@@ -599,7 +653,7 @@ export default function BrokerOnboardingClient() {
               <div className="max-w-7xl mx-auto flex items-center justify-between">
                 
                 {/* Logo E360 */}
-                <div className="relative h-9 w-32">
+                <div className="relative h-9 w-32 cursor-pointer" onClick={() => setActiveTab("inicio")}>
                   <Image 
                     src="/logo.png" 
                     alt="E360 Logo" 
@@ -610,18 +664,24 @@ export default function BrokerOnboardingClient() {
 
                 {/* Enlaces de Navegación del Hub */}
                 <div className="hidden md:flex items-center gap-8">
-                  <span className="text-xs uppercase tracking-widest font-bold text-cyan-400 cursor-default border-b-2 border-cyan-400 py-1">
-                    Inicio
-                  </span>
-                  <span className="text-xs uppercase tracking-widest font-medium text-gray-400 hover:text-white cursor-pointer transition-colors py-1">
-                    Mis Clientes
-                  </span>
-                  <span className="text-xs uppercase tracking-widest font-medium text-gray-400 hover:text-white cursor-pointer transition-colors py-1">
-                    Soporte
-                  </span>
-                  <span className="text-xs uppercase tracking-widest font-medium text-gray-400 hover:text-white cursor-pointer transition-colors py-1">
-                    Mi Perfil
-                  </span>
+                  {[
+                    { id: "inicio", label: "Inicio / Servicios" },
+                    { id: "clientes", label: "Mis Clientes (GHL)" },
+                    { id: "soporte", label: "Soporte VIP" },
+                    { id: "perfil", label: "Mi Perfil" }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as ActiveTab)}
+                      className={`text-xs uppercase tracking-widest py-1 transition-all ${
+                        activeTab === tab.id
+                          ? "font-extrabold text-cyan-400 border-b-2 border-cyan-400"
+                          : "font-semibold text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Info Broker / Salida */}
@@ -635,164 +695,209 @@ export default function BrokerOnboardingClient() {
                       Cerrar Sesión
                     </button>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-[0_0_15px_rgba(0,224,240,0.1)]">
+                  <div 
+                    onClick={() => setActiveTab("perfil")}
+                    className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-[0_0_15px_rgba(0,224,240,0.1)] cursor-pointer hover:border-cyan-400 transition-colors"
+                  >
                     {brokerName.charAt(0).toUpperCase()}
                   </div>
                 </div>
 
               </div>
+
+              {/* Navegación Móvil */}
+              <div className="flex md:hidden items-center justify-around pt-3 border-t border-gray-800/80 mt-3">
+                {[
+                  { id: "inicio", label: "Inicio" },
+                  { id: "clientes", label: "Clientes" },
+                  { id: "soporte", label: "Soporte" },
+                  { id: "perfil", label: "Perfil" }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as ActiveTab)}
+                    className={`text-[10px] uppercase tracking-wider py-1 font-bold ${
+                      activeTab === tab.id ? "text-cyan-400 border-b border-cyan-400" : "text-gray-400"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </header>
 
-            {/* --- HERO SECTION --- */}
-            <section className="py-12 px-6 border-b border-gray-900 bg-gradient-to-b from-[#05101F]/40 to-transparent">
-              <div className="max-w-4xl mx-auto text-center">
-                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">
-                  Bienvenido, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-400 to-blue-600">{brokerName}</span>
-                </h1>
-                <p className="text-sm md:text-base text-gray-400 font-light mb-8 max-w-2xl mx-auto leading-relaxed">
-                  Selecciona el servicio que necesitas para ver los requisitos, la hoja de ruta paso a paso, los tiempos y el contacto directo con soporte.
-                </p>
+            {activeTab === "inicio" && (
+              <>
+                {/* --- HERO SECTION --- */}
+                <section className="py-12 px-6 border-b border-gray-900 bg-gradient-to-b from-[#05101F]/40 to-transparent">
+                  <div className="max-w-4xl mx-auto text-center">
+                    <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">
+                      Bienvenido, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-400 to-blue-600">{brokerName}</span>
+                    </h1>
+                    <p className="text-sm md:text-base text-gray-400 font-light mb-8 max-w-2xl mx-auto leading-relaxed">
+                      Selecciona el servicio que necesitas para ver los requisitos, la hoja de ruta paso a paso, los tiempos y el contacto directo con soporte.
+                    </p>
 
-                {/* Buscador Rápido */}
-                <div className="max-w-lg mx-auto relative">
-                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input 
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Buscar servicio, requisito o palabra clave..."
-                    className="w-full bg-[#0A182D]/80 border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all shadow-inner"
-                  />
-                  {searchQuery && (
-                    <button 
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-white"
-                    >
-                      Limpiar
-                    </button>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* --- COLUMNAS DE SERVICIOS --- */}
-            <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-12">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                
-                {/* COLUMNA IZQUIERDA: SERVICIOS FINANCIEROS */}
-                <div>
-                  <div className="flex items-center gap-3 mb-6 pb-2 border-b border-blue-900/30">
-                    <div className="w-2.5 h-6 bg-blue-500 rounded-full" />
-                    <h2 className="text-lg font-bold tracking-widest text-blue-400 uppercase">
-                      Servicios Financieros
-                    </h2>
-                  </div>
-
-                  {financialServices.length === 0 ? (
-                    <p className="text-xs text-gray-600 py-4 italic">No se encontraron servicios financieros.</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {financialServices.map((service) => {
-                        const IconComponent = service.icon;
-                        return (
-                          <motion.button
-                            key={service.id}
-                            whileHover={{ scale: 1.01, x: 4 }}
-                            whileTap={{ scale: 0.99 }}
-                            onClick={() => setSelectedService(service)}
-                            className="w-full bg-[#0A182D]/40 hover:bg-[#0A182D]/80 border border-gray-800/80 hover:border-blue-500/40 p-5 rounded-2xl flex items-center justify-between text-left transition-all group shadow-sm"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 group-hover:bg-blue-500/20 group-hover:text-blue-300 transition-colors">
-                                <IconComponent size={22} />
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-white group-hover:text-blue-300 transition-colors text-sm md:text-base">
-                                  {service.title}
-                                </h3>
-                                <p className="text-xs text-gray-500 mt-1 line-clamp-1 max-w-[250px] md:max-w-[400px]">
-                                  {service.description}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                              {/* Estatus */}
-                              <div className="flex items-center gap-1.5 bg-gray-900/60 py-1.5 px-3 rounded-full border border-gray-800">
-                                <span className={`w-2 h-2 rounded-full ${getStatusColor(service.status)} relative`}>
-                                  <span className={`absolute inset-0 rounded-full ${getStatusColor(service.status)} animate-ping opacity-75`} />
-                                </span>
-                                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider hidden sm:inline">
-                                  {service.statusLabel}
-                                </span>
-                              </div>
-                              <ChevronRight size={18} className="text-gray-600 group-hover:text-white transition-colors" />
-                            </div>
-                          </motion.button>
-                        );
-                      })}
+                    {/* Buscador Rápido */}
+                    <div className="max-w-lg mx-auto relative">
+                      <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input 
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Buscar servicio, requisito o palabra clave..."
+                        className="w-full bg-[#0A182D]/80 border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all shadow-inner"
+                      />
+                      {searchQuery && (
+                        <button 
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-white"
+                        >
+                          Limpiar
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                {/* COLUMNA DERECHA: SEGUROS Y SERVICIOS PROFESIONALES */}
-                <div>
-                  <div className="flex items-center gap-3 mb-6 pb-2 border-b border-cyan-900/30">
-                    <div className="w-2.5 h-6 bg-cyan-400 rounded-full" />
-                    <h2 className="text-lg font-bold tracking-widest text-cyan-400 uppercase">
-                      Seguros y Servicios Profesionales
-                    </h2>
                   </div>
+                </section>
 
-                  {professionalServices.length === 0 ? (
-                    <p className="text-xs text-gray-600 py-4 italic">No se encontraron seguros o servicios profesionales.</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {professionalServices.map((service) => {
-                        const IconComponent = service.icon;
-                        return (
-                          <motion.button
-                            key={service.id}
-                            whileHover={{ scale: 1.01, x: 4 }}
-                            whileTap={{ scale: 0.99 }}
-                            onClick={() => setSelectedService(service)}
-                            className="w-full bg-[#0A182D]/40 hover:bg-[#0A182D]/80 border border-gray-800/80 hover:border-cyan-500/40 p-5 rounded-2xl flex items-center justify-between text-left transition-all group shadow-sm"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400 group-hover:bg-cyan-500/20 group-hover:text-cyan-300 transition-colors">
-                                <IconComponent size={22} />
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-white group-hover:text-cyan-300 transition-colors text-sm md:text-base">
-                                  {service.title}
-                                </h3>
-                                <p className="text-xs text-gray-500 mt-1 line-clamp-1 max-w-[250px] md:max-w-[400px]">
-                                  {service.description}
-                                </p>
-                              </div>
-                            </div>
+                {/* --- COLUMNAS DE SERVICIOS --- */}
+                <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-12">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    
+                    {/* COLUMNA IZQUIERDA: SERVICIOS FINANCIEROS */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-6 pb-2 border-b border-blue-900/30">
+                        <div className="w-2.5 h-6 bg-blue-500 rounded-full" />
+                        <h2 className="text-lg font-bold tracking-widest text-blue-400 uppercase">
+                          Servicios Financieros
+                        </h2>
+                      </div>
 
-                            <div className="flex items-center gap-3">
-                              {/* Estatus */}
-                              <div className="flex items-center gap-1.5 bg-gray-900/60 py-1.5 px-3 rounded-full border border-gray-800">
-                                <span className={`w-2 h-2 rounded-full ${getStatusColor(service.status)} relative`}>
-                                  <span className={`absolute inset-0 rounded-full ${getStatusColor(service.status)} animate-ping opacity-75`} />
-                                </span>
-                                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider hidden sm:inline">
-                                  {service.statusLabel}
-                                </span>
-                              </div>
-                              <ChevronRight size={18} className="text-gray-600 group-hover:text-white transition-colors" />
-                            </div>
-                          </motion.button>
-                        );
-                      })}
+                      {financialServices.length === 0 ? (
+                        <p className="text-xs text-gray-600 py-4 italic">No se encontraron servicios financieros.</p>
+                      ) : (
+                        <div className="space-y-4">
+                          {financialServices.map((service) => {
+                            const IconComponent = service.icon;
+                            return (
+                              <motion.button
+                                key={service.id}
+                                whileHover={{ scale: 1.01, x: 4 }}
+                                whileTap={{ scale: 0.99 }}
+                                onClick={() => setSelectedService(service)}
+                                className="w-full bg-[#0A182D]/40 hover:bg-[#0A182D]/80 border border-gray-800/80 hover:border-blue-500/40 p-5 rounded-2xl flex items-center justify-between text-left transition-all group shadow-sm"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 group-hover:bg-blue-500/20 group-hover:text-blue-300 transition-colors">
+                                    <IconComponent size={22} />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-bold text-white group-hover:text-blue-300 transition-colors text-sm md:text-base">
+                                      {service.title}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-1 line-clamp-1 max-w-[250px] md:max-w-[400px]">
+                                      {service.description}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                  {/* Estatus */}
+                                  <div className="flex items-center gap-1.5 bg-gray-900/60 py-1.5 px-3 rounded-full border border-gray-800">
+                                    <span className={`w-2 h-2 rounded-full ${getStatusColor(service.status)} relative`}>
+                                      <span className={`absolute inset-0 rounded-full ${getStatusColor(service.status)} animate-ping opacity-75`} />
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider hidden sm:inline">
+                                      {service.statusLabel}
+                                    </span>
+                                  </div>
+                                  <ChevronRight size={18} className="text-gray-600 group-hover:text-white transition-colors" />
+                                </div>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-              </div>
-            </main>
+                    {/* COLUMNA DERECHA: SEGUROS Y SERVICIOS PROFESIONALES */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-6 pb-2 border-b border-cyan-900/30">
+                        <div className="w-2.5 h-6 bg-cyan-400 rounded-full" />
+                        <h2 className="text-lg font-bold tracking-widest text-cyan-400 uppercase">
+                          Seguros y Servicios Profesionales
+                        </h2>
+                      </div>
+
+                      {professionalServices.length === 0 ? (
+                        <p className="text-xs text-gray-600 py-4 italic">No se encontraron seguros o servicios profesionales.</p>
+                      ) : (
+                        <div className="space-y-4">
+                          {professionalServices.map((service) => {
+                            const IconComponent = service.icon;
+                            return (
+                              <motion.button
+                                key={service.id}
+                                whileHover={{ scale: 1.01, x: 4 }}
+                                whileTap={{ scale: 0.99 }}
+                                onClick={() => setSelectedService(service)}
+                                className="w-full bg-[#0A182D]/40 hover:bg-[#0A182D]/80 border border-gray-800/80 hover:border-cyan-500/40 p-5 rounded-2xl flex items-center justify-between text-left transition-all group shadow-sm"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400 group-hover:bg-cyan-500/20 group-hover:text-cyan-300 transition-colors">
+                                    <IconComponent size={22} />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-bold text-white group-hover:text-cyan-300 transition-colors text-sm md:text-base">
+                                      {service.title}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-1 line-clamp-1 max-w-[250px] md:max-w-[400px]">
+                                      {service.description}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                  {/* Estatus */}
+                                  <div className="flex items-center gap-1.5 bg-gray-900/60 py-1.5 px-3 rounded-full border border-gray-800">
+                                    <span className={`w-2 h-2 rounded-full ${getStatusColor(service.status)} relative`}>
+                                      <span className={`absolute inset-0 rounded-full ${getStatusColor(service.status)} animate-ping opacity-75`} />
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider hidden sm:inline">
+                                      {service.statusLabel}
+                                    </span>
+                                  </div>
+                                  <ChevronRight size={18} className="text-gray-600 group-hover:text-white transition-colors" />
+                                </div>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                </main>
+              </>
+            )}
+
+            {activeTab === "clientes" && (
+              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+                <MisClientesSection brokerName={brokerName} />
+              </main>
+            )}
+
+            {activeTab === "soporte" && (
+              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+                <SoporteSection brokerName={brokerName} />
+              </main>
+            )}
+
+            {activeTab === "perfil" && (
+              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+                <MiPerfilSection brokerName={brokerName} />
+              </main>
+            )}
 
             {/* --- PIE DE PÁGINA CONFIDENCIAL --- */}
             <footer className="w-full py-8 px-6 mt-auto border-t border-gray-900/80 bg-gray-950/40 text-center">
@@ -932,47 +1037,152 @@ export default function BrokerOnboardingClient() {
                   </div>
                 </div>
 
+                {/* Confirmación Obligatoria de Términos y Requisitos */}
+                {selectedService.status === "upcoming" ? (
+                  <div className="bg-purple-950/30 border border-purple-500/30 p-5 rounded-2xl flex items-center gap-3">
+                    <Clock size={22} className="text-purple-400 shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-purple-300 uppercase tracking-wider">Servicio Disponible Próximamente</h4>
+                      <p className="text-xs text-purple-200/80 mt-1 leading-relaxed">
+                        Este servicio se encuentra en etapa final de preparación y estará 100% operativo para todos los brokers el próximo mes.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#05101F] border border-cyan-500/30 p-5 rounded-2xl space-y-3 shadow-inner">
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-800">
+                      <h4 className="text-xs font-extrabold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                        <ShieldCheck size={16} />
+                        <span>Confirmación de Lectura Obligatoria</span>
+                      </h4>
+                      <span className="text-[10px] font-mono font-semibold text-gray-500">3 de 3 requeridos</span>
+                    </div>
+
+                    <div className="space-y-2.5 text-xs text-gray-300">
+                      {(() => {
+                        const checks = checkedServices[selectedService.id] || { reqs: false, process: false, terms: false };
+                        return (
+                          <>
+                            <label className="flex items-start gap-3 cursor-pointer select-none group">
+                              <input 
+                                type="checkbox"
+                                checked={checks.reqs}
+                                onChange={() => toggleCheck(selectedService.id, "reqs")}
+                                className="mt-0.5 w-4 h-4 rounded border-gray-700 bg-black text-cyan-500 focus:ring-cyan-500 cursor-pointer"
+                              />
+                              <span className="group-hover:text-white transition-colors">
+                                Confirmo que el cliente cumple con los <strong>requisitos documentales mínimos</strong> solicitados.
+                              </span>
+                            </label>
+
+                            <label className="flex items-start gap-3 cursor-pointer select-none group">
+                              <input 
+                                type="checkbox"
+                                checked={checks.process}
+                                onChange={() => toggleCheck(selectedService.id, "process")}
+                                className="mt-0.5 w-4 h-4 rounded border-gray-700 bg-black text-cyan-500 focus:ring-cyan-500 cursor-pointer"
+                              />
+                              <span className="group-hover:text-white transition-colors">
+                                He leído el <strong>procedimiento y hoja de ruta</strong> para orientar correctamente al cliente.
+                              </span>
+                            </label>
+
+                            <label className="flex items-start gap-3 cursor-pointer select-none group">
+                              <input 
+                                type="checkbox"
+                                checked={checks.terms}
+                                onChange={() => toggleCheck(selectedService.id, "terms")}
+                                className="mt-0.5 w-4 h-4 rounded border-gray-700 bg-black text-cyan-500 focus:ring-cyan-500 cursor-pointer"
+                              />
+                              <span className="group-hover:text-white transition-colors">
+                                Acepto los <strong>términos de originación y políticas de comisión</strong> de E360 Hub.
+                              </span>
+                            </label>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
               </div>
 
               {/* Sección Inferior de Acciones / CTAs */}
               <div className="p-6 border-t border-gray-800/80 bg-[#05101F]/70 space-y-4">
                 
-                {/* Caja del Formulario con botón para copiar enlace */}
-                <div className="bg-black/40 border border-gray-900 rounded-xl p-3.5 flex items-center justify-between gap-4">
-                  <div className="min-w-0 flex-grow">
-                    <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Enlace del Formulario</p>
-                    <p className="text-xs text-cyan-500 font-mono mt-1 truncate">{selectedService.formLink}</p>
-                  </div>
-                  
-                  <div className="flex gap-2 shrink-0">
-                    <button 
-                      onClick={() => handleCopyLink(selectedService.formLink, selectedService.id)}
-                      className="p-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-cyan-500/30 rounded-xl transition-all text-gray-400 hover:text-white flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer"
-                    >
-                      {copiedId === selectedService.id ? (
-                        <>
-                          <Check size={14} className="text-green-400" />
-                          <span className="text-green-400">Copiado</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={14} />
-                          <span>Copiar</span>
-                        </>
-                      )}
-                    </button>
-                    
-                    <a 
-                      href={selectedService.formLink} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
-                    >
-                      <span>Abrir</span>
-                      <ChevronRight size={14} />
-                    </a>
-                  </div>
-                </div>
+                {(() => {
+                  const isUpcoming = selectedService.status === "upcoming";
+                  const checks = checkedServices[selectedService.id] || { reqs: false, process: false, terms: false };
+                  const isUnlocked = !isUpcoming && checks.reqs && checks.process && checks.terms;
+
+                  return (
+                    <>
+                      {/* Caja del Formulario con botón para copiar enlace */}
+                      <div className={`border rounded-xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 transition-all ${
+                        isUnlocked 
+                          ? "bg-black/60 border-cyan-500/50 shadow-[0_0_20px_rgba(0,224,240,0.1)]" 
+                          : "bg-black/20 border-gray-900 opacity-75"
+                      }`}>
+                        <div className="min-w-0 flex-grow">
+                          <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Enlace del Formulario</p>
+                          <p className="text-xs font-mono mt-1 truncate">
+                            {isUpcoming ? (
+                              <span className="text-purple-400 font-semibold">🔒 Próximamente disponible</span>
+                            ) : isUnlocked ? (
+                              <span className="text-cyan-400 font-bold">{selectedService.formLink}</span>
+                            ) : (
+                              <span className="text-amber-400/90 font-semibold">🔒 Marca las 3 casillas para desbloquear</span>
+                            )}
+                          </p>
+                        </div>
+                        
+                        <div className="flex gap-2 shrink-0">
+                          <button 
+                            disabled={!isUnlocked}
+                            onClick={() => isUnlocked && handleCopyLink(selectedService.formLink, selectedService.id)}
+                            className={`px-3 py-2.5 rounded-xl transition-all text-xs font-bold flex items-center justify-center gap-1.5 ${
+                              isUnlocked 
+                                ? "bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white cursor-pointer" 
+                                : "bg-gray-950 border border-gray-900 text-gray-600 cursor-not-allowed opacity-50"
+                            }`}
+                          >
+                            {copiedId === selectedService.id ? (
+                              <>
+                                <Check size={14} className="text-green-400" />
+                                <span className="text-green-400">Copiado</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={14} />
+                                <span>Copiar</span>
+                              </>
+                            )}
+                          </button>
+                          
+                          {isUnlocked ? (
+                            <a 
+                              href={selectedService.formLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors shadow-[0_0_15px_rgba(0,224,240,0.2)]"
+                            >
+                              <span>Abrir Formulario</span>
+                              <ChevronRight size={14} />
+                            </a>
+                          ) : (
+                            <button 
+                              disabled 
+                              className="px-4 py-2.5 bg-gray-800 text-gray-500 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed opacity-50"
+                            >
+                              <span>Bloqueado</span>
+                              <Lock size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 {/* Botón de Llamar al Soporte Específico */}
                 <a 
