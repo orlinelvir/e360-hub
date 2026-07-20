@@ -602,7 +602,9 @@ export default function BrokerOnboardingClient() {
     } catch (err: any) {
       console.error("Google Auth Error:", err);
       if (err.code === "auth/operation-not-allowed") {
-        setLoginError("Google Sign-In no está activado en tu consola de Firebase. Ve a Firebase Console -> Authentication -> Sign-in method y activa 'Google' (o usa Acceso Rápido Demo).");
+        setLoginError("Google Sign-In no está activado en tu consola de Firebase. Ve a Firebase Console -> Authentication -> Sign-in method y activa 'Google'.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        setLoginError("Este dominio de la web no está autorizado en tu consola de Firebase. Ve a Firebase -> Authentication -> Settings -> Authorized domains y agrega el dominio de Vercel.");
       } else if (err.code === "auth/popup-closed-by-user") {
         setLoginError("La ventana de inicio de sesión con Google fue cerrada.");
       } else {
