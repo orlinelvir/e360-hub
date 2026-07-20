@@ -264,12 +264,12 @@ const servicesData: ServiceDetail[] = [
   },
   {
     id: "auto-insurance",
-    title: "Seguro de Auto",
+    title: "Seguro de Auto Personal",
     icon: Car,
     category: "professional",
     status: "active",
     statusLabel: "Activo",
-    description: "Pólizas de seguro automotriz personal o comercial (flotillas), cotizando y comparando precios con las aseguradoras más importantes de USA.",
+    description: "Pólizas de seguro automotriz personal, cotizando y comparando precios con las aseguradoras más importantes de USA.",
     requirements: [
       "Información del vehículo (año, marca, modelo o número VIN)",
       "Licencia de conducir de todos los conductores del núcleo familiar",
@@ -282,13 +282,38 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Cotización en menos de 24 horas. Emisión de cobertura en minutos tras el pago.",
     comission: "Comisión completa directa de la póliza (si tiene licencia) o bono por referido (sin licencia).",
-    formLink: "https://app.emprende360.com/forms/auto-insurance",
+    formLink: "https://api.leadconnectorhq.com/widget/form/Ofq6tPlRhtLS5P8nipYe",
+    supportPhone: "tel:+18003607233",
+    supportPhoneFormatted: "+1 (800) 360-7233"
+  },
+  {
+    id: "commercial-auto-insurance",
+    title: "Seguro Comercial de Auto & Trucking",
+    icon: Car,
+    category: "professional",
+    status: "active",
+    statusLabel: "Activo",
+    description: "Pólizas de seguro comercial automotriz y de transporte pesado (Trucking / Flotillas) para camiones de carga, semi-remolques y vehículos corporativos.",
+    requirements: [
+      "EIN y registro oficial de la empresa transportista o comercial",
+      "Información de los vehículos (VIN, año, modelo, capacidad de carga)",
+      "Licencias CDL o de conducir de los choferes y registro de radio de operación"
+    ],
+    process: [
+      "Entrevistar al cliente sobre los vehículos, rutas y carga transportada.",
+      "Enviar formulario al departamento de suscripción de camiones y auto comercial.",
+      "Revisar cotizaciones con las aseguradoras especializadas en transportación.",
+      "Emisión del certificado de seguro (COI) y cobertura activa."
+    ],
+    timeframe: "Cotizaciones en 24 a 48 horas hábiles.",
+    comission: "Comisión sobre la prima comercial adjudicada o tarifa de referido.",
+    formLink: "https://api.leadconnectorhq.com/widget/form/LTDvyVbeNDxgawUvtxmt",
     supportPhone: "tel:+18003607233",
     supportPhoneFormatted: "+1 (800) 360-7233"
   },
   {
     id: "home-insurance",
-    title: "Seguro de Casa",
+    title: "Seguro de Casa (Homeowners)",
     icon: Home,
     category: "professional",
     status: "active",
@@ -306,18 +331,18 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Cotizaciones de seguros de hogar listas en 24 a 48 horas.",
     comission: "Comisión sobre prima anual (con licencia) o tarifa de referido (sin licencia).",
-    formLink: "https://app.emprende360.com/forms/home-insurance",
+    formLink: "https://api.leadconnectorhq.com/widget/form/4wTIAcBmi4DuuoyIccvk",
     supportPhone: "tel:+18003607233",
     supportPhoneFormatted: "+1 (800) 360-7233"
   },
   {
     id: "business-insurance",
-    title: "Seguro de Negocio",
+    title: "Seguro de Negocio (General Liability)",
     icon: Laptop,
     category: "professional",
     status: "active",
     statusLabel: "Activo",
-    description: "Coberturas de seguros comerciales clave como General Liability, BOP, Commercial Property y Workers Comp para blindar legal y financieramente la operación del negocio.",
+    description: "Cobertura de Responsabilidad Civil General (Commercial General Liability - CGL), BOP y propiedad comercial para blindar la operación del negocio ante reclamos y demandas.",
     requirements: [
       "EIN y registro de empresa",
       "Descripción exacta de las operaciones, estimados de facturación y nómina anual",
@@ -327,11 +352,36 @@ const servicesData: ServiceDetail[] = [
       "Entrevistar al cliente sobre los riesgos específicos de su industria.",
       "Enviar formulario al departamento de suscripción comercial de E360.",
       "El equipo cotiza con múltiples mercados especializados en riesgos comerciales.",
-      "Revisión de coberturas con el cliente y emisión de certificados de seguro."
+      "Revisión de coberturas con el cliente y emisión de certificados de seguro (COI)."
     ],
-    timeframe: "Cotizaciones comerciales toman de 48 a 72 horas hábiles debido a revisiones de riesgo.",
+    timeframe: "Cotizaciones comerciales toman de 24 a 48 horas hábiles.",
     comission: "Comisión comercial según la póliza adjudicada (o referido a agentes de E360).",
-    formLink: "https://app.emprende360.com/forms/business-insurance",
+    formLink: "https://api.leadconnectorhq.com/widget/form/YWiqKYGs4JzNfzklDwZo",
+    supportPhone: "tel:+18003607233",
+    supportPhoneFormatted: "+1 (800) 360-7233"
+  },
+  {
+    id: "workers-comp",
+    title: "Seguro de Compensación de Trabajadores",
+    icon: ShieldCheck,
+    category: "professional",
+    status: "active",
+    statusLabel: "Activo",
+    description: "Seguro obligatorio de Workers' Compensation para proteger la salud de los empleados y blindar al empleador ante lesiones o accidentes dentro del área de trabajo.",
+    requirements: [
+      "EIN corporativo y estimación de nómina total anual (Payroll)",
+      "Número de empleados a tiempo completo (FT) y tiempo parcial (PT)",
+      "Clasificación del tipo de trabajo / industria (Construcción, Transporte, Comercio, etc.)"
+    ],
+    process: [
+      "Recopilar la nómina anual estimada y clasificación de puestos.",
+      "Someter aplicación al departamento de suscripción de Workers Comp.",
+      "Presentar cotizaciones comparativas ajustadas al riesgo de la nómina.",
+      "Emisión inmediata de certificados de cumplimiento laboral."
+    ],
+    timeframe: "Cotización e inspección de riesgo en 24 a 48 horas.",
+    comission: "Comisión sobre prima de nómina contratada por la empresa.",
+    formLink: "https://api.leadconnectorhq.com/widget/form/RzPn2LF1d6tXzGM5X8PI",
     supportPhone: "tel:+18003607233",
     supportPhoneFormatted: "+1 (800) 360-7233"
   },

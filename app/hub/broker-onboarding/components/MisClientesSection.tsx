@@ -204,8 +204,13 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
       case "mortgage-loan": return "Préstamo Hipotecario DSCR / FHA";
       case "credit-repair": return "Reparación de Crédito";
       case "incorporation": return "Registro de Compañía & EIN";
+      case "auto-insurance": return "Seguro de Auto Personal";
+      case "commercial-auto-insurance": return "Seguro Comercial de Auto & Trucking";
+      case "home-insurance": return "Seguro de Casa (Homeowners)";
+      case "business-insurance": return "Seguro de Negocio (General Liability)";
+      case "workers-comp": return "Seguro de Compensación de Trabajadores";
       case "pos-services": return "Servicios de POS Merchant";
-      default: return "Servicio Financiero E360";
+      default: return "Servicio E360";
     }
   };
 
@@ -723,6 +728,11 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
                       <option value="mortgage-loan">Préstamo Hipotecario DSCR/FHA</option>
                       <option value="credit-repair">Reparación de Crédito</option>
                       <option value="incorporation">Registro de Compañía & EIN</option>
+                      <option value="auto-insurance">Seguro de Auto Personal</option>
+                      <option value="commercial-auto-insurance">Seguro Comercial & Trucking</option>
+                      <option value="home-insurance">Seguro de Casa (Homeowners)</option>
+                      <option value="business-insurance">Seguro de Negocio (General Liability)</option>
+                      <option value="workers-comp">Seguro de Workers' Compensation</option>
                       <option value="pos-services">Terminales de POS Merchant</option>
                     </select>
                   </div>
