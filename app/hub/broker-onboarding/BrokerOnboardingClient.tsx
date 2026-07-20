@@ -157,7 +157,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "DSCR/Dinero Duro: 5-30 días. FHA/Convencionales: 30-45 días. Nueva construcción: 45-90 días.",
     comission: "Comisión basada en la tabla de puntos de originación del préstamo.",
-    formLink: "https://app.emprende360.com/forms/mortgage",
+    formLink: "Formulario en desarrollo",
     supportPhone: "tel:+18003604663",
     supportPhoneFormatted: "+1 (800) 360-4663"
   },
@@ -183,7 +183,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Actualizaciones y rondas de disputa cada 30 días. Duración de 6 a 12 meses.",
     comission: "100% del pago de inicio y de la cuota mensual de $50 cobrada al cliente.",
-    formLink: "https://app.emprende360.com/forms/credit-repair",
+    formLink: "Formulario en desarrollo",
     supportPhone: "tel:+18003607372",
     supportPhoneFormatted: "+1 (800) 360-7372"
   },
@@ -210,7 +210,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Entrega de documentos completos en 24 a 72 horas hábiles tras la radicación.",
     comission: "Comisión fija de $150 sobre los honorarios base del servicio de registro.",
-    formLink: "https://app.emprende360.com/forms/company-registration",
+    formLink: "Formulario en desarrollo",
     supportPhone: "tel:+18003602677",
     supportPhoneFormatted: "+1 (800) 360-2677"
   },
@@ -234,7 +234,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Lanzamiento previsto para el próximo mes.",
     comission: "Comisión por cuenta activada y residual recurrente por mes de actividad.",
-    formLink: "https://app.emprende360.com/forms/payroll",
+    formLink: "Formulario en desarrollo",
     supportPhone: "tel:+18003607297",
     supportPhoneFormatted: "+1 (800) 360-7297"
   },
@@ -258,7 +258,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Lanzamiento previsto para el próximo mes.",
     comission: "Bono único por instalación física + comisión residual mensual de por vida sobre el volumen.",
-    formLink: "https://app.emprende360.com/forms/pos",
+    formLink: "Formulario en desarrollo",
     supportPhone: "tel:+18003607273",
     supportPhoneFormatted: "+1 (800) 360-7273"
   },
@@ -406,7 +406,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Preparación de expedientes en 3 a 7 días hábiles tras recopilación completa.",
     comission: "Comisión fija de referido del 30% sobre el valor del servicio preparado.",
-    formLink: "https://app.emprende360.com/forms/immigration",
+    formLink: "Formulario en desarrollo",
     supportPhone: "tel:+18003604664",
     supportPhoneFormatted: "+1 (800) 360-4664"
   },
@@ -430,7 +430,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "En temporada (Ene-Abr): 24 a 72 horas. Fuera de temporada: 3 a 5 días hábiles.",
     comission: "Porcentaje sobre el costo base de preparación cobrado por E360.",
-    formLink: "https://app.emprende360.com/forms/tax",
+    formLink: "Formulario en desarrollo",
     supportPhone: "tel:+18003608293",
     supportPhoneFormatted: "+1 (800) 360-8293"
   },
@@ -455,7 +455,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Planes simplificados: emisión inmediata. Planes médicos: de 2 a 4 semanas.",
     comission: "Sólo brokers con licencia de vida activa: 80% al 100% de la prima pagada el primer año.",
-    formLink: "https://app.emprende360.com/forms/life-insurance",
+    formLink: "Formulario en desarrollo",
     supportPhone: "tel:+18003607233",
     supportPhoneFormatted: "+1 (800) 360-7233"
   },
@@ -479,7 +479,7 @@ const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Inscripción en 20 minutos. Cobertura activa el primer día del mes entrante.",
     comission: "Sólo brokers con licencia de salud activa: comisión mensual recurrente por miembro inscrito.",
-    formLink: "https://app.emprende360.com/forms/health-insurance",
+    formLink: "Formulario en desarrollo",
     supportPhone: "tel:+18003607233",
     supportPhoneFormatted: "+1 (800) 360-7233"
   }
@@ -1162,8 +1162,9 @@ export default function BrokerOnboardingClient() {
                 
                 {(() => {
                   const isUpcoming = selectedService.status === "upcoming";
+                  const hasValidUrl = selectedService.formLink.startsWith("http");
                   const checks = checkedServices[selectedService.id] || { reqs: false, process: false, terms: false };
-                  const isUnlocked = !isUpcoming && checks.reqs && checks.process && checks.terms;
+                  const isUnlocked = !isUpcoming && hasValidUrl && checks.reqs && checks.process && checks.terms;
 
                   return (
                     <>
@@ -1178,6 +1179,8 @@ export default function BrokerOnboardingClient() {
                           <p className="text-xs font-mono mt-1 truncate">
                             {isUpcoming ? (
                               <span className="text-purple-400 font-semibold">🔒 Próximamente disponible</span>
+                            ) : !hasValidUrl ? (
+                              <span className="text-amber-400 font-semibold">🚧 Formulario en desarrollo (Próximamente)</span>
                             ) : isUnlocked ? (
                               <span className="text-cyan-400 font-bold">{selectedService.formLink}</span>
                             ) : (
@@ -1224,7 +1227,7 @@ export default function BrokerOnboardingClient() {
                               disabled 
                               className="px-4 py-2.5 bg-gray-800 text-gray-500 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed opacity-50"
                             >
-                              <span>Bloqueado</span>
+                              <span>{!hasValidUrl ? "En Desarrollo" : "Bloqueado"}</span>
                               <Lock size={14} />
                             </button>
                           )}
