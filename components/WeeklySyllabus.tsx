@@ -30,7 +30,7 @@ export default function WeeklySyllabus() {
   const [activeWeek, setActiveWeek] = useState<number | null>(0); // La primera semana empieza abierta
 
   return (
-    <section className="py-32 px-6 relative z-10 w-full bg-[#030812]">
+    <section id="syllabus" className="py-32 px-6 relative z-10 w-full bg-[#030812]">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-4">Hoja de Ruta del <span className="text-cyan-400">Programa</span></h2>

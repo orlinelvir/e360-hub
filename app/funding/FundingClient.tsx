@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, CreditCard, Landmark, Zap, User, Clock, Calendar, BarChart3, Info } from "lucide-react";
 import ProductModal from "@/components/ProductModal";
@@ -145,14 +146,17 @@ export default function FundingClient() {
             Sin la burocracia de los bancos tradicionales. Accede a capital estratégico diseñado para cada etapa de tu negocio, con procesos de validación ágiles y transparentes.
           </p>
 
-          <button className="bg-gradient-to-r from-cyan-400 to-blue-600 text-black px-8 py-4 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-cyan-300 active:scale-95 transition-all mx-auto transform hover:scale-105 shadow-[0_0_20px_rgba(0,224,240,0.3)]">
+          <Link 
+            href="#products-section"
+            className="bg-gradient-to-r from-cyan-400 to-blue-600 text-black px-8 py-4 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-cyan-300 active:scale-95 transition-all mx-auto transform hover:scale-105 shadow-[0_0_20px_rgba(0,224,240,0.3)]"
+          >
             Evaluar mi Escenario de Fondeo <ArrowRight size={20} />
-          </button>
+          </Link>
         </motion.div>
       </section>
 
       {/* Sección de Tarjetas de Productos */}
-      <section className="py-20 px-6 relative z-10 max-w-7xl mx-auto w-full">
+      <section id="products-section" className="py-20 px-6 relative z-10 max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {products.map((product, i) => (
             <motion.div

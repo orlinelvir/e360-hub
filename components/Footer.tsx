@@ -47,7 +47,7 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-bold mb-6">Soporte</h4>
             <ul className="space-y-4">
-              <li><Link href="#" className="text-gray-400 hover:text-cyan-400 text-sm transition-colors">Portal de Estudiantes</Link></li>
+              <li><Link href="/hub/broker-onboarding" className="text-gray-400 hover:text-cyan-400 text-sm transition-colors">Portal de Estudiantes</Link></li>
               <li><Link href="#" className="text-gray-400 hover:text-cyan-400 text-sm transition-colors">Términos y Condiciones</Link></li>
               <li><Link href="#" className="text-gray-400 hover:text-cyan-400 text-sm transition-colors">Política de Privacidad</Link></li>
             </ul>

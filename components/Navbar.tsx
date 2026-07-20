@@ -62,7 +62,7 @@ export default function Navbar() {
 
         {/* Botones de Acción */}
         <div className="hidden lg:flex items-center gap-6">
-          <Link href="#" className="text-sm font-medium text-gray-400 hover:text-white active:opacity-70 transition-all">
+          <Link href="/hub/broker-onboarding" className="text-sm font-medium text-gray-400 hover:text-white active:opacity-70 transition-all">
             Login Portal
           </Link>
           <Link 
@@ -96,7 +96,7 @@ export default function Navbar() {
             </Link>
           ))}
           <div className="flex flex-col gap-4 mt-4">
-            <Link href="#" className="text-center py-3 text-gray-400 border border-gray-800 rounded-xl">Login Portal</Link>
+            <Link href="/hub/broker-onboarding" className="text-center py-3 text-gray-400 border border-gray-800 rounded-xl">Login Portal</Link>
             <Link href="/hub/broker-onboarding" className="text-center py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-xl">Ser Broker</Link>
           </div>
         </div>

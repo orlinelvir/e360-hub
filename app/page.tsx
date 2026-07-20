@@ -57,12 +57,18 @@ export default function Home() {
             {/* Botones de Acción - Psicología High-Ticket */}
             <div className="flex flex-col items-center">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full">
-                <button className="bg-white text-black px-10 py-5 rounded-full font-bold text-lg flex items-center justify-center gap-3 hover:bg-cyan-400 hover:text-black active:scale-95 transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.15)] w-full sm:w-auto">
+                <Link 
+                  href="/hub/broker-onboarding"
+                  className="bg-white text-black px-10 py-5 rounded-full font-bold text-lg flex items-center justify-center gap-3 hover:bg-cyan-400 hover:text-black active:scale-95 transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.15)] w-full sm:w-auto"
+                >
                   Aplicar a la Academia <ArrowRight size={20} />
-                </button>
-                <button className="px-10 py-5 rounded-full font-semibold border border-gray-600 text-white flex items-center justify-center gap-3 hover:bg-white hover:text-black active:scale-95 transition-all w-full sm:w-auto backdrop-blur-md">
+                </Link>
+                <Link 
+                  href="#syllabus"
+                  className="px-10 py-5 rounded-full font-semibold border border-gray-600 text-white flex items-center justify-center gap-3 hover:bg-white hover:text-black active:scale-95 transition-all w-full sm:w-auto backdrop-blur-md"
+                >
                   <PlayCircle size={20} className="text-cyan-400 group-hover:text-black" /> Verificar Disponibilidad
-                </button>
+                </Link>
               </div>
               
               {/* Micro-copy de escasez y autoridad */}
