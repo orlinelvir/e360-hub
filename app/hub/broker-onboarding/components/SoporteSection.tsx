@@ -60,17 +60,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
   // Tickets
-  const [tickets, setTickets] = useState<SupportTicket[]>([
-    {
-      id: "TCK-801",
-      subject: "Verificación de comisión Préstamo MCA #CLI-901",
-      category: "commission",
-      priority: "high",
-      status: "in_progress",
-      createdAt: "2026-07-19",
-      description: "Solicitud de revisión de cierre de fondeo para pago en el corte del viernes."
-    }
-  ]);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [ticketSubject, setTicketSubject] = useState("");
   const [ticketCategory, setTicketCategory] = useState<SupportTicket["category"]>("general");
@@ -167,67 +157,43 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
+          {/* CANAL PRINCIPAL */}
           <a
-            href="tel:+18003605626"
-            className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-gray-800 hover:border-blue-500/40 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 mb-3 group-hover:bg-blue-500/20">
-                <Briefcase size={20} />
-              </div>
-              <h4 className="font-bold text-white text-sm">Préstamos Financieros</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Underwriting, precalificaciones y fondeos MCA/Personal</p>
-            </div>
-            <p className="text-xs font-mono font-bold text-blue-400 mt-4 pt-3 border-t border-gray-800/80">
-              +1 (800) 360-5626
-            </p>
-          </a>
-
-          <a
-            href="tel:+18003607233"
-            className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-gray-800 hover:border-cyan-500/40 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
+            href="tel:+12013652055"
+            className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-cyan-500/40 hover:border-cyan-400 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
           >
             <div>
               <div className="w-10 h-10 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400 mb-3 group-hover:bg-cyan-500/20">
-                <ShieldCheck size={20} />
+                <Briefcase size={20} />
               </div>
-              <h4 className="font-bold text-white text-sm">Seguros & Pólizas</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Auto, Casa, Comercial, Vida y Seguros Médicos</p>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 font-extrabold text-[9px] uppercase tracking-wider rounded">Canal Fundamental</span>
+              </div>
+              <h4 className="font-bold text-white text-sm">Atención Principal Brokers & Underwriting</h4>
+              <p className="text-[11px] text-gray-400 mt-1">Línea directa para aprobación de casos, comisiones y consultas urgentes</p>
             </div>
             <p className="text-xs font-mono font-bold text-cyan-400 mt-4 pt-3 border-t border-gray-800/80">
-              +1 (800) 360-7233
+              +1 (201) 365-2055
             </p>
           </a>
 
+          {/* CANAL SECUNDARIO */}
           <a
-            href="tel:+18003608293"
-            className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-gray-800 hover:border-emerald-500/40 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 mb-3 group-hover:bg-emerald-500/20">
-                <Calculator size={20} />
-              </div>
-              <h4 className="font-bold text-white text-sm">Impuestos & Registros</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Taxes, Registro de Empresas (LLC/Corp) y Nómina</p>
-            </div>
-            <p className="text-xs font-mono font-bold text-emerald-400 mt-4 pt-3 border-t border-gray-800/80">
-              +1 (800) 360-8293
-            </p>
-          </a>
-
-          <a
-            href="tel:+18003604663"
+            href="tel:+19172845636"
             className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-gray-800 hover:border-purple-500/40 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
           >
             <div>
               <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400 mb-3 group-hover:bg-purple-500/20">
-                <Laptop size={20} />
+                <ShieldCheck size={20} />
               </div>
-              <h4 className="font-bold text-white text-sm">Mesa de Ayuda GHL</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Acceso a subcuentas CRM, automatizaciones y webhooks</p>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 font-extrabold text-[9px] uppercase tracking-wider rounded">Canal Secundario</span>
+              </div>
+              <h4 className="font-bold text-white text-sm">Soporte Operativo & Asistencia GHL</h4>
+              <p className="text-[11px] text-gray-400 mt-1">Asistencia de subcuentas, tickets generales y documentación</p>
             </div>
             <p className="text-xs font-mono font-bold text-purple-400 mt-4 pt-3 border-t border-gray-800/80">
-              +1 (800) 360-4663
+              +1 (917) 284-5636
             </p>
           </a>
 

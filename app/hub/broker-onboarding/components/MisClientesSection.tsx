@@ -31,83 +31,7 @@ interface MisClientesSectionProps {
   brokerName: string;
 }
 
-const initialMockClients: ClientLead[] = [
-  {
-    id: "CLI-901",
-    name: "Carlos Mendoza",
-    email: "carlos.mendoza@mendozatransport.com",
-    phone: "+1 (305) 849-2041",
-    serviceId: "business-loan",
-    serviceName: "Préstamo de Negocio (MCA)",
-    amount: 75000,
-    estimatedCommission: 3750,
-    stage: "submitted",
-    createdAt: "2026-07-15",
-    lastActivity: "Hace 2 horas - Sometido a Underwriting",
-    ghlContactId: "ghl_cnt_9018472",
-    notes: "Empresa de logística con 3 años de operación. Depósitos mensuales promedian $45k. Requiere fondeo urgente para compra de camión."
-  },
-  {
-    id: "CLI-902",
-    name: "María Fernanda Ramos",
-    email: "mf.ramos@gmail.com",
-    phone: "+1 (786) 512-9903",
-    serviceId: "credit-repair",
-    serviceName: "Reparación de Crédito",
-    amount: 1500,
-    estimatedCommission: 500,
-    stage: "qualification",
-    createdAt: "2026-07-18",
-    lastActivity: "Ayer - Esperando Reporte de 3 Burós",
-    ghlContactId: "ghl_cnt_9018473",
-    notes: "Cliente busca eliminar 2 tardanzas de pago de hipoteca previa. Score actual de 610, busca llegar a 720+."
-  },
-  {
-    id: "CLI-903",
-    name: "Inversiones Grupo Velásquez LLC",
-    email: "contacto@grupovelásquez.us",
-    phone: "+1 (407) 931-4420",
-    serviceId: "mortgage-loan",
-    serviceName: "Préstamo Hipotecario DSCR",
-    amount: 320000,
-    estimatedCommission: 6400,
-    stage: "docs_pending",
-    createdAt: "2026-07-10",
-    lastActivity: "Hace 1 día - Pendiente Appraisall",
-    ghlContactId: "ghl_cnt_9018474",
-    notes: "Propiedad multifamiliar en Orlando, FL. Renta estimada de $3,400/mes frente a PITI de $2,200. DSCR sólido de 1.54."
-  },
-  {
-    id: "CLI-904",
-    name: "Roberto Garza",
-    email: "rgarza.construction@yahoo.com",
-    phone: "+1 (832) 764-1189",
-    serviceId: "incorporation",
-    serviceName: "Registro de Compañía & EIN",
-    amount: 550,
-    estimatedCommission: 150,
-    stage: "paid",
-    createdAt: "2026-07-02",
-    lastActivity: "05 Jul - Comisión Pagada vía Zelle",
-    ghlContactId: "ghl_cnt_9018475",
-    notes: "LLC en Texas completada y entregada con Artículos de Formación y EIN de IRS en 48 horas."
-  },
-  {
-    id: "CLI-905",
-    name: "Elena Suárez",
-    email: "elena.suarez@healthclinic.org",
-    phone: "+1 (305) 441-8890",
-    serviceId: "pos-services",
-    serviceName: "Terminales de POS Merchant Account",
-    amount: 12000,
-    estimatedCommission: 450,
-    stage: "approved",
-    createdAt: "2026-07-12",
-    lastActivity: "Ayer - Terminal enviada por FedEx",
-    ghlContactId: "ghl_cnt_9018476",
-    notes: "Clínica médica con 2 terminales de cobro. Reducción de tarifas de procesamiento del 3.2% al 1.9% con E360 POS."
-  }
-];
+const initialMockClients: ClientLead[] = [];
 
 const stageLabels: Record<PipelineStage, { label: string; color: string; bg: string }> = {
   lead: { label: "Nuevo Lead", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30" },
@@ -139,14 +63,21 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
     const saved = localStorage.getItem("e360_broker_clients");
     if (saved) {
       try {
-        setClients(JSON.parse(saved));
+        const parsed: ClientLead[] = JSON.parse(saved);
+        // Filtrar cualquier mock data heredado anterior
+        const realClients = parsed.filter(c => !c.id.startsWith("CLI-90"));
+        setClients(realClients);
+        localStorage.setItem("e360_broker_clients", JSON.stringify(realClients));
       } catch (e) {
-        setClients(initialMockClients);
+        setClients([]);
+        localStorage.removeItem("e360_broker_clients");
       }
     } else {
-      setClients(initialMockClients);
-      localStorage.setItem("e360_broker_clients", JSON.stringify(initialMockClients));
+      setClients([]);
     }
+
+    // Intentar sincronización inicial en tiempo real con GHL API
+    handleSyncGHL();
   }, []);
 
   const saveClients = (updated: ClientLead[]) => {
@@ -353,16 +284,16 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
               className="flex-1 md:flex-none px-4 py-3 bg-[#05101F] hover:bg-cyan-950/40 border border-gray-800 hover:border-cyan-500/40 text-gray-300 hover:text-cyan-400 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
             >
               <RefreshCw size={14} className={isSyncingGHL ? "animate-spin text-cyan-400" : ""} />
-              <span>{isSyncingGHL ? "Sincronizando..." : "Sincronizar GHL"}</span>
+              <span>{isSyncingGHL ? "Sincronizando..." : "Sincronizar StartPoint"}</span>
             </button>
 
             <a
-              href="https://app.gohighlevel.com/"
+              href="https://app.startpoint.biz"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 md:flex-none px-5 py-3 bg-gradient-to-r from-cyan-400 to-blue-600 hover:opacity-90 text-black font-extrabold rounded-xl text-xs transition-opacity flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,224,240,0.2)]"
+              className="flex-1 md:flex-none px-5 py-3 bg-gradient-to-r from-cyan-400 to-blue-600 hover:opacity-90 text-black font-extrabold rounded-xl text-xs transition-opacity flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,224,240,0.2)] cursor-pointer"
             >
-              <span>Abrir GoHighLevel</span>
+              <span>Abrir StartPoint CRM</span>
               <ExternalLink size={14} />
             </a>
           </div>

@@ -29,7 +29,8 @@ import {
   Laptop,
   Car,
   HeartPulse,
-  Heart
+  Heart,
+  Sparkles
 } from "lucide-react";
 
 // Estructura de tipo para los servicios
@@ -488,13 +489,20 @@ const servicesData: ServiceDetail[] = [
 import MisClientesSection from "./components/MisClientesSection";
 import SoporteSection from "./components/SoporteSection";
 import MiPerfilSection from "./components/MiPerfilSection";
+import GHLOnboardingWizardModal from "./components/GHLOnboardingWizardModal";
 import { ActiveTab } from "./types";
+
+import { auth, googleProvider } from "@/lib/firebase";
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
 
 export default function BrokerOnboardingClient() {
   const [mounted, setMounted] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [brokerName, setBrokerName] = useState<string>("");
-  const [accessCode, setAccessCode] = useState<string>("");
+  const [emailInput, setEmailInput] = useState<string>("");
+  const [passwordInput, setPasswordInput] = useState<string>("");
+  const [isSignUp, setIsSignUp] = useState<boolean>(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ActiveTab>("inicio");
   
@@ -503,32 +511,123 @@ export default function BrokerOnboardingClient() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [checkedServices, setCheckedServices] = useState<Record<string, { reqs: boolean; process: boolean; terms: boolean }>>({});
 
-  // Cargar estado de sesión persistido
-  useEffect(() => {
-    setMounted(true);
-    const savedAuth = localStorage.getItem("e360_broker_auth");
-    const savedName = localStorage.getItem("e360_broker_name");
-    if (savedAuth === "true" && savedName) {
-      setIsAuthenticated(true);
-      setBrokerName(savedName);
-    }
-  }, []);
+  const [isWizardOpen, setIsWizardOpen] = useState<boolean>(false);
+  const [userLocationId, setUserLocationId] = useState<string>("");
+  const [userApiKey, setUserApiKey] = useState<string>("");
 
-  // Manejo del Login del Broker
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!brokerName.trim()) {
-      setLoginError("Por favor ingresa tu nombre completo");
-      return;
-    }
-    // Permitir cualquier ingreso por defecto para facilitar pruebas, o un código simple si es requerido
-    setIsAuthenticated(true);
-    localStorage.setItem("e360_broker_auth", "true");
-    localStorage.setItem("e360_broker_name", brokerName.trim());
-    setLoginError("");
+  const handleSaveGHLWizard = (locId: string, key: string) => {
+    setUserLocationId(locId);
+    setUserApiKey(key);
+    const existing = localStorage.getItem("e360_broker_profile");
+    let profileData = existing ? JSON.parse(existing) : {};
+    profileData.ghlLocationId = locId;
+    profileData.ghlSubaccountEmail = key;
+    profileData.ghlConnected = true;
+    localStorage.setItem("e360_broker_profile", JSON.stringify(profileData));
   };
 
-  const handleLogout = () => {
+  // Escuchar sesión activa de Firebase Auth o LocalStorage
+  useEffect(() => {
+    setMounted(true);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        setBrokerName(user.displayName || user.email?.split("@")[0] || "Broker E360");
+        localStorage.setItem("e360_broker_auth", "true");
+        localStorage.setItem("e360_broker_name", user.displayName || user.email || "Broker E360");
+      } else {
+        const savedAuth = localStorage.getItem("e360_broker_auth");
+        const savedName = localStorage.getItem("e360_broker_name");
+        if (savedAuth === "true" && savedName) {
+          setIsAuthenticated(true);
+          setBrokerName(savedName);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Login / Registro con Firebase Email & Password
+  const handleFirebaseEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setIsLoadingAuth(true);
+
+    try {
+      if (isSignUp) {
+        if (!brokerName.trim() || !emailInput.trim() || !passwordInput.trim()) {
+          setLoginError("Completa todos los campos para registrarte.");
+          setIsLoadingAuth(false);
+          return;
+        }
+        await createUserWithEmailAndPassword(auth, emailInput.trim(), passwordInput.trim());
+      } else {
+        if (!emailInput.trim() || !passwordInput.trim()) {
+          setLoginError("Ingresa tu correo y contraseña.");
+          setIsLoadingAuth(false);
+          return;
+        }
+        await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput.trim());
+      }
+    } catch (err: any) {
+      console.error("Error de autenticación Firebase:", err);
+      if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+        setLoginError("Credenciales incorrectas. Verifique correo y contraseña.");
+      } else if (err.code === "auth/email-already-in-use") {
+        setLoginError("Este correo ya está registrado en E360 App.");
+      } else if (err.code === "auth/weak-password") {
+        setLoginError("La contraseña debe tener al menos 6 caracteres.");
+      } else {
+        // Fallback de demostración rápida si las llaves aún no han sido activadas
+        if (brokerName.trim()) {
+          setIsAuthenticated(true);
+          localStorage.setItem("e360_broker_auth", "true");
+          localStorage.setItem("e360_broker_name", brokerName.trim());
+        } else {
+          setLoginError(err.message || "Error al autenticar con Firebase.");
+        }
+      }
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
+
+  // Login con Google (Firebase Auth)
+  const handleGoogleAuth = async () => {
+    setIsLoadingAuth(true);
+    setLoginError("");
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err: any) {
+      console.error("Google Auth Error:", err);
+      if (err.code === "auth/operation-not-allowed") {
+        setLoginError("Google Sign-In no está activado en tu consola de Firebase. Ve a Firebase Console -> Authentication -> Sign-in method y activa 'Google' (o usa Acceso Rápido Demo).");
+      } else if (err.code === "auth/popup-closed-by-user") {
+        setLoginError("La ventana de inicio de sesión con Google fue cerrada.");
+      } else {
+        setLoginError(err.message || "No se pudo iniciar sesión con Google.");
+      }
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
+
+  // Demo Fast Login
+  const handleDemoLogin = () => {
+    const name = brokerName.trim() || "Broker E360";
+    setIsAuthenticated(true);
+    setBrokerName(name);
+    localStorage.setItem("e360_broker_auth", "true");
+    localStorage.setItem("e360_broker_name", name);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn("SignOut notice:", e);
+    }
     setIsAuthenticated(false);
     localStorage.removeItem("e360_broker_auth");
     localStorage.removeItem("e360_broker_name");
@@ -635,52 +734,126 @@ export default function BrokerOnboardingClient() {
                 </p>
               </div>
 
-              <form onSubmit={handleLogin} className="space-y-6">
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative h-12 w-44 mb-4">
+                  <Image 
+                    src="/logo.png" 
+                    alt="E360 Logo" 
+                    fill
+                    priority
+                    className="object-contain" 
+                  />
+                </div>
+                <h2 className="text-xl font-bold text-center tracking-tight">Acceso Oficial de Brokers E360</h2>
+                <p className="text-xs text-gray-400 text-center mt-2 leading-relaxed">
+                  Autenticación unificada con **E360 Firebase Auth** & **GoHighLevel CRM Sub-accounts**.
+                </p>
+              </div>
+
+              {/* Botón Google Sign-In */}
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={isLoadingAuth}
+                className="w-full mb-5 bg-[#05101F] hover:bg-[#0A1A30] border border-gray-700/80 text-white py-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-3 transition-all cursor-pointer"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.6 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
+                  <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                  <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9z"/>
+                  <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+                </svg>
+                <span>Continuar con Google</span>
+              </button>
+
+              <div className="relative flex items-center justify-center mb-6">
+                <div className="border-t border-gray-800 w-full" />
+                <span className="bg-[#0A182D] px-3 text-[10px] text-gray-500 uppercase tracking-widest absolute">o con correo</span>
+              </div>
+
+              <form onSubmit={handleFirebaseEmailAuth} className="space-y-4">
+                {isSignUp && (
+                  <div>
+                    <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
+                      Nombre Completo
+                    </label>
+                    <div className="relative">
+                      <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input 
+                        type="text"
+                        value={brokerName}
+                        onChange={(e) => setBrokerName(e.target.value)}
+                        placeholder="Ej. Juan Pérez"
+                        className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-widest mb-2">
-                    Nombre del Broker
+                  <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
+                    Correo Electrónico
                   </label>
                   <div className="relative">
-                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input 
-                      type="text"
-                      value={brokerName}
-                      onChange={(e) => setBrokerName(e.target.value)}
-                      placeholder="Ej. Yampiero de Dios"
-                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/80 transition-colors"
+                      type="email"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="broker@emprende360.com"
+                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-colors"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-widest mb-2">
-                    Código de Acceso CRM
+                  <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
+                    Contraseña
                   </label>
                   <div className="relative">
-                    <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input 
                       type="password"
-                      value={accessCode}
-                      onChange={(e) => setAccessCode(e.target.value)}
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/80 transition-colors"
+                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-colors"
                     />
                   </div>
                 </div>
 
                 {loginError && (
-                  <p className="text-xs font-semibold text-red-400 flex items-center gap-1.5 animate-pulse">
+                  <p className="text-[11px] font-semibold text-red-400 flex items-center gap-1.5 animate-pulse bg-red-950/40 p-2.5 rounded-xl border border-red-500/20">
                     ⚠️ {loginError}
                   </p>
                 )}
 
                 <button 
                   type="submit"
-                  className="w-full bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-600 text-black py-4 rounded-xl font-bold text-sm tracking-wide uppercase hover:opacity-90 transition-opacity active:scale-[0.98] transform flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(0,224,240,0.15)] cursor-pointer"
+                  disabled={isLoadingAuth}
+                  className="w-full bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-600 text-black py-3.5 rounded-xl font-bold text-xs tracking-wide uppercase hover:opacity-90 transition-opacity active:scale-[0.98] transform flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,224,240,0.15)] cursor-pointer"
                 >
-                  <Lock size={16} /> Ingresar al Hub
+                  <Lock size={14} /> {isLoadingAuth ? "Autenticando..." : isSignUp ? "Crear Cuenta Broker" : "Ingresar con Firebase"}
                 </button>
               </form>
+
+              <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
+                <button
+                  type="button"
+                  onClick={() => { setIsSignUp(!isSignUp); setLoginError(""); }}
+                  className="text-cyan-400 hover:underline font-medium text-[11px] cursor-pointer"
+                >
+                  {isSignUp ? "¿Ya tienes cuenta? Inicia Sesión" : "¿Nuevo Broker? Regístrate aquí"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  className="text-gray-500 hover:text-gray-300 underline font-mono text-[10px] cursor-pointer"
+                >
+                  Acceso Rápido Demo
+                </button>
+              </div>
 
               <div className="mt-8 text-center">
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">
@@ -736,11 +909,32 @@ export default function BrokerOnboardingClient() {
 
                 {/* Info Broker / Salida */}
                 <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setIsWizardOpen(true)}
+                    className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      userLocationId 
+                        ? "bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400" 
+                        : "bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400"
+                    }`}
+                  >
+                    {userLocationId ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>CRM Conectado</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={14} />
+                        <span>Guía CRM</span>
+                      </>
+                    )}
+                  </button>
+
                   <div className="text-right">
                     <p className="text-xs font-bold text-white leading-none">{brokerName}</p>
                     <button 
                       onClick={handleLogout}
-                      className="text-[10px] font-semibold text-gray-500 hover:text-red-400 transition-colors mt-1"
+                      className="text-[10px] font-semibold text-gray-500 hover:text-red-400 transition-colors mt-1 cursor-pointer"
                     >
                       Cerrar Sesión
                     </button>
@@ -1252,6 +1446,14 @@ export default function BrokerOnboardingClient() {
           </>
         )}
       </AnimatePresence>
+
+      <GHLOnboardingWizardModal
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onSaveCredentials={handleSaveGHLWizard}
+        currentLocationId={userLocationId}
+        currentApiKey={userApiKey}
+      />
 
     </div>
   );

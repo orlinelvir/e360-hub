@@ -28,65 +28,73 @@ interface MiPerfilSectionProps {
   brokerName: string;
 }
 
-const initialProfile: BrokerProfileData = {
-  name: "Yampiero de Dios",
-  email: "ydedios@emprende360.com",
+const createCleanProfile = (name: string): BrokerProfileData => ({
+  name: name || "Broker E360",
+  email: "broker@emprende360.com",
   phone: "+1 (800) 360-5626",
-  brokerId: "BRK-360-99",
-  ghlLocationId: "LOC-E360-BRK99",
-  ghlSubaccountEmail: "ydedios@subaccount.gohighlevel.com",
-  ghlConnected: true,
+  brokerId: "BRK-360-001",
+  ghlLocationId: process.env.NEXT_PUBLIC_GHL_DEFAULT_LOCATION_ID || "",
+  ghlSubaccountEmail: "",
+  ghlConnected: false,
   tier: "Senior Broker",
-  nmlsId: "2049182",
-  licenseNumber: "FL-INS-89104",
+  nmlsId: "Por registrar",
+  licenseNumber: "Por registrar",
   payoutMethod: "zelle",
   payoutDetails: {
-    bankName: "Chase Bank",
-    accountNumber: "••••••••4820",
-    routingNumber: "021000021",
-    zellePhoneOrEmail: "ydedios@emprende360.com"
+    bankName: "",
+    accountNumber: "",
+    routingNumber: "",
+    zellePhoneOrEmail: ""
   },
-  referralSlug: "yampiero-dedios",
-  totalVolumeProcessed: 408500,
-  totalCommissionsPaid: 10750,
+  referralSlug: (name || "broker").toLowerCase().replace(/[^a-z0-9]/g, "-"),
+  totalVolumeProcessed: 0,
+  totalCommissionsPaid: 0,
   documentsStatus: {
     brokerAgreement: true,
     w9Form: true,
-    directDepositAuth: true
+    directDepositAuth: false
   }
-};
+});
 
 export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
-  const [profile, setProfile] = useState<BrokerProfileData>(initialProfile);
+  const [profile, setProfile] = useState<BrokerProfileData>(createCleanProfile(brokerName));
   const [copiedLink, setCopiedLink] = useState(false);
   const [isSavedToast, setIsSavedToast] = useState(false);
   const [isSyncingGHL, setIsSyncingGHL] = useState(false);
 
   // Form states
-  const [payoutMethod, setPayoutMethod] = useState<"ach" | "zelle" | "wire">(initialProfile.payoutMethod);
-  const [zelleValue, setZelleValue] = useState(initialProfile.payoutDetails.zellePhoneOrEmail || "");
-  const [bankName, setBankName] = useState(initialProfile.payoutDetails.bankName || "");
-  const [accountNum, setAccountNum] = useState(initialProfile.payoutDetails.accountNumber || "");
-  const [routingNum, setRoutingNum] = useState(initialProfile.payoutDetails.routingNumber || "");
+  const [payoutMethod, setPayoutMethod] = useState<"ach" | "zelle" | "wire">("zelle");
+  const [zelleValue, setZelleValue] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNum, setAccountNum] = useState("");
+  const [routingNum, setRoutingNum] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("e360_broker_profile");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setProfile(parsed);
-        setPayoutMethod(parsed.payoutMethod || "zelle");
-        setZelleValue(parsed.payoutDetails?.zellePhoneOrEmail || "");
-        setBankName(parsed.payoutDetails?.bankName || "");
-        setAccountNum(parsed.payoutDetails?.accountNumber || "");
-        setRoutingNum(parsed.payoutDetails?.routingNumber || "");
+        // Filtrar datos obsoletos anteriores
+        if (parsed.email === "ydedios@emprende360.com") {
+          const fresh = createCleanProfile(brokerName);
+          setProfile(fresh);
+          localStorage.setItem("e360_broker_profile", JSON.stringify(fresh));
+        } else {
+          setProfile(parsed);
+          setPayoutMethod(parsed.payoutMethod || "zelle");
+          setZelleValue(parsed.payoutDetails?.zellePhoneOrEmail || "");
+          setBankName(parsed.payoutDetails?.bankName || "");
+          setAccountNum(parsed.payoutDetails?.accountNumber || "");
+          setRoutingNum(parsed.payoutDetails?.routingNumber || "");
+        }
       } catch (e) {
-        setProfile({ ...initialProfile, name: brokerName || initialProfile.name });
+        const fresh = createCleanProfile(brokerName);
+        setProfile(fresh);
       }
     } else {
-      const updated = { ...initialProfile, name: brokerName || initialProfile.name };
-      setProfile(updated);
-      localStorage.setItem("e360_broker_profile", JSON.stringify(updated));
+      const fresh = createCleanProfile(brokerName);
+      setProfile(fresh);
+      localStorage.setItem("e360_broker_profile", JSON.stringify(fresh));
     }
   }, [brokerName]);
 
@@ -174,7 +182,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
       </div>
 
       {/* ESTADO CONEXIÓN GHL SUBCUENTA */}
-      <div className="bg-[#0A182D]/60 border border-cyan-500/30 rounded-3xl p-6 relative overflow-hidden">
+      <div className="bg-[#0A182D]/60 border border-cyan-500/30 rounded-3xl p-6 relative overflow-hidden space-y-4">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           
           <div className="flex items-center gap-4">
@@ -184,10 +192,10 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <h3 className="font-extrabold text-white text-base">Subcuenta GoHighLevel Vinculada</h3>
+                <h3 className="font-extrabold text-white text-base">Subcuenta GoHighLevel (GHL Multi-Tenant)</h3>
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                Location ID: <strong className="text-cyan-400 font-mono">{profile.ghlLocationId}</strong> · Email GHL: <span className="text-gray-300 font-mono">{profile.ghlSubaccountEmail}</span>
+                Vinculación directa de CRM para la gestión individual de Leads y Pipeline de comisiones.
               </p>
             </div>
           </div>
@@ -196,23 +204,51 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
             <button
               onClick={handleSyncGHL}
               disabled={isSyncingGHL}
-              className="flex-1 md:flex-none px-4 py-2.5 bg-[#05101F] hover:bg-gray-800 border border-gray-800 text-gray-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+              className="flex-1 md:flex-none px-4 py-2.5 bg-[#05101F] hover:bg-gray-800 border border-gray-800 text-gray-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <RefreshCw size={14} className={isSyncingGHL ? "animate-spin text-cyan-400" : ""} />
               <span>Verificar Sync</span>
             </button>
             
             <a
-              href="https://app.gohighlevel.com/"
+              href="https://app.startpoint.biz"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 md:flex-none px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-2"
+              className="flex-1 md:flex-none px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Abrir GHL CRM</span>
+              <span>Abrir StartPoint CRM</span>
               <ExternalLink size={14} />
             </a>
           </div>
 
+        </div>
+
+        {/* Campos de Configuración GHL de la Subcuenta */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-gray-800/80">
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+              GHL Location ID
+            </label>
+            <input 
+              type="text"
+              value={profile.ghlLocationId}
+              onChange={(e) => setProfile(prev => ({ ...prev, ghlLocationId: e.target.value }))}
+              placeholder="Ej. veYvJ38dK..."
+              className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs font-mono text-cyan-400 focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+              Subaccount API Key (Opcional si no usas Pro Plan)
+            </label>
+            <input 
+              type="password"
+              value={profile.ghlSubaccountEmail}
+              onChange={(e) => setProfile(prev => ({ ...prev, ghlSubaccountEmail: e.target.value }))}
+              placeholder="••••••••••••••••"
+              className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs font-mono text-gray-300 focus:outline-none focus:border-cyan-500"
+            />
+          </div>
         </div>
       </div>
 
