@@ -1,7 +1,76 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck, FileSearch, TrendingUp } from "lucide-react";
+import { 
+  ArrowRight, 
+  ShieldCheck, 
+  FileSearch, 
+  TrendingUp, 
+  CheckCircle2,
+  AlertTriangle,
+  HelpCircle,
+  Clock,
+  Zap,
+  Info
+} from "lucide-react";
+
+// Estructura de niveles de precios extraída de las guías de precios de E360
+const pricingLevels = [
+  {
+    level: "Nivel 1",
+    name: "Corrección Simple",
+    desc: "Para clientes con problemas menores y fáciles de resolver en su historial de crédito.",
+    setupFee: "$250",
+    monthlyFee: "$50/mes",
+    duration: "6 meses",
+    totalEst: "~$550",
+    features: [
+      "Corrección de información personal (nombre, dirección, SSN)",
+      "Eliminación de inquiries (consultas) no autorizados o en exceso",
+      "Actualización de cuentas con saldos/datos desactualizados",
+      "Corrección de pequeños errores que dañan el score innecesariamente"
+    ],
+    idealFor: "Clientes con puntaje moderado que necesitan una limpieza rápida para calificar a créditos básicos.",
+    borderClass: "border-gray-800",
+    badge: null
+  },
+  {
+    level: "Nivel 2",
+    name: "Trabajo Moderado",
+    desc: "Para clientes con varias cuentas negativas y colecciones que requieren atención.",
+    setupFee: "$500",
+    monthlyFee: "$50/mes",
+    duration: "8 meses",
+    totalEst: "~$900",
+    features: [
+      "Disputas de cuentas derogatorias (pagos tardíos, charge-offs)",
+      "Eliminación de inquiries no autorizados en los tres burós",
+      "Negociación y disputa formal de cuentas en colecciones",
+      "Corrección de saldos y límites de crédito reportados incorrectamente"
+    ],
+    idealFor: "Clientes con múltiples factores negativos que necesitan un saneamiento completo de su historial en 8 meses.",
+    borderClass: "border-cyan-500/40 bg-gradient-to-b from-[#0A182D] to-[#05101F]/80",
+    badge: "Más Solicitado"
+  },
+  {
+    level: "Nivel 3",
+    name: "Caso Complejo",
+    desc: "Para clientes con daño crediticio severo que requieren reconstrucción integral.",
+    setupFee: "$1,000 - $2,000",
+    monthlyFee: "$50/mes",
+    duration: "12 meses",
+    totalEst: "~$1,600 - $2,600",
+    features: [
+      "Disputa de múltiples colecciones con diversas agencias de cobro",
+      "Corrección por robo de identidad y cuentas fraudulentas",
+      "Disputas por quiebras (bankruptcies), repossessions y embargos",
+      "Reconstrucción total de historial crediticio dañado por 12 meses"
+    ],
+    idealFor: "Clientes con daños severos o historial en quiebra que requieren acompañamiento jurídico-técnico completo.",
+    borderClass: "border-purple-500/30",
+    badge: "Premium"
+  }
+];
 
 export default function CreditRepairClient() {
   return (
@@ -32,14 +101,17 @@ export default function CreditRepairClient() {
             Nuestro equipo de especialistas realiza un análisis profundo de los tres burós principales, utilizando estrategias basadas en la FCRA para disputar y eliminar errores, colecciones e inconsistencias de tu historial.
           </p>
 
-          <button className="bg-gradient-to-r from-cyan-400 to-blue-600 text-black px-8 py-4 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-cyan-300 transition-all mx-auto transform hover:scale-105 shadow-[0_0_20px_rgba(0,224,240,0.3)]">
-            Solicitar Auditoría Gratuita <ArrowRight size={20} />
-          </button>
+          <a 
+            href="#pricing-section"
+            className="bg-gradient-to-r from-cyan-400 to-blue-600 text-black px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all mx-auto transform hover:scale-105 shadow-[0_0_20px_rgba(0,224,240,0.3)]"
+          >
+            Ver Planes de Reparación <ArrowRight size={20} />
+          </a>
         </motion.div>
       </section>
 
       {/* Sección Interactiva: Cómo Funciona (El Análisis) */}
-      <section className="py-20 px-6 relative z-10 max-w-6xl mx-auto w-full">
+      <section className="py-12 px-6 relative z-10 max-w-6xl mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           
           {/* Columna Izquierda: Texto y Pasos */}
@@ -113,7 +185,7 @@ export default function CreditRepairClient() {
       </section>
 
       {/* Sección de Resultados / Proyección Visual */}
-      <section className="py-24 px-6 relative z-10 w-full bg-[#030812] border-y border-gray-800/50">
+      <section className="py-20 px-6 relative z-10 w-full bg-[#030812] border-t border-gray-800/50">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           
           {/* Gráfico Dinámico Mejorado */}
@@ -206,6 +278,114 @@ export default function CreditRepairClient() {
               ))}
             </ul>
           </motion.div>
+        </div>
+      </section>
+
+      {/* --- PRICING SECTION (NIVELES Y PRECIOS OFICIALES) --- */}
+      <section id="pricing-section" className="py-24 px-6 relative z-10 w-full bg-[#05101F] border-t border-gray-800/50">
+        <div className="max-w-6xl mx-auto">
+          
+          <div className="text-center mb-20">
+            <span className="text-cyan-400 font-semibold tracking-widest uppercase text-xs mb-3 block">Precios y Programas</span>
+            <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
+              Estructura de Cobros <br className="sm:hidden" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">Transparente.</span>
+            </h2>
+            <p className="text-gray-400 text-sm mt-4 max-w-xl mx-auto font-light leading-relaxed">
+              El costo del servicio depende de la complejidad de tu caso. Realizamos una auditoría inicial para recomendarte el plan adecuado.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+            {pricingLevels.map((plan, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.6 }}
+                className={`border rounded-3xl p-8 flex flex-col justify-between relative overflow-hidden h-full ${plan.borderClass} ${
+                  plan.badge ? "shadow-[0_0_40px_rgba(0,224,240,0.08)] bg-[#0A182D]/70" : "bg-[#0A182D]/40"
+                }`}
+              >
+                {/* Badge de Plan */}
+                {plan.badge && (
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-cyan-400 to-blue-600 text-black text-[9px] font-extrabold px-4 py-1.5 rounded-bl-xl uppercase tracking-widest">
+                    {plan.badge}
+                  </div>
+                )}
+
+                {/* Encabezado */}
+                <div>
+                  <span className="text-cyan-400 font-semibold text-xs uppercase tracking-widest block mb-2">{plan.level}</span>
+                  <h3 className="text-2xl font-bold text-white mb-3">{plan.name}</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed mb-6">{plan.desc}</p>
+                  
+                  {/* Precios */}
+                  <div className="py-6 border-y border-gray-800/80 mb-6 flex items-baseline gap-2">
+                    <span className="text-4xl font-extrabold text-white">{plan.setupFee}</span>
+                    <span className="text-gray-500 text-xs font-semibold uppercase font-mono">/ de inicio</span>
+                    <span className="text-cyan-400 text-sm font-bold ml-1 font-mono">{plan.monthlyFee}</span>
+                  </div>
+
+                  {/* Duración y Total */}
+                  <div className="grid grid-cols-2 gap-4 bg-black/30 p-3.5 rounded-xl border border-gray-900 mb-8 text-center">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-widest text-gray-500 font-bold block mb-1">Duración</span>
+                      <span className="text-xs font-semibold text-gray-300 flex items-center justify-center gap-1">
+                        <Clock size={12} className="text-cyan-400" /> {plan.duration}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] uppercase tracking-widest text-gray-500 font-bold block mb-1">Inversión Est.</span>
+                      <span className="text-xs font-bold text-cyan-400">{plan.totalEst}</span>
+                    </div>
+                  </div>
+
+                  {/* Coberturas */}
+                  <h4 className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-4">¿Qué Incluye?</h4>
+                  <ul className="space-y-3.5 mb-8">
+                    {plan.features.map((feat, idx) => (
+                      <li key={idx} className="flex gap-2.5 text-xs text-gray-400 leading-relaxed">
+                        <CheckCircle2 size={14} className="text-cyan-500 shrink-0 mt-0.5" />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Footer del Plan */}
+                <div>
+                  <p className="text-[10px] text-gray-500 leading-relaxed italic border-t border-gray-800/80 pt-4 mb-6">
+                    💡 **Ideal para:** {plan.idealFor}
+                  </p>
+                  
+                  <button className="w-full bg-gradient-to-r from-cyan-400 to-blue-600 text-black py-4.5 rounded-xl font-bold text-xs tracking-wider uppercase hover:opacity-90 active:scale-[0.98] transition-all transform flex items-center justify-center gap-2 cursor-pointer">
+                    Iniciar este Plan <ArrowRight size={14} />
+                  </button>
+                </div>
+
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-16 bg-[#0A182D]/40 border border-gray-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex gap-4 items-start">
+              <div className="p-3 bg-blue-900/10 rounded-xl text-cyan-400 border border-cyan-500/10 shrink-0 mt-1">
+                <Info size={20} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white mb-1">¿No estás seguro de qué nivel necesitas?</h4>
+                <p className="text-xs text-gray-400 leading-relaxed max-w-xl">
+                  Agenda una consulta de auditoría inicial de crédito. Evaluaremos tu reporte completo de los 3 burós y determinaremos tu nivel exacto de complejidad antes de cualquier cobro.
+                </p>
+              </div>
+            </div>
+            <button className="bg-transparent hover:bg-white/5 border border-gray-600 hover:border-white text-white px-6 py-3.5 rounded-xl text-xs font-bold uppercase transition-all tracking-wider shrink-0 cursor-pointer">
+              Agendar Auditoría Gratis
+            </button>
+          </div>
+
         </div>
       </section>
 
