@@ -66,7 +66,7 @@ export default function Navbar() {
             Login Portal
           </Link>
           <Link 
-            href="#" 
+            href="/hub/broker-onboarding" 
             className="bg-gradient-to-r from-cyan-500 to-blue-600 text-black px-6 py-2.5 rounded-xl text-sm font-bold hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,224,240,0.3)]"
           >
             Ser Broker
@@ -97,7 +97,7 @@ export default function Navbar() {
           ))}
           <div className="flex flex-col gap-4 mt-4">
             <Link href="#" className="text-center py-3 text-gray-400 border border-gray-800 rounded-xl">Login Portal</Link>
-            <Link href="#" className="text-center py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-xl">Ser Broker</Link>
+            <Link href="/hub/broker-onboarding" className="text-center py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-xl">Ser Broker</Link>
           </div>
         </div>
       )}
