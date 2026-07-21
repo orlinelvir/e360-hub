@@ -467,7 +467,7 @@ export const servicesData: ServiceDetail[] = [
   },
   {
     id: "health-insurance",
-    title: "Seguro Médico",
+    title: "Membresía de Seguro Médico",
     icon: HeartPulse,
     category: "professional",
     status: "active",
