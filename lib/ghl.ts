@@ -13,10 +13,10 @@ export interface GHLContactPayload {
 }
 
 /**
- * Obtiene el encabezado de autorización con la llave API de Agencia o Token de Location
+ * Obtiene el encabezado de autorización con la llave API de Subcuenta o Agencia
  */
 function getHeaders(locationId?: string) {
-  const apiKey = process.env.GHL_AGENCY_API_KEY || "";
+  const apiKey = process.env.GHL_PRIVATE_KEY || process.env.GHL_AGENCY_API_KEY || "";
   return {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${apiKey}`,
@@ -24,9 +24,6 @@ function getHeaders(locationId?: string) {
   };
 }
 
-/**
- * Busca o lista los contactos/leads de una locación específica de GHL
- */
 function parseErrorMessage(status: number, text: string): string {
   if (!text || text.includes("<html") || text.includes("<!DOCTYPE")) {
     return `Error en GHL API (${status}): Respuesta inválida del servidor.`;
