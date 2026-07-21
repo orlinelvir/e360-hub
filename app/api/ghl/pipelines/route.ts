@@ -25,16 +25,19 @@ export async function GET(request: Request) {
   const pipelineId = searchParams.get("pipelineId") || undefined;
 
   let authorizedLocationId = process.env.GHL_DEFAULT_LOCATION_ID;
+  let brokerApiKey = process.env.GHL_PRIVATE_KEY || process.env.GHL_AGENCY_API_KEY;
 
   try {
     if (adminDb) {
       const brokerSnap = await adminDb.collection("brokers").doc(user.uid).get();
-      if (brokerSnap.exists && brokerSnap.data()?.ghlLocationId) {
-        authorizedLocationId = brokerSnap.data()?.ghlLocationId;
+      if (brokerSnap.exists) {
+        const data = brokerSnap.data();
+        if (data?.ghlLocationId) authorizedLocationId = data.ghlLocationId;
+        if (data?.ghlApiKey) brokerApiKey = data.ghlApiKey;
       }
     }
   } catch (e) {
-    console.warn("Error al consultar Firestore para locationId en pipelines:", e);
+    console.warn("Error al consultar Firestore para locationId y apiKey en pipelines:", e);
   }
 
   // Rechazar solicitudes que intenten forzar un locationId ajeno
@@ -46,7 +49,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const rawData = await getGHLOpportunities(authorizedLocationId, pipelineId);
+    const rawData = await getGHLOpportunities(authorizedLocationId, pipelineId, brokerApiKey);
     return NextResponse.json({ data: rawData, error: null });
   } catch (error: any) {
     console.error("GHL Pipelines API Error:", error);

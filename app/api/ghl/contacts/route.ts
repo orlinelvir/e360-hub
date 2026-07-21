@@ -25,16 +25,19 @@ export async function GET(request: Request) {
   const query = searchParams.get("query") || undefined;
 
   let authorizedLocationId = process.env.GHL_DEFAULT_LOCATION_ID;
+  let brokerApiKey = process.env.GHL_PRIVATE_KEY || process.env.GHL_AGENCY_API_KEY;
 
   try {
     if (adminDb) {
       const brokerSnap = await adminDb.collection("brokers").doc(user.uid).get();
-      if (brokerSnap.exists && brokerSnap.data()?.ghlLocationId) {
-        authorizedLocationId = brokerSnap.data()?.ghlLocationId;
+      if (brokerSnap.exists) {
+        const data = brokerSnap.data();
+        if (data?.ghlLocationId) authorizedLocationId = data.ghlLocationId;
+        if (data?.ghlApiKey) brokerApiKey = data.ghlApiKey;
       }
     }
   } catch (e) {
-    console.warn("Error al consultar Firestore para locationId del broker:", e);
+    console.warn("Error al consultar Firestore para locationId y apiKey del broker:", e);
   }
 
   // Rechazar solicitudes que intenten forzar un locationId ajeno
@@ -46,7 +49,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const rawData = await getGHLContacts(authorizedLocationId, query);
+    const rawData = await getGHLContacts(authorizedLocationId, query, brokerApiKey);
     return NextResponse.json({ data: rawData, contacts: rawData.contacts || [], error: null });
   } catch (error: any) {
     console.error("GHL Contacts API Error:", error);
@@ -89,16 +92,19 @@ export async function POST(request: Request) {
     }
 
     let authorizedLocationId = process.env.GHL_DEFAULT_LOCATION_ID;
+    let brokerApiKey = process.env.GHL_PRIVATE_KEY || process.env.GHL_AGENCY_API_KEY;
 
     try {
       if (adminDb) {
         const brokerSnap = await adminDb.collection("brokers").doc(user.uid).get();
-        if (brokerSnap.exists && brokerSnap.data()?.ghlLocationId) {
-          authorizedLocationId = brokerSnap.data()?.ghlLocationId;
+        if (brokerSnap.exists) {
+          const data = brokerSnap.data();
+          if (data?.ghlLocationId) authorizedLocationId = data.ghlLocationId;
+          if (data?.ghlApiKey) brokerApiKey = data.ghlApiKey;
         }
       }
     } catch (e) {
-      console.warn("Error al consultar Firestore para locationId en POST:", e);
+      console.warn("Error al consultar Firestore para locationId y apiKey en POST:", e);
     }
 
     // Rechazar si intenta forzar un locationId ajeno
@@ -118,7 +124,7 @@ export async function POST(request: Request) {
       customFields: amount ? [{ id: "estimated_amount", key: "monto_estimado", value: amount }] : []
     };
 
-    const newContact = await createGHLContact(contactData, authorizedLocationId);
+    const newContact = await createGHLContact(contactData, authorizedLocationId, brokerApiKey);
     return NextResponse.json({ data: { success: true, contact: newContact }, contact: newContact, error: null });
   } catch (error: any) {
     console.error("GHL Create Contact API Error:", error);

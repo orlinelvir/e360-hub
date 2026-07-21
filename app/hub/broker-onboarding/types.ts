@@ -45,6 +45,7 @@ export interface BrokerProfileData {
   phone?: string;
   tier?: "Junior Broker" | "Senior Broker VIP" | "Master Broker" | string;
   ghlLocationId?: string;
+  ghlApiKey?: string;
   ghlSubaccountEmail?: string;
   ghlConnected?: boolean;
   nmlsId?: string;

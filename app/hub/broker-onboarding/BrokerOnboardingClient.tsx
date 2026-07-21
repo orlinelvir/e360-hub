@@ -73,16 +73,18 @@ export default function BrokerOnboardingClient() {
     setMounted(true);
   }, []);
 
-  const handleSaveGHLWizard = async (locId: string) => {
+  const handleSaveGHLWizard = async (locId: string, key: string) => {
     setUserLocationId(locId);
+    setUserApiKey(key);
     if (user) {
       try {
         await updateBrokerProfile(user.uid, {
           ghlLocationId: locId,
+          ghlApiKey: key,
           ghlConnected: true
         });
       } catch (err) {
-        console.error("Error al guardar subcuenta GHL en Firestore:", err);
+        console.error("Error al guardar subcuenta GHL y API Key en Firestore:", err);
       }
     }
   };
@@ -984,6 +986,7 @@ export default function BrokerOnboardingClient() {
         onClose={() => setIsWizardOpen(false)}
         onSaveCredentials={handleSaveGHLWizard}
         currentLocationId={userLocationId}
+        currentApiKey={userApiKey}
       />
 
     </div>

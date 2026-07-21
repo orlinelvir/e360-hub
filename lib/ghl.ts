@@ -13,10 +13,10 @@ export interface GHLContactPayload {
 }
 
 /**
- * Obtiene el encabezado de autorización con la llave API de Subcuenta o Agencia
+ * Obtiene el encabezado de autorización usando la API Key individual del broker o del servidor
  */
-function getHeaders(locationId?: string) {
-  const apiKey = process.env.GHL_PRIVATE_KEY || process.env.GHL_AGENCY_API_KEY || "";
+function getHeaders(customApiKey?: string) {
+  const apiKey = customApiKey || process.env.GHL_PRIVATE_KEY || process.env.GHL_AGENCY_API_KEY || "";
   return {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${apiKey}`,
@@ -37,9 +37,9 @@ function parseErrorMessage(status: number, text: string): string {
 }
 
 /**
- * Busca o lista los contactos/leads de una locación específica de GHL
+ * Busca o lista los contactos/leads de una locación específica de GHL usando las credenciales del broker
  */
-export async function getGHLContacts(locationId?: string, query?: string) {
+export async function getGHLContacts(locationId?: string, query?: string, customApiKey?: string) {
   const locId = locationId || process.env.GHL_DEFAULT_LOCATION_ID;
   if (!locId) {
     throw new Error("GHL Location ID no configurado.");
@@ -52,7 +52,7 @@ export async function getGHLContacts(locationId?: string, query?: string) {
 
   const response = await fetch(url.toString(), {
     method: "GET",
-    headers: getHeaders(locId),
+    headers: getHeaders(customApiKey),
     next: { revalidate: 60 }
   });
 
@@ -65,9 +65,9 @@ export async function getGHLContacts(locationId?: string, query?: string) {
 }
 
 /**
- * Registra un nuevo cliente/lead directamente en la subcuenta de GHL
+ * Registra un nuevo cliente/lead directamente en la subcuenta del broker en GHL
  */
-export async function createGHLContact(contactData: GHLContactPayload, locationId?: string) {
+export async function createGHLContact(contactData: GHLContactPayload, locationId?: string, customApiKey?: string) {
   const locId = locationId || process.env.GHL_DEFAULT_LOCATION_ID;
   if (!locId) {
     throw new Error("GHL Location ID no configurado.");
@@ -82,7 +82,7 @@ export async function createGHLContact(contactData: GHLContactPayload, locationI
 
   const response = await fetch(`${GHL_API_BASE}/contacts/`, {
     method: "POST",
-    headers: getHeaders(locId),
+    headers: getHeaders(customApiKey),
     body: JSON.stringify(payload)
   });
 
@@ -95,9 +95,9 @@ export async function createGHLContact(contactData: GHLContactPayload, locationI
 }
 
 /**
- * Obtiene las Oportunidades / Pipelines activas de GHL
+ * Obtiene las Oportunidades / Pipelines activas de GHL para el broker
  */
-export async function getGHLOpportunities(locationId?: string, pipelineId?: string) {
+export async function getGHLOpportunities(locationId?: string, pipelineId?: string, customApiKey?: string) {
   const locId = locationId || process.env.GHL_DEFAULT_LOCATION_ID;
   const pipeId = pipelineId || process.env.GHL_MAIN_PIPELINE_ID;
 
@@ -111,7 +111,7 @@ export async function getGHLOpportunities(locationId?: string, pipelineId?: stri
 
   const response = await fetch(url.toString(), {
     method: "GET",
-    headers: getHeaders(locId)
+    headers: getHeaders(customApiKey)
   });
 
   if (!response.ok) {
