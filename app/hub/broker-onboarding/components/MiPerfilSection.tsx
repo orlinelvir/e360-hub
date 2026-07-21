@@ -20,7 +20,8 @@ import {
   Mail, 
   Phone, 
   Globe,
-  Download
+  Download,
+  Construction
 } from "lucide-react";
 import { BrokerProfileData } from "../types";
 
@@ -147,6 +148,22 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
 
   return (
     <div className="space-y-8">
+      
+      {/* AVISO DE SECCIÓN EN DESARROLLO / PRUEBAS BETA */}
+      <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-2xl p-4 flex items-center gap-3.5 shadow-inner">
+        <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-400 border border-amber-500/30 shrink-0">
+          <Construction size={20} />
+        </div>
+        <div>
+          <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+            <span>Módulo en Desarrollo / Versión Beta</span>
+            <span className="bg-amber-500/20 text-amber-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-500/40">BETA PRUEBAS</span>
+          </h4>
+          <p className="text-xs text-amber-200/80 mt-1 leading-relaxed">
+            La gestión de perfil se encuentra en fase de pruebas activas. Puedes guardar y personalizar tus métodos de cobro e información de broker libremente.
+          </p>
+        </div>
+      </div>
       
       {/* CARD DE ENCABEZADO DE PERFIL & TIER */}
       <div className="bg-gradient-to-r from-[#0A182D] via-[#0E2342] to-[#0A182D] border border-gray-800 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
