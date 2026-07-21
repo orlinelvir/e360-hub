@@ -37,29 +37,32 @@ export interface SupportTicket {
 }
 
 export interface BrokerProfileData {
-  name: string;
+  uid: string;
+  displayName: string;
   email: string;
-  phone: string;
-  brokerId: string;
-  ghlLocationId: string;
-  ghlSubaccountEmail: string;
-  ghlConnected: boolean;
-  tier: "Junior Broker" | "Senior Broker" | "Master Broker";
+  name?: string;
+  brokerId?: string;
+  phone?: string;
+  tier?: "Junior Broker" | "Senior Broker VIP" | "Master Broker" | string;
+  ghlLocationId?: string;
+  ghlSubaccountEmail?: string;
+  ghlConnected?: boolean;
   nmlsId?: string;
   licenseNumber?: string;
-  payoutMethod: "ach" | "zelle" | "wire";
-  payoutDetails: {
+  payoutMethod?: "ach" | "zelle" | "wire";
+  payoutDetails?: {
     bankName?: string;
     accountNumber?: string;
     routingNumber?: string;
     zellePhoneOrEmail?: string;
   };
-  referralSlug: string;
-  totalVolumeProcessed: number;
-  totalCommissionsPaid: number;
-  documentsStatus: {
-    brokerAgreement: boolean;
-    w9Form: boolean;
-    directDepositAuth: boolean;
+  referralSlug?: string;
+  totalVolumeProcessed?: number;
+  totalCommissionsPaid?: number;
+  documentsStatus?: {
+    brokerAgreement?: boolean;
+    w9Form?: boolean;
+    directDepositAuth?: boolean;
   };
+  createdAt?: string;
 }

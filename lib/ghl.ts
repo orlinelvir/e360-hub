@@ -27,6 +27,21 @@ function getHeaders(locationId?: string) {
 /**
  * Busca o lista los contactos/leads de una locación específica de GHL
  */
+function parseErrorMessage(status: number, text: string): string {
+  if (!text || text.includes("<html") || text.includes("<!DOCTYPE")) {
+    return `Error en GHL API (${status}): Respuesta inválida del servidor.`;
+  }
+  try {
+    const json = JSON.parse(text);
+    return json.message || json.error || `Error en GHL API (${status})`;
+  } catch {
+    return `Error en GHL API (${status}): ${text.substring(0, 150)}`;
+  }
+}
+
+/**
+ * Busca o lista los contactos/leads de una locación específica de GHL
+ */
 export async function getGHLContacts(locationId?: string, query?: string) {
   const locId = locationId || process.env.GHL_DEFAULT_LOCATION_ID;
   if (!locId) {
@@ -41,12 +56,12 @@ export async function getGHLContacts(locationId?: string, query?: string) {
   const response = await fetch(url.toString(), {
     method: "GET",
     headers: getHeaders(locId),
-    next: { revalidate: 60 } // Cache en servidor por 60s
+    next: { revalidate: 60 }
   });
 
   if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(`Error en GHL API (${response.status}): ${errorData}`);
+    const errorText = await response.text();
+    throw new Error(parseErrorMessage(response.status, errorText));
   }
 
   return response.json();
@@ -75,8 +90,8 @@ export async function createGHLContact(contactData: GHLContactPayload, locationI
   });
 
   if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(`Error creando contacto en GHL (${response.status}): ${errorData}`);
+    const errorText = await response.text();
+    throw new Error(parseErrorMessage(response.status, errorText));
   }
 
   return response.json();
@@ -103,8 +118,8 @@ export async function getGHLOpportunities(locationId?: string, pipelineId?: stri
   });
 
   if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(`Error buscando oportunidades en GHL (${response.status}): ${errorData}`);
+    const errorText = await response.text();
+    throw new Error(parseErrorMessage(response.status, errorText));
   }
 
   return response.json();

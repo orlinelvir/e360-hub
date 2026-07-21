@@ -1,0 +1,29 @@
+# Copia tus carpetas pesadas de Git
+node_modules/
+.next/
+out/
+build/
+coverage/
+
+# --- CRÍTICO PARA LA IA (TOKEN KILLERS) ---
+# Git los necesita, pero el agente NO debe leerlos
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Multimedia y Assets estáticos (la IA no necesita leer código de imágenes ni fuentes)
+public/
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.ico
+*.woff*
+*.ttf
+
+# Configuraciones de entorno y carpetas locales
+.env*
+*.pem
+.vscode/
+.git/

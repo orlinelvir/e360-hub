@@ -1,0 +1,15 @@
+# REGLAS DEL PROYECTO WEB
+
+## Tecnologías y Estructura
+- Framework: Next.js (App Router) + TypeScript estricto.
+- Estilos: Tailwind CSS.
+- Componentes: Modulares, limpios y reutilizables en `/components`.
+
+## Estándares de Código
+- NUNCA uses el tipo `any` en TypeScript; define interfaces o tipos claros.
+- Escribe código moderno (Functional Components, Hooks personalizados).
+- Documenta en español los métodos complejos.
+
+## Control de Calidad
+- Antes de entregar un componente, verifica que las props estén tipadas.
+- No modifiques archivos de configuración (`next.config`, `package.json`) a menos que se te pida explícitamente.

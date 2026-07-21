@@ -1,18 +1,60 @@
 import { NextResponse } from "next/server";
 import { getGHLOpportunities } from "@/lib/ghl";
+import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { isRateLimited } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
+  const user = await verifyAuthToken(request);
+  if (!user) {
+    return NextResponse.json(
+      { data: null, error: "No autorizado. Sesión inválida o expirada.", code: "UNAUTHORIZED" },
+      { status: 401 }
+    );
+  }
+
+  // Rate Limiting (30 peticiones/min por usuario)
+  if (isRateLimited(user.uid, 30, 60000)) {
+    return NextResponse.json(
+      { data: null, error: "Demasiadas peticiones. Por favor espera un momento.", code: "TOO_MANY_REQUESTS" },
+      { status: 429 }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
-  const locationId = searchParams.get("locationId") || undefined;
+  const requestedLocationId = searchParams.get("locationId");
   const pipelineId = searchParams.get("pipelineId") || undefined;
 
+  let authorizedLocationId = process.env.GHL_DEFAULT_LOCATION_ID;
+
   try {
-    const data = await getGHLOpportunities(locationId, pipelineId);
-    return NextResponse.json(data);
+    if (adminDb) {
+      const brokerSnap = await adminDb.collection("brokers").doc(user.uid).get();
+      if (brokerSnap.exists && brokerSnap.data()?.ghlLocationId) {
+        authorizedLocationId = brokerSnap.data()?.ghlLocationId;
+      }
+    }
+  } catch (e) {
+    console.warn("Error al consultar Firestore para locationId en pipelines:", e);
+  }
+
+  // Rechazar solicitudes que intenten forzar un locationId ajeno
+  if (requestedLocationId && authorizedLocationId && requestedLocationId !== authorizedLocationId) {
+    return NextResponse.json(
+      { data: null, error: "Acceso denegado. No tienes autorización para consultar la subcuenta GHL especificada.", code: "FORBIDDEN_LOCATION_ACCESS" },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const rawData = await getGHLOpportunities(authorizedLocationId, pipelineId);
+    return NextResponse.json({ data: rawData, error: null });
   } catch (error: any) {
     console.error("GHL Pipelines API Error:", error);
+    const safeMsg = typeof error?.message === "string" && !error.message.includes("<html")
+      ? error.message 
+      : "Error al consultar pipeline de GoHighLevel API";
     return NextResponse.json(
-      { error: error.message || "Error al consultar pipeline de GHL" },
+      { data: null, error: safeMsg, code: "GHL_API_ERROR" },
       { status: 500 }
     );
   }

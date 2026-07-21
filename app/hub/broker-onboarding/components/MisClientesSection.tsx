@@ -26,6 +26,9 @@ import {
   Check
 } from "lucide-react";
 import { ClientLead, PipelineStage } from "../types";
+import { useAuth } from "@/components/AuthProvider";
+import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
+import { useGHLContacts } from "@/lib/hooks/useGHLContacts";
 
 interface MisClientesSectionProps {
   brokerName: string;
@@ -43,6 +46,9 @@ const stageLabels: Record<PipelineStage, { label: string; color: string; bg: str
 };
 
 export default function MisClientesSection({ brokerName }: MisClientesSectionProps) {
+  const { user } = useAuth();
+  const { fetchContacts, createContact, loading: ghlLoading } = useGHLContacts();
+
   const [clients, setClients] = useState<ClientLead[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStage, setSelectedStage] = useState<string>("all");
@@ -60,61 +66,56 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
   const [newClientNotes, setNewClientNotes] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("e360_broker_clients");
-    if (saved) {
-      try {
-        const parsed: ClientLead[] = JSON.parse(saved);
-        // Filtrar cualquier mock data heredado anterior
-        const realClients = parsed.filter(c => !c.id.startsWith("CLI-90"));
-        setClients(realClients);
-        localStorage.setItem("e360_broker_clients", JSON.stringify(realClients));
-      } catch (e) {
-        setClients([]);
-        localStorage.removeItem("e360_broker_clients");
-      }
-    } else {
-      setClients([]);
-    }
+    if (!user) return;
 
-    // Intentar sincronización inicial en tiempo real con GHL API
+    getBrokerClients(user.uid).then((storedClients: any[]) => {
+      setClients(storedClients as ClientLead[]);
+    }).catch((err: any) => {
+      console.error("Error cargando clientes de Firestore:", err);
+    });
+
     handleSyncGHL();
-  }, []);
+  }, [user]);
 
-  const saveClients = (updated: ClientLead[]) => {
+  const saveClients = async (updated: ClientLead[]) => {
     setClients(updated);
-    localStorage.setItem("e360_broker_clients", JSON.stringify(updated));
+    if (!user) return;
+    for (const c of updated) {
+      try {
+        await saveBrokerClient(user.uid, c as ClientLeadData);
+      } catch (err) {
+        console.error("Error guardando cliente en Firestore:", err);
+      }
+    }
   };
 
   const handleSyncGHL = async () => {
     setIsSyncingGHL(true);
     try {
-      const res = await fetch("/api/ghl/contacts");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.contacts && Array.isArray(data.contacts)) {
-          const ghlMappedLeads: ClientLead[] = data.contacts.map((cnt: any, idx: number) => ({
-            id: cnt.id || `GHL-${idx}`,
-            name: `${cnt.firstName || ""} ${cnt.lastName || ""}`.trim() || cnt.name || "Cliente GHL",
-            email: cnt.email || "sin_correo@ghl.com",
-            phone: cnt.phone || "+1 (555) 000-0000",
-            serviceId: "business-loan",
-            serviceName: "Cliente CRM GoHighLevel",
-            amount: cnt.customFields?.find((f: any) => f.key === "monto_estimado")?.value || 25000,
-            estimatedCommission: 1250,
-            stage: cnt.tags?.includes("Aprobado") ? "approved" : cnt.tags?.includes("Sometido") ? "submitted" : "lead",
-            createdAt: cnt.dateAdded ? cnt.dateAdded.split("T")[0] : new Date().toISOString().split("T")[0],
-            lastActivity: "Sincronizado en vivo desde GoHighLevel API v2",
-            ghlContactId: cnt.id || `ghl_${cnt.phone}`,
-            notes: cnt.source || "Contacto importado en tiempo real desde subcuenta GHL."
-          }));
+      const contacts = await fetchContacts();
+      if (contacts && Array.isArray(contacts)) {
+        const ghlMappedLeads: ClientLead[] = contacts.map((cnt: any, idx: number) => ({
+          id: cnt.id || `GHL-${idx}`,
+          name: `${cnt.firstName || ""} ${cnt.lastName || ""}`.trim() || cnt.name || "Cliente GHL",
+          email: cnt.email || "sin_correo@ghl.com",
+          phone: cnt.phone || "+1 (555) 000-0000",
+          serviceId: "business-loan",
+          serviceName: "Cliente CRM GoHighLevel",
+          amount: cnt.customFields?.find((f: any) => f.key === "monto_estimado")?.value || 25000,
+          estimatedCommission: 1250,
+          stage: cnt.tags?.includes("Aprobado") ? "approved" : cnt.tags?.includes("Sometido") ? "submitted" : "lead",
+          createdAt: cnt.dateAdded ? cnt.dateAdded.split("T")[0] : new Date().toISOString().split("T")[0],
+          lastActivity: "Sincronizado en vivo desde GoHighLevel API v2",
+          ghlContactId: cnt.id || `ghl_${cnt.phone}`,
+          notes: cnt.source || "Contacto importado en tiempo real desde subcuenta GHL."
+        }));
 
-          if (ghlMappedLeads.length > 0) {
-            saveClients(ghlMappedLeads);
-          }
+        if (ghlMappedLeads.length > 0) {
+          saveClients(ghlMappedLeads);
         }
       }
     } catch (e) {
-      console.error("Error al sincronizar con GHL API:", e);
+      console.error("Error al sincronizar con GHL API mediante hook:", e);
     } finally {
       setIsSyncingGHL(false);
     }

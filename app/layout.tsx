@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -16,6 +17,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://emprende360.info"),
   title: {
     default: "E360 Hub | Instituto de Negocios y Capital",
     template: "%s | E360 Hub"
@@ -53,15 +55,17 @@ export default function RootLayout({
   return (
     <html lang="es" className="scroll-smooth" suppressHydrationWarning>
       <body className={`${inter.className} flex flex-col min-h-screen`} suppressHydrationWarning>
-        <Navbar />
-        
-        {/* Aquí se cargan todas las páginas dinámicamente */}
-        <div className="flex-grow">
-          {children}
-        </div>
-        
-        {/* El Footer pegado al fondo en todas las páginas */}
-        <Footer />
+        <AuthProvider>
+          <Navbar />
+          
+          {/* Aquí se cargan todas las páginas dinámicamente */}
+          <div className="flex-grow">
+            {children}
+          </div>
+          
+          {/* El Footer pegado al fondo en todas las páginas */}
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

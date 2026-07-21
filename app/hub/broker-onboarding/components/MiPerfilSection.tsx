@@ -29,6 +29,8 @@ interface MiPerfilSectionProps {
 }
 
 const createCleanProfile = (name: string): BrokerProfileData => ({
+  uid: "usr-default",
+  displayName: name || "Broker E360",
   name: name || "Broker E360",
   email: "broker@emprende360.com",
   phone: "+1 (800) 360-5626",
@@ -56,7 +58,11 @@ const createCleanProfile = (name: string): BrokerProfileData => ({
   }
 });
 
+import { useAuth } from "@/components/AuthProvider";
+import { getBrokerProfile, updateBrokerProfile } from "@/lib/services/broker-service";
+
 export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<BrokerProfileData>(createCleanProfile(brokerName));
   const [copiedLink, setCopiedLink] = useState(false);
   const [isSavedToast, setIsSavedToast] = useState(false);
@@ -70,36 +76,29 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
   const [routingNum, setRoutingNum] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("e360_broker_profile");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Filtrar datos obsoletos anteriores
-        if (parsed.email === "ydedios@emprende360.com") {
-          const fresh = createCleanProfile(brokerName);
-          setProfile(fresh);
-          localStorage.setItem("e360_broker_profile", JSON.stringify(fresh));
-        } else {
-          setProfile(parsed);
-          setPayoutMethod(parsed.payoutMethod || "zelle");
-          setZelleValue(parsed.payoutDetails?.zellePhoneOrEmail || "");
-          setBankName(parsed.payoutDetails?.bankName || "");
-          setAccountNum(parsed.payoutDetails?.accountNumber || "");
-          setRoutingNum(parsed.payoutDetails?.routingNumber || "");
-        }
-      } catch (e) {
-        const fresh = createCleanProfile(brokerName);
-        setProfile(fresh);
-      }
-    } else {
-      const fresh = createCleanProfile(brokerName);
-      setProfile(fresh);
-      localStorage.setItem("e360_broker_profile", JSON.stringify(fresh));
-    }
-  }, [brokerName]);
+    if (!user) return;
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+    getBrokerProfile(user.uid, brokerName, user.email || "").then((data: any) => {
+      setProfile((prev) => ({ 
+        ...prev, 
+        ...data,
+        name: data.displayName || data.name || prev.name,
+        brokerId: `BRK-${data.uid ? data.uid.substring(0, 6).toUpperCase() : "360"}`
+      }));
+      setPayoutMethod(data.payoutMethod || "zelle");
+      setZelleValue(data.payoutDetails?.zellePhoneOrEmail || "");
+      setBankName(data.payoutDetails?.bankName || "");
+      setAccountNum(data.payoutDetails?.accountNumber || "");
+      setRoutingNum(data.payoutDetails?.routingNumber || "");
+    }).catch(err => {
+      console.error("Error cargando perfil desde Firestore:", err);
+    });
+  }, [user, brokerName]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+
     const updated: BrokerProfileData = {
       ...profile,
       payoutMethod,
@@ -111,9 +110,22 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
       }
     };
     setProfile(updated);
-    localStorage.setItem("e360_broker_profile", JSON.stringify(updated));
-    setIsSavedToast(true);
-    setTimeout(() => setIsSavedToast(false), 2500);
+
+    try {
+      await updateBrokerProfile(user.uid, {
+        payoutMethod,
+        payoutDetails: {
+          bankName,
+          accountNumber: accountNum,
+          routingNumber: routingNum,
+          zellePhoneOrEmail: zelleValue
+        }
+      });
+      setIsSavedToast(true);
+      setTimeout(() => setIsSavedToast(false), 2500);
+    } catch (err) {
+      console.error("Error guardando perfil en Firestore:", err);
+    }
   };
 
   const handleSyncGHL = () => {
@@ -131,6 +143,8 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const displayName = profile.displayName || profile.name || brokerName || "Broker E360";
+
   return (
     <div className="space-y-8">
       
@@ -141,7 +155,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-5">
             <div className="w-20 h-20 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center text-black font-black text-3xl shadow-[0_0_30px_rgba(0,224,240,0.3)] shrink-0">
-              {profile.name.charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -149,10 +163,10 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
                   <Award size={12} />
                   <span>{profile.tier}</span>
                 </span>
-                <span className="text-xs font-mono text-gray-500">ID: {profile.brokerId}</span>
+                <span className="text-xs font-mono text-gray-500">ID: {profile.brokerId || `BRK-${user?.uid ? user.uid.substring(0, 6).toUpperCase() : "360"}`}</span>
               </div>
               <h2 className="text-2xl md:text-3xl font-extrabold text-white mt-1">
-                {profile.name}
+                {displayName}
               </h2>
               <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 mt-2">
                 <span className="flex items-center gap-1.5">
@@ -170,12 +184,12 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
           <div className="bg-[#05101F]/80 border border-gray-800/80 rounded-2xl p-4 flex items-center gap-6 w-full md:w-auto justify-around">
             <div className="text-center">
               <p className="text-[10px] text-gray-500 uppercase font-semibold">Volumen Procesado</p>
-              <p className="text-lg font-extrabold text-white mt-0.5">${profile.totalVolumeProcessed.toLocaleString()}</p>
+              <p className="text-lg font-extrabold text-white mt-0.5">${(profile.totalVolumeProcessed || 0).toLocaleString()}</p>
             </div>
             <div className="w-px h-8 bg-gray-800" />
             <div className="text-center">
               <p className="text-[10px] text-gray-500 uppercase font-semibold">Comisiones Pagadas</p>
-              <p className="text-lg font-extrabold text-emerald-400 mt-0.5">${profile.totalCommissionsPaid.toLocaleString()}</p>
+              <p className="text-lg font-extrabold text-emerald-400 mt-0.5">${(profile.totalCommissionsPaid || 0).toLocaleString()}</p>
             </div>
           </div>
         </div>

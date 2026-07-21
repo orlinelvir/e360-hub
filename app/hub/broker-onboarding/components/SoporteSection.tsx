@@ -49,7 +49,12 @@ const faqsData = [
   }
 ];
 
+import { useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { getBrokerTickets, createBrokerTicket, SupportTicketData } from "@/lib/services/broker-service";
+
 export default function SoporteSection({ brokerName }: SoporteSectionProps) {
+  const { user } = useAuth();
   const [searchFaq, setSearchFaq] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
@@ -67,12 +72,20 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
   const [ticketPriority, setTicketPriority] = useState<SupportTicket["priority"]>("medium");
   const [ticketDescription, setTicketDescription] = useState("");
 
-  const handleCreateTicket = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!user) return;
+    getBrokerTickets(user.uid).then((storedTickets: any[]) => {
+      setTickets(storedTickets as SupportTicket[]);
+    }).catch(err => {
+      console.error("Error cargando tickets de Firestore:", err);
+    });
+  }, [user]);
+
+  const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ticketSubject.trim() || !ticketDescription.trim()) return;
 
-    const newTicket: SupportTicket = {
-      id: `TCK-${Math.floor(800 + Math.random() * 200)}`,
+    const newTicketPayload: SupportTicketData = {
       subject: ticketSubject.trim(),
       category: ticketCategory,
       priority: ticketPriority,
@@ -81,7 +94,19 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
       description: ticketDescription.trim()
     };
 
-    setTickets([newTicket, ...tickets]);
+    if (user) {
+      try {
+        const docId = await createBrokerTicket(user.uid, newTicketPayload);
+        const newTicket: SupportTicket = {
+          id: docId,
+          ...newTicketPayload
+        };
+        setTickets([newTicket, ...tickets]);
+      } catch (err) {
+        console.error("Error al crear ticket en Firestore:", err);
+      }
+    }
+
     setIsTicketModalOpen(false);
     setTicketSubject("");
     setTicketDescription("");

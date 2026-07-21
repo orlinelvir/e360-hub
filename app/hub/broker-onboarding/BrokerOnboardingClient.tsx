@@ -33,472 +33,21 @@ import {
   Sparkles
 } from "lucide-react";
 
-// Estructura de tipo para los servicios
-interface ServiceDetail {
-  id: string;
-  title: string;
-  icon: any;
-  category: "financial" | "professional";
-  status: "active" | "delay" | "paused" | "upcoming";
-  statusLabel: string;
-  description: string;
-  requirements: string[];
-  process: string[];
-  timeframe: string;
-  comission: string;
-  formLink: string;
-  supportPhone: string;
-  supportPhoneFormatted: string;
-}
-
-// Iconos mapeados a cada servicio para renderizado dinámico
-const servicesData: ServiceDetail[] = [
-  {
-    id: "business-loan",
-    title: "Préstamo de Negocio",
-    icon: Briefcase,
-    category: "financial",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Merchant Cash Advance (MCA) y préstamos empresariales rápidos basados en el flujo de caja del negocio. Aprobación rápida sin colaterales y con crédito desde 500.",
-    requirements: [
-      "Mínimo 6 meses operando el negocio (1 año ideal)",
-      "Depósitos bancarios mensuales consistentes de $10,000+",
-      "Frecuencia de 10+ depósitos mensuales en la cuenta de negocio",
-      "Saldo promedio positivo y sin NSF (fondos insuficientes) excesivos",
-      "Identificación oficial vigente del dueño (Pasaporte o ID)",
-      "Últimos 3 estados de cuenta bancarios de la empresa",
-      "Voided check y número EIN del negocio"
-    ],
-    process: [
-      "Precalificar al cliente respondiendo a las 6 preguntas clave de volumen e historial.",
-      "Recopilar documentos básicos (Solicitud de financiamiento firmada, ID, EIN, 3 estados de cuenta, voided check).",
-      "Revisar estados de cuenta (analizar volumen, NSF, y saldos negativos recurrentes antes de someter).",
-      "Someter aplicación completa en la plataforma de Emprende 360.",
-      "Recibir oferta en 24-48 horas, presentar al cliente, firmar y fondear en 24-72 horas."
-    ],
-    timeframe: "Aprobación en 24-48 horas. Fondeo en 1 a 3 días hábiles.",
-    comission: "Comisión del 3% al 8% del monto financiado (Ej: $1,500 - $4,000 en un préstamo de $50,000).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/tvJ4AjmdXHVnOmm8DyEk?notrack=true",
-    supportPhone: "tel:+18003605626",
-    supportPhoneFormatted: "+1 (800) 360-5626"
-  },
-  {
-    id: "personal-loan",
-    title: "Préstamo Personal",
-    icon: User,
-    category: "financial",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Financiamiento personal sin garantías para perfiles sólidos (A-Paper) que buscan liquidez inmediata con tasas competitivas y plazos cómodos.",
-    requirements: [
-      "Puntaje de crédito de 700 o superior obligatoriamente",
-      "Relación Deuda-Ingreso (DTI) del 20% o menos",
-      "Ingresos anuales comprobables (W-2, talones de pago o taxes)",
-      "Historial de crédito limpio sin marcas negativas recientes"
-    ],
-    process: [
-      "Consulta inicial para evaluar el reporte de crédito del cliente e ingresos.",
-      "Verificación de DTI obligatoria antes de iniciar la solicitud.",
-      "Llenado del formulario de aplicación y carga de pruebas de ingresos.",
-      "Revisión y pre-aprobación automática en un lapso de 24-48 horas."
-    ],
-    timeframe: "Precalificación inmediata. Aprobación y desembolso en 24-48 horas.",
-    comission: "Honorario fijo garantizado por referido aprobado y financiado.",
-    formLink: "https://api.leadconnectorhq.com/widget/form/Qgnp3xRhHOWeUW4dUE63?notrack=true",
-    supportPhone: "tel:+18003605626",
-    supportPhoneFormatted: "+1 (800) 360-5626"
-  },
-  {
-    id: "business-credit-cards",
-    title: "Tarjetas de Crédito de Negocio",
-    icon: CreditCard,
-    category: "financial",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Líneas de crédito rotativas empresariales al 0% de interés introductorio por 12 a 24 meses para capital de trabajo y expansión del negocio sin afectar el crédito personal.",
-    requirements: [
-      "Puntaje de crédito personal de 680+ en los 3 burós de crédito",
-      "Compañía registrada (LLC o Corp) con número EIN activo",
-      "Sin bancarrotas ni pagos atrasados recientes en el reporte",
-      "Uso de tarjetas de crédito actuales por debajo del 30%"
-    ],
-    process: [
-      "Precalificar el reporte de crédito del dueño del negocio.",
-      "Completar la aplicación oficial a través del enlace del widget GHL.",
-      "El equipo procesa las solicitudes estratégicas con múltiples bancos asociados.",
-      "Recepción y activación de las tarjetas de crédito corporativas en 7-14 días."
-    ],
-    timeframe: "Precalificación en 24 horas. Aprobación y entrega en 7 a 14 días.",
-    comission: "Comisión fija sobre el volumen total de crédito aprobado para el negocio.",
-    formLink: "https://api.leadconnectorhq.com/widget/form/rYyJUvwRiMc0bsznMjOd?notrack=true",
-    supportPhone: "tel:+18003605626",
-    supportPhoneFormatted: "+1 (800) 360-5626"
-  },
-  {
-    id: "mortgage-loan",
-    title: "Préstamo Hipotecario",
-    icon: Home,
-    category: "financial",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Financiamiento integral para bienes raíces (residenciales y comerciales) adaptado a cada perfil: FHA (compradores primerizos), Convencionales, VA (veteranos), DSCR (inversionistas sin verificar ingresos personales) y Dinero Duro.",
-    requirements: [
-      "FHA: 580+ FICO para 3.5% de enganche; con 500-579 se requiere 10% de enganche",
-      "Convencional: 620+ FICO, enganche desde 3% para primerizos, 2 años de taxes/W2",
-      "DSCR (Inversionistas): 620-680+ FICO, 20-25% de enganche, propiedad debe generar rentas >= pago mensual de hipoteca (DSCR >= 1.0)",
-      "Dinero Duro / Harmony: 550+ FICO, 10-35% de enganche, basado en la solidez del proyecto (ARV de la propiedad >= 70%)"
-    ],
-    process: [
-      "Cita inicial obligatoria con el Oficial de Préstamos para analizar el caso.",
-      "Evaluación y selección del programa adecuado (FHA, Convencional, DSCR, Harmony).",
-      "Carga de aplicación y expediente completo en la plataforma de procesamiento.",
-      "Procesamiento y Underwriting del banco (tasación, revisión legal).",
-      "Divulgación de cierre, firma final y entrega de llaves."
-    ],
-    timeframe: "DSCR/Dinero Duro: 5-30 días. FHA/Convencionales: 30-45 días. Nueva construcción: 45-90 días.",
-    comission: "Comisión basada en la tabla de puntos de originación del préstamo.",
-    formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003604663",
-    supportPhoneFormatted: "+1 (800) 360-4663"
-  },
-  {
-    id: "credit-repair",
-    title: "Reparación de Crédito",
-    icon: CreditCard,
-    category: "financial",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Programa integral de disputa y remoción de cuentas derogatorias del reporte de crédito utilizando la Ley de Crédito Justo (FCRA) para elevar el score de crédito del cliente.",
-    requirements: [
-      "Reporte de crédito completo y reciente de los 3 burós (Equifax, Experian, TransUnion)",
-      "Identificación oficial válida y SSN o número ITIN",
-      "Comprobante de domicilio reciente (factura de servicios, banco, etc.)"
-    ],
-    process: [
-      "Consulta inicial y verificación del reporte de crédito de los tres bureaus.",
-      "Cobro de honorarios de inicio según el nivel (Nivel 1: $250, Nivel 2: $500, Nivel 3: $1,000-$2,000; ¡el 100% de inicio y la cuota mensual es tuya!).",
-      "Llenado del formulario oficial de onboarding para disputas.",
-      "Envío automático de cartas de disputa a los burós de crédito en un lapso de 24-72 horas.",
-      "Seguimiento mensual (cada 30 días) con el cliente para monitorear eliminaciones y variaciones del puntaje."
-    ],
-    timeframe: "Actualizaciones y rondas de disputa cada 30 días. Duración de 6 a 12 meses.",
-    comission: "100% del pago de inicio y de la cuota mensual de $50 cobrada al cliente.",
-    formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607372",
-    supportPhoneFormatted: "+1 (800) 360-7372"
-  },
-  {
-    id: "incorporation",
-    title: "Registro de Compañía",
-    icon: Building,
-    category: "financial",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Servicio de constitución y registro oficial de LLCs, Corporaciones (Corp) o Nonprofits en cualquiera de los 50 estados de USA. Incluye EIN y Acuerdo Operativo.",
-    requirements: [
-      "Nombre deseado del negocio (y 1 o 2 alternativas adicionales)",
-      "Dirección física comercial o contratación de servicio de Agente Registrado",
-      "Identificación de los dueños/socios y distribución de porcentajes de participación",
-      "Correo electrónico oficial de la empresa para recibir los documentos"
-    ],
-    process: [
-      "Conversación inicial para definir la industria, estado de registro y estructura adecuada (LLC vs Corp).",
-      "Explicación del alcance del servicio (Artículos de formación, EIN del IRS, Operating Agreement).",
-      "Cobro del servicio ($350 de honorario + tarifa oficial del estado correspondiente).",
-      "Cliente llena el formulario oficial mediante el enlace proporcionado.",
-      "Radicación estatal y entrega de documentos oficiales por correo electrónico."
-    ],
-    timeframe: "Entrega de documentos completos en 24 a 72 horas hábiles tras la radicación.",
-    comission: "Comisión fija de $150 sobre los honorarios base del servicio de registro.",
-    formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003602677",
-    supportPhoneFormatted: "+1 (800) 360-2677"
-  },
-  {
-    id: "payroll",
-    title: "Servicios de Nómina",
-    icon: Calculator,
-    category: "financial",
-    status: "upcoming",
-    statusLabel: "Próximamente",
-    description: "Configuración, manejo de payroll y automatización para el pago de empleados y contratistas, asegurando el cumplimiento tributario laboral local y federal. Disponible muy pronto.",
-    requirements: [
-      "EIN (Federal Tax ID) activo y registro estatal de empleador",
-      "Cuenta bancaria corporativa para procesar los fondos de nómina",
-      "Información personal, números SSN/ITIN y salarios de los empleados"
-    ],
-    process: [
-      "Referir los datos básicos del cliente en el enlace de nómina.",
-      "El equipo especialista de E360 se reúne con el cliente para cotizar y configurar el sistema.",
-      "Carga e integración del software de payroll y procesamiento de la primera nómina activa."
-    ],
-    timeframe: "Lanzamiento previsto para el próximo mes.",
-    comission: "Comisión por cuenta activada y residual recurrente por mes de actividad.",
-    formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607297",
-    supportPhoneFormatted: "+1 (800) 360-7297"
-  },
-  {
-    id: "pos-services",
-    title: "Servicios de POS",
-    icon: CreditCard,
-    category: "financial",
-    status: "upcoming",
-    statusLabel: "Próximamente",
-    description: "Instalación de terminales de pago con tarjeta e integración de procesamiento de merchant account con tarifas garantizadas y soporte técnico local. Disponible muy pronto.",
-    requirements: [
-      "EIN comercial y registro oficial de la empresa",
-      "Cuenta de banco comercial para los depósitos de ventas",
-      "Estados de cuenta de procesamiento actuales (si ya acepta tarjetas) para análisis de ahorro"
-    ],
-    process: [
-      "Recopilar y enviar los estados de cuenta de merchant actuales del cliente.",
-      "El departamento comercial realiza un estudio comparativo sin costo demostrando ahorros.",
-      "Aprobación de la cuenta, configuración y envío/instalación de las terminales físicas."
-    ],
-    timeframe: "Lanzamiento previsto para el próximo mes.",
-    comission: "Bono único por instalación física + comisión residual mensual de por vida sobre el volumen.",
-    formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607273",
-    supportPhoneFormatted: "+1 (800) 360-7273"
-  },
-  {
-    id: "auto-insurance",
-    title: "Seguro de Auto Personal",
-    icon: Car,
-    category: "professional",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Pólizas de seguro automotriz personal, cotizando y comparando precios con las aseguradoras más importantes de USA.",
-    requirements: [
-      "Información del vehículo (año, marca, modelo o número VIN)",
-      "Licencia de conducir de todos los conductores del núcleo familiar",
-      "Código postal (ZIP) de residencia e historial de manejo (tickets, colisiones)"
-    ],
-    process: [
-      "Si tienes licencia activa: ingresa los datos a la plataforma para cotización directa. Si no tienes: refiere la información.",
-      "Comparar cotizaciones obtenidas con el cliente (se sugieren las 3 mejores opciones).",
-      "Cliente acepta y firma la póliza; emisión de los 'binders' de cobertura."
-    ],
-    timeframe: "Cotización en menos de 24 horas. Emisión de cobertura en minutos tras el pago.",
-    comission: "Comisión completa directa de la póliza (si tiene licencia) o bono por referido (sin licencia).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/Ofq6tPlRhtLS5P8nipYe",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
-  },
-  {
-    id: "commercial-auto-insurance",
-    title: "Seguro Comercial de Auto & Trucking",
-    icon: Car,
-    category: "professional",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Pólizas de seguro comercial automotriz y de transporte pesado (Trucking / Flotillas) para camiones de carga, semi-remolques y vehículos corporativos.",
-    requirements: [
-      "EIN y registro oficial de la empresa transportista o comercial",
-      "Información de los vehículos (VIN, año, modelo, capacidad de carga)",
-      "Licencias CDL o de conducir de los choferes y registro de radio de operación"
-    ],
-    process: [
-      "Entrevistar al cliente sobre los vehículos, rutas y carga transportada.",
-      "Enviar formulario al departamento de suscripción de camiones y auto comercial.",
-      "Revisar cotizaciones con las aseguradoras especializadas en transportación.",
-      "Emisión del certificado de seguro (COI) y cobertura activa."
-    ],
-    timeframe: "Cotizaciones en 24 a 48 horas hábiles.",
-    comission: "Comisión sobre la prima comercial adjudicada o tarifa de referido.",
-    formLink: "https://api.leadconnectorhq.com/widget/form/LTDvyVbeNDxgawUvtxmt",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
-  },
-  {
-    id: "home-insurance",
-    title: "Seguro de Casa (Homeowners)",
-    icon: Home,
-    category: "professional",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Seguros residenciales (homeowners) para proteger la estructura física de la vivienda, propiedad personal y responsabilidad civil del asegurado.",
-    requirements: [
-      "Dirección física exacta de la vivienda",
-      "Año de construcción, tipo de techo y detalles estructurales claves",
-      "Historial de reclamos de seguros de casa del propietario"
-    ],
-    process: [
-      "Recopilar la información y detalles de la propiedad a asegurar.",
-      "Someter los datos a cotización con las agencias aliadas de E360 (24-48 horas).",
-      "Presentar ofertas, verificar endosos requeridos (hipoteca) y emitir póliza."
-    ],
-    timeframe: "Cotizaciones de seguros de hogar listas en 24 a 48 horas.",
-    comission: "Comisión sobre prima anual (con licencia) o tarifa de referido (sin licencia).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/4wTIAcBmi4DuuoyIccvk",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
-  },
-  {
-    id: "business-insurance",
-    title: "Seguro de Negocio (General Liability)",
-    icon: Laptop,
-    category: "professional",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Cobertura de Responsabilidad Civil General (Commercial General Liability - CGL), BOP y propiedad comercial para blindar la operación del negocio ante reclamos y demandas.",
-    requirements: [
-      "EIN y registro de empresa",
-      "Descripción exacta de las operaciones, estimados de facturación y nómina anual",
-      "Número de empleados y detalles físicos de la locación comercial"
-    ],
-    process: [
-      "Entrevistar al cliente sobre los riesgos específicos de su industria.",
-      "Enviar formulario al departamento de suscripción comercial de E360.",
-      "El equipo cotiza con múltiples mercados especializados en riesgos comerciales.",
-      "Revisión de coberturas con el cliente y emisión de certificados de seguro (COI)."
-    ],
-    timeframe: "Cotizaciones comerciales toman de 24 a 48 horas hábiles.",
-    comission: "Comisión comercial según la póliza adjudicada (o referido a agentes de E360).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/YWiqKYGs4JzNfzklDwZo",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
-  },
-  {
-    id: "workers-comp",
-    title: "Seguro de Compensación de Trabajadores",
-    icon: ShieldCheck,
-    category: "professional",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Seguro obligatorio de Workers' Compensation para proteger la salud de los empleados y blindar al empleador ante lesiones o accidentes dentro del área de trabajo.",
-    requirements: [
-      "EIN corporativo y estimación de nómina total anual (Payroll)",
-      "Número de empleados a tiempo completo (FT) y tiempo parcial (PT)",
-      "Clasificación del tipo de trabajo / industria (Construcción, Transporte, Comercio, etc.)"
-    ],
-    process: [
-      "Recopilar la nómina anual estimada y clasificación de puestos.",
-      "Someter aplicación al departamento de suscripción de Workers Comp.",
-      "Presentar cotizaciones comparativas ajustadas al riesgo de la nómina.",
-      "Emisión inmediata de certificados de cumplimiento laboral."
-    ],
-    timeframe: "Cotización e inspección de riesgo en 24 a 48 horas.",
-    comission: "Comisión sobre prima de nómina contratada por la empresa.",
-    formLink: "https://api.leadconnectorhq.com/widget/form/RzPn2LF1d6tXzGM5X8PI",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
-  },
-  {
-    id: "immigration-services",
-    title: "Servicios de Inmigración",
-    icon: Users,
-    category: "professional",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Asistencia no legal en la preparación y envío de documentación oficial para trámites ante el USCIS (DACA, renovación de permisos de trabajo, cartas de patrocinio). NO incluye representación jurídica.",
-    requirements: [
-      "Documentación vigente de identidad del solicitante",
-      "Historial de trámites y formularios presentados previamente",
-      "Pago de tarifas correspondientes a la solicitud estatal"
-    ],
-    process: [
-      "Revisar el trámite que requiere el cliente en la tabla de servicios elegibles.",
-      "Completar el formulario básico de recolección de información del cliente.",
-      "El equipo experto de E360 prepara las formas oficiales del USCIS.",
-      "Entrega del expediente completo listo para firma y envío por correo certificado."
-    ],
-    timeframe: "Preparación de expedientes en 3 a 7 días hábiles tras recopilación completa.",
-    comission: "Comisión fija de referido del 30% sobre el valor del servicio preparado.",
-    formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003604664",
-    supportPhoneFormatted: "+1 (800) 360-4664"
-  },
-  {
-    id: "tax-preparation",
-    title: "Preparación de Impuestos",
-    icon: Calculator,
-    category: "professional",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Declaración anual y trimestral de taxes personales y corporativos. Trámite de nuevo número ITIN, enmiendas y corrección de impuestos de años anteriores.",
-    requirements: [
-      "W-2, 1099 y registros detallados de ingresos y egresos del negocio",
-      "Identificación oficial, número SSN o tarjeta/carta de número ITIN",
-      "Copia de la declaración de impuestos del año fiscal anterior"
-    ],
-    process: [
-      "Recoger toda la documentación y subirla a través del portal de impuestos de E360.",
-      "El especialista fiscal de E360 realiza los cálculos y el borrador de declaración.",
-      "Reunión de revisión de reembolsos/pagos con el cliente, firma y transmisión electrónica al IRS."
-    ],
-    timeframe: "En temporada (Ene-Abr): 24 a 72 horas. Fuera de temporada: 3 a 5 días hábiles.",
-    comission: "Porcentaje sobre el costo base de preparación cobrado por E360.",
-    formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003608293",
-    supportPhoneFormatted: "+1 (800) 360-8293"
-  },
-  {
-    id: "life-insurance",
-    title: "Seguro de Vida",
-    icon: Heart,
-    category: "professional",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Pólizas de seguro de vida individuales a término o permanente para la protección patrimonial y financiera de la familia del tomador.",
-    requirements: [
-      "Edad, sexo, estado de salud y hábitos del asegurado (condiciones preexistentes)",
-      "Monto de cobertura deseado e información detallada de beneficiarios",
-      "Examen médico preventivo en sitio (si el programa lo requiere)"
-    ],
-    process: [
-      "Evaluar la necesidad financiera y de herencia del asegurado.",
-      "Realizar cotización en la plataforma multi-compañías.",
-      "Someter aplicación médica a través de la red autorizada.",
-      "Aprobación por parte del departamento de Suscripción (Underwriting) y emisión."
-    ],
-    timeframe: "Planes simplificados: emisión inmediata. Planes médicos: de 2 a 4 semanas.",
-    comission: "Sólo brokers con licencia de vida activa: 80% al 100% de la prima pagada el primer año.",
-    formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
-  },
-  {
-    id: "health-insurance",
-    title: "Seguro Médico",
-    icon: HeartPulse,
-    category: "professional",
-    status: "active",
-    statusLabel: "Activo",
-    description: "Planes de seguro médico individuales, familiares y comerciales (Planes bajo el Obamacare - Mercado de Seguros de Salud, y seguros privados).",
-    requirements: [
-      "Estimado de ingresos del hogar para el año fiscal actual y número de dependientes",
-      "ZIP code de residencia e información personal de todos los miembros",
-      "Documento de estatus migratorio válido en USA para planes subsidiados (Obamacare)"
-    ],
-    process: [
-      "Recopilar ingresos y dependientes para calcular el subsidio federal asignado.",
-      "Seleccionar el plan ideal considerando deducibles, copagos y red de especialistas.",
-      "Proceder con el enrolamiento en el sistema oficial del Mercado de Salud."
-    ],
-    timeframe: "Inscripción en 20 minutos. Cobertura activa el primer día del mes entrante.",
-    comission: "Sólo brokers con licencia de salud activa: comisión mensual recurrente por miembro inscrito.",
-    formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
-  }
-];
+import { servicesData, ServiceDetail } from "./data/services";
 
 import MisClientesSection from "./components/MisClientesSection";
 import SoporteSection from "./components/SoporteSection";
 import MiPerfilSection from "./components/MiPerfilSection";
 import GHLOnboardingWizardModal from "./components/GHLOnboardingWizardModal";
 import { ActiveTab } from "./types";
-
-import { auth, googleProvider } from "@/lib/firebase";
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
+import { useAuth } from "@/components/AuthProvider";
+import { updateBrokerProfile } from "@/lib/services/broker-service";
 
 export default function BrokerOnboardingClient() {
   const [mounted, setMounted] = useState<boolean>(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [brokerName, setBrokerName] = useState<string>("");
+  const { user, profile, loading: authLoading, loginWithEmail, registerWithEmail, loginWithGoogle, logout } = useAuth();
+  
+  const [registerName, setRegisterName] = useState<string>("");
   const [emailInput, setEmailInput] = useState<string>("");
   const [passwordInput, setPasswordInput] = useState<string>("");
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
@@ -515,40 +64,29 @@ export default function BrokerOnboardingClient() {
   const [userLocationId, setUserLocationId] = useState<string>("");
   const [userApiKey, setUserApiKey] = useState<string>("");
 
-  const handleSaveGHLWizard = (locId: string, key: string) => {
-    setUserLocationId(locId);
-    setUserApiKey(key);
-    const existing = localStorage.getItem("e360_broker_profile");
-    let profileData = existing ? JSON.parse(existing) : {};
-    profileData.ghlLocationId = locId;
-    profileData.ghlSubaccountEmail = key;
-    profileData.ghlConnected = true;
-    localStorage.setItem("e360_broker_profile", JSON.stringify(profileData));
-  };
+  const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
 
-  // Escuchar sesión activa de Firebase Auth o LocalStorage
+  const isAuthenticated = Boolean(user);
+  const brokerName = profile?.displayName || user?.displayName || user?.email?.split("@")[0] || "Broker E360";
+
   useEffect(() => {
     setMounted(true);
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setIsAuthenticated(true);
-        setBrokerName(user.displayName || user.email?.split("@")[0] || "Broker E360");
-        localStorage.setItem("e360_broker_auth", "true");
-        localStorage.setItem("e360_broker_name", user.displayName || user.email || "Broker E360");
-      } else {
-        const savedAuth = localStorage.getItem("e360_broker_auth");
-        const savedName = localStorage.getItem("e360_broker_name");
-        if (savedAuth === "true" && savedName) {
-          setIsAuthenticated(true);
-          setBrokerName(savedName);
-        }
-      }
-    });
-
-    return () => unsubscribe();
   }, []);
 
-  // Login / Registro con Firebase Email & Password
+  const handleSaveGHLWizard = async (locId: string) => {
+    setUserLocationId(locId);
+    if (user) {
+      try {
+        await updateBrokerProfile(user.uid, {
+          ghlLocationId: locId,
+          ghlConnected: true
+        });
+      } catch (err) {
+        console.error("Error al guardar subcuenta GHL en Firestore:", err);
+      }
+    }
+  };
+
   const handleFirebaseEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
@@ -556,19 +94,24 @@ export default function BrokerOnboardingClient() {
 
     try {
       if (isSignUp) {
-        if (!brokerName.trim() || !emailInput.trim() || !passwordInput.trim()) {
+        if (!registerName.trim() || !emailInput.trim() || !passwordInput.trim()) {
           setLoginError("Completa todos los campos para registrarte.");
           setIsLoadingAuth(false);
           return;
         }
-        await createUserWithEmailAndPassword(auth, emailInput.trim(), passwordInput.trim());
+        if (!termsAccepted) {
+          setLoginError("Debes aceptar los términos y políticas de comisiones de E360 Hub.");
+          setIsLoadingAuth(false);
+          return;
+        }
+        await registerWithEmail(emailInput.trim(), passwordInput.trim(), registerName.trim());
       } else {
         if (!emailInput.trim() || !passwordInput.trim()) {
           setLoginError("Ingresa tu correo y contraseña.");
           setIsLoadingAuth(false);
           return;
         }
-        await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput.trim());
+        await loginWithEmail(emailInput.trim(), passwordInput.trim());
       }
     } catch (err: any) {
       console.error("Error de autenticación Firebase:", err);
@@ -579,32 +122,24 @@ export default function BrokerOnboardingClient() {
       } else if (err.code === "auth/weak-password") {
         setLoginError("La contraseña debe tener al menos 6 caracteres.");
       } else {
-        // Fallback de demostración rápida si las llaves aún no han sido activadas
-        if (brokerName.trim()) {
-          setIsAuthenticated(true);
-          localStorage.setItem("e360_broker_auth", "true");
-          localStorage.setItem("e360_broker_name", brokerName.trim());
-        } else {
-          setLoginError(err.message || "Error al autenticar con Firebase.");
-        }
+        setLoginError(err.message || "Error al autenticar con Firebase.");
       }
     } finally {
       setIsLoadingAuth(false);
     }
   };
 
-  // Login con Google (Firebase Auth)
   const handleGoogleAuth = async () => {
     setIsLoadingAuth(true);
     setLoginError("");
     try {
-      await signInWithPopup(auth, googleProvider);
+      await loginWithGoogle();
     } catch (err: any) {
       console.error("Google Auth Error:", err);
       if (err.code === "auth/operation-not-allowed") {
-        setLoginError("Google Sign-In no está activado en tu consola de Firebase. Ve a Firebase Console -> Authentication -> Sign-in method y activa 'Google'.");
+        setLoginError("Google Sign-In no está activado en tu consola de Firebase.");
       } else if (err.code === "auth/unauthorized-domain") {
-        setLoginError("Este dominio de la web no está autorizado en tu consola de Firebase. Ve a Firebase -> Authentication -> Settings -> Authorized domains y agrega el dominio de Vercel.");
+        setLoginError("Este dominio de la web no está autorizado en tu consola de Firebase.");
       } else if (err.code === "auth/popup-closed-by-user") {
         setLoginError("La ventana de inicio de sesión con Google fue cerrada.");
       } else {
@@ -615,24 +150,12 @@ export default function BrokerOnboardingClient() {
     }
   };
 
-  // Demo Fast Login
-  const handleDemoLogin = () => {
-    const name = brokerName.trim() || "Broker E360";
-    setIsAuthenticated(true);
-    setBrokerName(name);
-    localStorage.setItem("e360_broker_auth", "true");
-    localStorage.setItem("e360_broker_name", name);
-  };
-
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
     } catch (e) {
       console.warn("SignOut notice:", e);
     }
-    setIsAuthenticated(false);
-    localStorage.removeItem("e360_broker_auth");
-    localStorage.removeItem("e360_broker_name");
   };
 
   // Filtrado de servicios según el buscador en tiempo real
@@ -783,8 +306,8 @@ export default function BrokerOnboardingClient() {
                       <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
                       <input 
                         type="text"
-                        value={brokerName}
-                        onChange={(e) => setBrokerName(e.target.value)}
+                        value={registerName}
+                        onChange={(e) => setRegisterName(e.target.value)}
                         placeholder="Ej. Juan Pérez"
                         className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-colors"
                       />
@@ -824,6 +347,21 @@ export default function BrokerOnboardingClient() {
                   </div>
                 </div>
 
+                {isSignUp && (
+                  <div className="flex items-start gap-2.5 pt-1">
+                    <input 
+                      type="checkbox"
+                      id="acceptTerms"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      className="mt-0.5 accent-cyan-500 rounded cursor-pointer"
+                    />
+                    <label htmlFor="acceptTerms" className="text-[11px] text-gray-400 leading-snug cursor-pointer select-none">
+                      Acepto el <strong className="text-cyan-400">Acuerdo de Broker E360</strong>, los términos de servicios de originación y la política de privacidad de datos.
+                    </label>
+                  </div>
+                )}
+
                 {loginError && (
                   <p className="text-[11px] font-semibold text-red-400 flex items-center gap-1.5 animate-pulse bg-red-950/40 p-2.5 rounded-xl border border-red-500/20">
                     ⚠️ {loginError}
@@ -839,21 +377,13 @@ export default function BrokerOnboardingClient() {
                 </button>
               </form>
 
-              <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
+              <div className="mt-4 flex items-center justify-center text-xs text-gray-400">
                 <button
                   type="button"
                   onClick={() => { setIsSignUp(!isSignUp); setLoginError(""); }}
                   className="text-cyan-400 hover:underline font-medium text-[11px] cursor-pointer"
                 >
                   {isSignUp ? "¿Ya tienes cuenta? Inicia Sesión" : "¿Nuevo Broker? Regístrate aquí"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDemoLogin}
-                  className="text-gray-500 hover:text-gray-300 underline font-mono text-[10px] cursor-pointer"
-                >
-                  Acceso Rápido Demo
                 </button>
               </div>
 
@@ -1454,7 +984,6 @@ export default function BrokerOnboardingClient() {
         onClose={() => setIsWizardOpen(false)}
         onSaveCredentials={handleSaveGHLWizard}
         currentLocationId={userLocationId}
-        currentApiKey={userApiKey}
       />
 
     </div>
