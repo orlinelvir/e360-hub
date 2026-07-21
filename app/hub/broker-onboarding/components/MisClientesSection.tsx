@@ -28,8 +28,8 @@ import {
 } from "lucide-react";
 import { ClientLead, PipelineStage } from "../types";
 import { useAuth } from "@/components/AuthProvider";
-import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
-import { useGHLContacts } from "@/lib/hooks/useGHLContacts";
+import { getBrokerClients, saveBrokerClient, ClientLeadData, getBrokerProfile } from "@/lib/services/broker-service";
+import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
 
 interface MisClientesSectionProps {
   brokerName: string;
@@ -58,6 +58,9 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Credenciales CRM del broker (cargadas desde Firestore vía client SDK)
+  const [brokerCredentials, setBrokerCredentials] = useState<CRMCredentials>({ locationId: "", apiKey: "" });
+
   // Formulario nuevo cliente
   const [newClientName, setNewClientName] = useState("");
   const [newClientEmail, setNewClientEmail] = useState("");
@@ -66,17 +69,6 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
   const [newClientAmount, setNewClientAmount] = useState("");
   const [newClientNotes, setNewClientNotes] = useState("");
 
-  useEffect(() => {
-    if (!user) return;
-
-    getBrokerClients(user.uid).then((storedClients: any[]) => {
-      setClients(storedClients as ClientLead[]);
-    }).catch((err: any) => {
-      console.error("Error cargando clientes de Firestore:", err);
-    });
-
-    handleSyncGHL();
-  }, [user]);
 
   const saveClients = async (updated: ClientLead[]) => {
     setClients(updated);
@@ -90,10 +82,11 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
     }
   };
 
-  const handleSyncGHL = async () => {
+  const handleSyncGHLWithCredentials = async (creds: CRMCredentials) => {
+
     setIsSyncingGHL(true);
     try {
-      const contacts = await fetchContacts();
+      const contacts = await fetchContacts(undefined, creds);
       if (contacts && Array.isArray(contacts)) {
         const ghlMappedLeads: ClientLead[] = contacts.map((cnt: any, idx: number) => ({
           id: cnt.id || `CLI-${idx}`,
@@ -116,11 +109,43 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
         }
       }
     } catch (e) {
-      console.error("Error al sincronizar con GHL API mediante hook:", e);
+      console.error("Error al sincronizar con el CRM:", e);
     } finally {
       setIsSyncingGHL(false);
     }
   };
+
+  // Sincronización manual desde el botón (usa credenciales ya cargadas en estado)
+  const handleSyncGHL = async () => {
+    handleSyncGHLWithCredentials(brokerCredentials);
+  };
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Cargar clientes guardados en Firestore
+    getBrokerClients(user.uid).then((storedClients: any[]) => {
+      setClients(storedClients as ClientLead[]);
+    }).catch((err: any) => {
+      console.error("Error cargando clientes de Firestore:", err);
+    });
+
+    // Cargar credenciales CRM del broker y luego sincronizar
+    getBrokerProfile(user.uid).then((profile) => {
+      const creds: CRMCredentials = {
+        locationId: profile.ghlLocationId || "",
+        apiKey: profile.ghlApiKey || ""
+      };
+      setBrokerCredentials(creds);
+      // Solo sincronizar si el broker ya tiene credenciales configuradas
+      if (creds.locationId && creds.apiKey) {
+        handleSyncGHLWithCredentials(creds);
+      }
+    }).catch((err: any) => {
+      console.error("Error cargando perfil de broker para credenciales CRM:", err);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,12 +157,16 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(" ");
 
-    // Enviar a GHL API backend
+    // Enviar al CRM backend incluyendo las credenciales del broker en los headers
     let ghlId = `ghl_cnt_${Math.floor(1000000 + Math.random() * 9000000)}`;
     try {
+      const crmHeaders: HeadersInit = { "Content-Type": "application/json" };
+      if (brokerCredentials.locationId) crmHeaders["x-crm-location-id"] = brokerCredentials.locationId;
+      if (brokerCredentials.apiKey) crmHeaders["x-crm-api-key"] = brokerCredentials.apiKey;
+
       const ghlRes = await fetch("/api/ghl/contacts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: crmHeaders,
         body: JSON.stringify({
           firstName,
           lastName,
@@ -152,7 +181,7 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
         if (ghlData.contact?.id) ghlId = ghlData.contact.id;
       }
     } catch (err) {
-      console.warn("No se pudo enviar a GHL backend (usando fallback local):", err);
+      console.warn("No se pudo registrar el cliente en el CRM (usando ID local):", err);
     }
 
     const newLead: ClientLead = {
