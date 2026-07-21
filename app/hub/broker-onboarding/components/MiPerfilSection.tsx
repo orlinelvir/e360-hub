@@ -212,7 +212,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
         </div>
       </div>
 
-      {/* ESTADO CONEXIÓN GHL SUBCUENTA */}
+      {/* ESTADO CONEXIÓN CRM SUBCUENTA */}
       <div className="bg-[#0A182D]/60 border border-cyan-500/30 rounded-3xl p-6 relative overflow-hidden space-y-4">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           
@@ -223,7 +223,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <h3 className="font-extrabold text-white text-base">Subcuenta GoHighLevel (GHL Multi-Tenant)</h3>
+                <h3 className="font-extrabold text-white text-base">Subcuenta StartPoint CRM</h3>
               </div>
               <p className="text-xs text-gray-400 mt-1">
                 Vinculación directa de CRM para la gestión individual de Leads y Pipeline de comisiones.
@@ -254,11 +254,11 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
 
         </div>
 
-        {/* Campos de Configuración GHL de la Subcuenta */}
+        {/* Campos de Configuración CRM de la Subcuenta */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-gray-800/80">
           <div>
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-              GHL Location ID
+              CRM Location ID
             </label>
             <input 
               type="text"
@@ -270,7 +270,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
           </div>
           <div>
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-              Subaccount API Key (Opcional si no usas Pro Plan)
+              Subaccount Private Token (PIT)
             </label>
             <input 
               type="password"
@@ -283,207 +283,78 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
         </div>
       </div>
 
-      {/* ENLACE ÚNICO DE REFERIDO Y CODIGO QR */}
-      <div className="bg-[#0A182D]/40 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-4">
-        <div>
+      {/* ENLACE ÚNICO DE REFERIDO Y CODIGO QR (PRÓXIMAMENTE) */}
+      <div className="bg-[#0A182D]/40 border border-gray-800/80 rounded-3xl p-6 md:p-8 space-y-4 relative overflow-hidden">
+        <div className="flex items-center justify-between border-b border-gray-800/80 pb-3">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <QrCode size={18} className="text-cyan-400" />
             <span>Enlace de Captura de Clientes & Código QR</span>
           </h3>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Cualquier lead que complete tus formularios usando este enlace se asignará automáticamente a tu subcuenta de GHL.
-          </p>
+          <span className="bg-amber-500/10 text-amber-400 text-[10px] font-mono font-extrabold px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5">
+            <Lock size={12} />
+            <span>PRÓXIMAMENTE</span>
+          </span>
         </div>
 
-        <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-          <div className="min-w-0 flex-grow">
-            <p className="text-[10px] text-gray-500 uppercase font-semibold">Tu URL Personal de Referido</p>
-            <p className="text-xs md:text-sm font-mono text-cyan-400 font-bold truncate mt-1">{referralUrl}</p>
+        <div className="bg-[#05101F]/80 border border-amber-500/20 rounded-2xl p-6 text-center space-y-2">
+          <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 mx-auto">
+            <Lock size={22} />
           </div>
-
-          <div className="flex gap-2 shrink-0">
-            <button
-              onClick={copyReferralLink}
-              className="px-4 py-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2"
-            >
-              {copiedLink ? (
-                <>
-                  <Check size={14} className="text-emerald-400" />
-                  <span className="text-emerald-400">Copiado</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={14} />
-                  <span>Copiar Enlace</span>
-                </>
-              )}
-            </button>
-          </div>
+          <h4 className="text-sm font-bold text-white">Módulo de Referidos & QR en Desarrollo</h4>
+          <p className="text-xs text-gray-400 max-w-lg mx-auto leading-relaxed">
+            La generación automática de URLs de captura personalizada y código QR dinámico para tu subcuenta se activará en la próxima actualización de la plataforma.
+          </p>
         </div>
       </div>
 
       {/* CONFIGURACIÓN DE PAGO DE COMISIONES & DOCUMENTOS (GRID 2 COLS) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* COLUMNA IZQUIERDA: FORMULARIO METODOS DE PAGO */}
-        <div className="bg-[#0A182D]/40 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6">
-          <div>
+        {/* COLUMNA IZQUIERDA: FORMULARIO METODOS DE PAGO (PRÓXIMAMENTE) */}
+        <div className="bg-[#0A182D]/40 border border-gray-800/80 rounded-3xl p-6 md:p-8 space-y-4 relative overflow-hidden flex flex-col justify-between">
+          <div className="border-b border-gray-800/80 pb-3 flex items-center justify-between">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <CreditCard size={18} className="text-emerald-400" />
               <span>Configuración de Cobro de Comisiones</span>
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">Define cómo deseas recibir tus comisiones los días de pago (Viernes)</p>
+            <span className="bg-amber-500/10 text-amber-400 text-[10px] font-mono font-extrabold px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5">
+              <Lock size={12} />
+              <span>PRÓXIMAMENTE</span>
+            </span>
           </div>
 
-          <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
-            <div>
-              <label className="block font-semibold text-gray-300 uppercase mb-2">Método de Pago Preferido</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: "zelle", label: "Zelle Instant" },
-                  { id: "ach", label: "Direct Deposit (ACH)" },
-                  { id: "wire", label: "Wire Transfer" }
-                ].map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setPayoutMethod(m.id as any)}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all ${
-                      payoutMethod === m.id
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/40 ring-1 ring-emerald-500/30"
-                        : "bg-[#05101F] text-gray-400 border-gray-800 hover:text-white"
-                    }`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
+          <div className="bg-[#05101F]/80 border border-amber-500/20 rounded-2xl p-6 text-center space-y-2 my-auto">
+            <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 mx-auto">
+              <Lock size={22} />
             </div>
-
-            {payoutMethod === "zelle" ? (
-              <div>
-                <label className="block font-semibold text-gray-300 uppercase mb-1">Teléfono o Correo Zelle *</label>
-                <input
-                  type="text"
-                  required
-                  value={zelleValue}
-                  onChange={(e) => setZelleValue(e.target.value)}
-                  placeholder="ejemplo@zelle.com o +1 (305) 000-0000"
-                  className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <label className="block font-semibold text-gray-300 uppercase mb-1">Nombre del Banco</label>
-                  <input
-                    type="text"
-                    value={bankName}
-                    onChange={(e) => setBankName(e.target.value)}
-                    placeholder="Bank of America, Chase, Wells Fargo..."
-                    className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-gray-300 uppercase mb-1">Número de Cuenta</label>
-                    <input
-                      type="text"
-                      value={accountNum}
-                      onChange={(e) => setAccountNum(e.target.value)}
-                      placeholder="••••••••1234"
-                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-gray-300 uppercase mb-1">Número de Ruta (Routing)</label>
-                    <input
-                      type="text"
-                      value={routingNum}
-                      onChange={(e) => setRoutingNum(e.target.value)}
-                      placeholder="021000021"
-                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="pt-2 flex items-center justify-between">
-              {isSavedToast ? (
-                <span className="text-emerald-400 font-bold flex items-center gap-1.5 animate-pulse">
-                  <CheckCircle2 size={16} /> ¡Datos de Pago Actualizados!
-                </span>
-              ) : <div />}
-
-              <button
-                type="submit"
-                className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-xl text-xs transition-all flex items-center gap-2"
-              >
-                <Save size={14} />
-                <span>Guardar Cambios</span>
-              </button>
-            </div>
-          </form>
+            <h4 className="text-sm font-bold text-white">Dispersión Automática de Comisiones en Desarrollo</h4>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              El portal automatizado para asociar tus datos de Zelle, ACH y transferencias para pagos de los viernes se habilitará en la versión 2.0.
+            </p>
+          </div>
         </div>
 
-        {/* COLUMNA DERECHA: BÓVEDA DE DOCUMENTOS */}
-        <div className="bg-[#0A182D]/40 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6">
-          <div>
+        {/* COLUMNA DERECHA: BÓVEDA DE DOCUMENTOS (PRÓXIMAMENTE) */}
+        <div className="bg-[#0A182D]/40 border border-gray-800/80 rounded-3xl p-6 md:p-8 space-y-4 relative overflow-hidden flex flex-col justify-between">
+          <div className="border-b border-gray-800/80 pb-3 flex items-center justify-between">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <FileCheck size={18} className="text-cyan-400" />
               <span>Bóveda de Documentos & Licencias</span>
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">Estado legal y acuerdos oficiales para operar como broker</p>
+            <span className="bg-amber-500/10 text-amber-400 text-[10px] font-mono font-extrabold px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5">
+              <Lock size={12} />
+              <span>PRÓXIMAMENTE</span>
+            </span>
           </div>
 
-          <div className="space-y-3 text-xs">
-            
-            <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                  <CheckCircle2 size={20} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-white">Acuerdo de Broker E360 (Firmado)</h4>
-                  <p className="text-[10px] text-gray-500">Firmado digitalmente el 15 Enero 2026</p>
-                </div>
-              </div>
-              <button className="p-2 text-gray-400 hover:text-white" title="Descargar Copia">
-                <Download size={16} />
-              </button>
+          <div className="bg-[#05101F]/80 border border-amber-500/20 rounded-2xl p-6 text-center space-y-2 my-auto">
+            <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 mx-auto">
+              <Lock size={22} />
             </div>
-
-            <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                  <CheckCircle2 size={20} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-white">Formulario W-9 del IRS</h4>
-                  <p className="text-[10px] text-gray-500">Validado para retención tributaria</p>
-                </div>
-              </div>
-              <button className="p-2 text-gray-400 hover:text-white" title="Descargar Copia">
-                <Download size={16} />
-              </button>
-            </div>
-
-            <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                  <CheckCircle2 size={20} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-white">Autorización Depósito Directo</h4>
-                  <p className="text-[10px] text-gray-500">Cuenta verificada por E360 Finance Desk</p>
-                </div>
-              </div>
-              <button className="p-2 text-gray-400 hover:text-white" title="Descargar Copia">
-                <Download size={16} />
-              </button>
-            </div>
-
+            <h4 className="text-sm font-bold text-white">Bóveda Digital en Desarrollo</h4>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              La carga y consulta digital de tu contrato W-9, póliza de broker y licencias estatales estará disponible en el próximo release.
+            </p>
           </div>
         </div>
 

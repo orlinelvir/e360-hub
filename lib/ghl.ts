@@ -26,23 +26,23 @@ function getHeaders(customApiKey?: string) {
 
 function parseErrorMessage(status: number, text: string): string {
   if (!text || text.includes("<html") || text.includes("<!DOCTYPE")) {
-    return `Error en GHL API (${status}): Respuesta inválida del servidor.`;
+    return `Error en servidor CRM (${status}): Respuesta inválida del servidor.`;
   }
   try {
     const json = JSON.parse(text);
-    return json.message || json.error || `Error en GHL API (${status})`;
+    return json.message || json.error || `Error en servidor CRM (${status})`;
   } catch {
-    return `Error en GHL API (${status}): ${text.substring(0, 150)}`;
+    return `Error en servidor CRM (${status}): ${text.substring(0, 150)}`;
   }
 }
 
 /**
- * Busca o lista los contactos/leads de una locación específica de GHL usando las credenciales del broker
+ * Busca o lista los contactos/leads de una locación específica del CRM usando las credenciales del broker
  */
 export async function getGHLContacts(locationId?: string, query?: string, customApiKey?: string) {
   const locId = locationId || process.env.GHL_DEFAULT_LOCATION_ID;
   if (!locId) {
-    throw new Error("GHL Location ID no configurado.");
+    throw new Error("Location ID del CRM no configurado.");
   }
 
   const url = new URL(`${GHL_API_BASE}/contacts/`);
@@ -70,7 +70,7 @@ export async function getGHLContacts(locationId?: string, query?: string, custom
 export async function createGHLContact(contactData: GHLContactPayload, locationId?: string, customApiKey?: string) {
   const locId = locationId || process.env.GHL_DEFAULT_LOCATION_ID;
   if (!locId) {
-    throw new Error("GHL Location ID no configurado.");
+    throw new Error("Location ID del CRM no configurado.");
   }
 
   const payload = {
@@ -102,7 +102,7 @@ export async function getGHLOpportunities(locationId?: string, pipelineId?: stri
   const pipeId = pipelineId || process.env.GHL_MAIN_PIPELINE_ID;
 
   if (!locId) {
-    throw new Error("GHL Location ID no configurado.");
+    throw new Error("Location ID del CRM no configurado.");
   }
 
   const url = new URL(`${GHL_API_BASE}/opportunities/search`);

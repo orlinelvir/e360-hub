@@ -43,7 +43,7 @@ export async function GET(request: Request) {
   // Rechazar solicitudes que intenten forzar un locationId ajeno
   if (requestedLocationId && authorizedLocationId && requestedLocationId !== authorizedLocationId) {
     return NextResponse.json(
-      { data: null, error: "Acceso denegado. No tienes autorización para consultar la subcuenta GHL especificada.", code: "FORBIDDEN_LOCATION_ACCESS" },
+      { data: null, error: "Acceso denegado. No tienes autorización para consultar la subcuenta CRM especificada.", code: "FORBIDDEN_LOCATION_ACCESS" },
       { status: 403 }
     );
   }
@@ -52,12 +52,12 @@ export async function GET(request: Request) {
     const rawData = await getGHLContacts(authorizedLocationId, query, brokerApiKey);
     return NextResponse.json({ data: rawData, contacts: rawData.contacts || [], error: null });
   } catch (error: any) {
-    console.error("GHL Contacts API Error:", error);
+    console.error("CRM Contacts API Error:", error);
     const safeMsg = typeof error?.message === "string" && !error.message.includes("<html")
       ? error.message 
-      : "Error al comunicarse con GoHighLevel API";
+      : "Error al comunicarse con el servidor CRM";
     return NextResponse.json(
-      { data: null, error: safeMsg, code: "GHL_API_ERROR" },
+      { data: null, error: safeMsg, code: "CRM_API_ERROR" },
       { status: 500 }
     );
   }
@@ -127,12 +127,12 @@ export async function POST(request: Request) {
     const newContact = await createGHLContact(contactData, authorizedLocationId, brokerApiKey);
     return NextResponse.json({ data: { success: true, contact: newContact }, contact: newContact, error: null });
   } catch (error: any) {
-    console.error("GHL Create Contact API Error:", error);
+    console.error("CRM Create Contact API Error:", error);
     const safeMsg = typeof error?.message === "string" && !error.message.includes("<html")
       ? error.message 
-      : "Error al registrar cliente en GoHighLevel API";
+      : "Error al registrar cliente en el CRM";
     return NextResponse.json(
-      { data: null, error: safeMsg, code: "GHL_API_ERROR" },
+      { data: null, error: safeMsg, code: "CRM_API_ERROR" },
       { status: 500 }
     );
   }

@@ -96,19 +96,19 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
       const contacts = await fetchContacts();
       if (contacts && Array.isArray(contacts)) {
         const ghlMappedLeads: ClientLead[] = contacts.map((cnt: any, idx: number) => ({
-          id: cnt.id || `GHL-${idx}`,
-          name: `${cnt.firstName || ""} ${cnt.lastName || ""}`.trim() || cnt.name || "Cliente GHL",
-          email: cnt.email || "sin_correo@ghl.com",
-          phone: cnt.phone || "+1 (555) 000-0000",
+          id: cnt.id || `CLI-${idx}`,
+          name: `${cnt.firstName || ""} ${cnt.lastName || ""}`.trim() || cnt.name || "Cliente CRM",
+          email: cnt.email || "sin_correo@crm.com",
+          phone: cnt.phone || "+1 (917) 284-5636",
           serviceId: "business-loan",
-          serviceName: "Cliente CRM GoHighLevel",
+          serviceName: "Cliente StartPoint CRM",
           amount: cnt.customFields?.find((f: any) => f.key === "monto_estimado")?.value || 25000,
           estimatedCommission: 1250,
           stage: cnt.tags?.includes("Aprobado") ? "approved" : cnt.tags?.includes("Sometido") ? "submitted" : "lead",
           createdAt: cnt.dateAdded ? cnt.dateAdded.split("T")[0] : new Date().toISOString().split("T")[0],
-          lastActivity: "Sincronizado en vivo desde GoHighLevel API v2",
-          ghlContactId: cnt.id || `ghl_${cnt.phone}`,
-          notes: cnt.source || "Contacto importado en tiempo real desde subcuenta GHL."
+          lastActivity: "Sincronizado en vivo desde el CRM",
+          ghlContactId: cnt.id || `cnt_${cnt.phone}`,
+          notes: cnt.source || "Contacto importado en tiempo real desde subcuenta CRM."
         }));
 
         if (ghlMappedLeads.length > 0) {
@@ -166,7 +166,7 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
       estimatedCommission: Math.round(estCommission),
       stage: "lead",
       createdAt: new Date().toISOString().split("T")[0],
-      lastActivity: "Enviado a GoHighLevel CRM · Oportunidad activa en Pipeline",
+      lastActivity: "Enviado a StartPoint CRM · Oportunidad activa",
       ghlContactId: ghlId,
       notes: newClientNotes.trim() || "Referido por el broker en la plataforma Hub."
     };
@@ -283,14 +283,14 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
               <div className="flex items-center gap-2">
                 <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-xs font-mono font-semibold text-emerald-400 uppercase tracking-widest">
-                  Subcuenta GoHighLevel Conectada
+                  Subcuenta CRM Conectada
                 </span>
               </div>
               <h2 className="text-xl md:text-2xl font-extrabold text-white mt-1">
                 CRM & Pipeline de Leads
               </h2>
               <p className="text-xs text-gray-400 mt-1">
-                Sincronización en tiempo real con tu ubicación GHL: <span className="font-mono text-cyan-400 font-semibold">#LOC-E360-BRK99</span>
+                Sincronización en tiempo real con tu ubicación CRM: <span className="font-mono text-cyan-400 font-semibold">#LOC-E360-BRK99</span>
               </p>
             </div>
           </div>
@@ -299,17 +299,17 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
             <button
               onClick={handleSyncGHL}
               disabled={isSyncingGHL}
-              className="flex-1 md:flex-none px-4 py-3 bg-[#05101F] hover:bg-cyan-950/40 border border-gray-800 hover:border-cyan-500/40 text-gray-300 hover:text-cyan-400 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
+              className="px-4 py-2.5 bg-[#05101F] hover:bg-gray-800 border border-gray-800 text-gray-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <RefreshCw size={14} className={isSyncingGHL ? "animate-spin text-cyan-400" : ""} />
-              <span>{isSyncingGHL ? "Sincronizando..." : "Sincronizar StartPoint"}</span>
+              <span>{isSyncingGHL ? "Sincronizando..." : "Sincronizar CRM"}</span>
             </button>
 
             <a
               href="https://app.startpoint.biz"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 md:flex-none px-5 py-3 bg-gradient-to-r from-cyan-400 to-blue-600 hover:opacity-90 text-black font-extrabold rounded-xl text-xs transition-opacity flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,224,240,0.2)] cursor-pointer"
+              className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(0,224,240,0.3)]"
             >
               <span>Abrir StartPoint CRM</span>
               <ExternalLink size={14} />
@@ -566,14 +566,14 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
                   </button>
                 </div>
 
-                {/* Info GHL Sync */}
+                {/* Info CRM Sync */}
                 <div className="my-5 bg-[#05101F] border border-cyan-500/20 rounded-2xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-cyan-500/10 text-cyan-400 rounded-xl flex items-center justify-center font-bold text-xs">
-                      GHL
+                      CRM
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-400 uppercase font-semibold">GHL Contact ID</p>
+                      <p className="text-[10px] text-gray-400 uppercase font-semibold">CRM Contact ID</p>
                       <p className="text-xs font-mono text-white font-bold">{selectedClient.ghlContactId}</p>
                     </div>
                   </div>
@@ -670,7 +670,7 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
               <div className="flex items-center justify-between pb-4 border-b border-gray-800 mb-6">
                 <div>
                   <h2 className="text-xl font-extrabold text-white">Referir / Registrar Cliente</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Se creará automáticamente en la subcuenta GHL de {brokerName}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Se creará automáticamente en la subcuenta de CRM de {brokerName}</p>
                 </div>
                 <button
                   onClick={() => setIsAddModalOpen(false)}
@@ -774,7 +774,7 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
                     type="submit"
                     className="px-6 py-2.5 bg-gradient-to-r from-cyan-400 to-blue-600 text-black font-extrabold rounded-xl text-xs shadow-[0_0_15px_rgba(0,224,240,0.2)]"
                   >
-                    Guardar y Sincronizar GHL
+                    Guardar y Sincronizar CRM
                   </button>
                 </div>
               </form>

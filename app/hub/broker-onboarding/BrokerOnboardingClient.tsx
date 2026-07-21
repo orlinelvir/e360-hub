@@ -273,7 +273,7 @@ export default function BrokerOnboardingClient() {
                 </div>
                 <h2 className="text-xl font-bold text-center tracking-tight">Acceso Oficial de Brokers E360</h2>
                 <p className="text-xs text-gray-400 text-center mt-2 leading-relaxed">
-                  Autenticación unificada con **E360 Firebase Auth** & **GoHighLevel CRM Sub-accounts**.
+                  Autenticación unificada con <strong>E360 Firebase Auth</strong> & <strong>StartPoint CRM</strong>.
                 </p>
               </div>
 
@@ -423,7 +423,7 @@ export default function BrokerOnboardingClient() {
                 <div className="hidden md:flex items-center gap-8">
                   {[
                     { id: "inicio", label: "Inicio / Servicios" },
-                    { id: "clientes", label: "Mis Clientes (GHL)" },
+                    { id: "clientes", label: "Mis Clientes (CRM)" },
                     { id: "soporte", label: "Soporte VIP" },
                     { id: "perfil", label: "Mi Perfil" }
                   ].map((tab) => (
@@ -815,7 +815,7 @@ export default function BrokerOnboardingClient() {
                   </div>
                 </div>
 
-                {/* Confirmación Obligatoria de Términos y Requisitos */}
+                {/* Confirmación Obligatoria de Lectura & Desbloqueo del Formulario */}
                 {selectedService.status === "upcoming" ? (
                   <div className="bg-purple-950/30 border border-purple-500/30 p-5 rounded-2xl flex items-center gap-3">
                     <Clock size={22} className="text-purple-400 shrink-0" />
@@ -827,16 +827,16 @@ export default function BrokerOnboardingClient() {
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-[#05101F] border border-cyan-500/30 p-5 rounded-2xl space-y-3 shadow-inner">
-                    <div className="flex items-center justify-between pb-2 border-b border-gray-800">
+                  <div className="bg-[#05101F] border border-cyan-500/30 p-5 md:p-6 rounded-2xl space-y-5 shadow-xl">
+                    <div className="flex items-center justify-between pb-3 border-b border-gray-800">
                       <h4 className="text-xs font-extrabold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
                         <ShieldCheck size={16} />
                         <span>Confirmación de Lectura Obligatoria</span>
                       </h4>
-                      <span className="text-[10px] font-mono font-semibold text-gray-500">3 de 3 requeridos</span>
+                      <span className="text-[10px] font-mono font-semibold text-gray-400 bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20">3 de 3 requeridos</span>
                     </div>
 
-                    <div className="space-y-2.5 text-xs text-gray-300">
+                    <div className="space-y-3 text-xs text-gray-300">
                       {(() => {
                         const checks = checkedServices[selectedService.id] || { reqs: false, process: false, terms: false };
                         return (
@@ -846,9 +846,9 @@ export default function BrokerOnboardingClient() {
                                 type="checkbox"
                                 checked={checks.reqs}
                                 onChange={() => toggleCheck(selectedService.id, "reqs")}
-                                className="mt-0.5 w-4 h-4 rounded border-gray-700 bg-black text-cyan-500 focus:ring-cyan-500 cursor-pointer"
+                                className="mt-0.5 w-4 h-4 rounded border-gray-700 bg-black text-cyan-500 focus:ring-cyan-500 cursor-pointer shrink-0"
                               />
-                              <span className="group-hover:text-white transition-colors">
+                              <span className="group-hover:text-white transition-colors leading-relaxed">
                                 Confirmo que el cliente cumple con los <strong>requisitos documentales mínimos</strong> solicitados.
                               </span>
                             </label>
@@ -858,9 +858,9 @@ export default function BrokerOnboardingClient() {
                                 type="checkbox"
                                 checked={checks.process}
                                 onChange={() => toggleCheck(selectedService.id, "process")}
-                                className="mt-0.5 w-4 h-4 rounded border-gray-700 bg-black text-cyan-500 focus:ring-cyan-500 cursor-pointer"
+                                className="mt-0.5 w-4 h-4 rounded border-gray-700 bg-black text-cyan-500 focus:ring-cyan-500 cursor-pointer shrink-0"
                               />
-                              <span className="group-hover:text-white transition-colors">
+                              <span className="group-hover:text-white transition-colors leading-relaxed">
                                 He leído el <strong>procedimiento y hoja de ruta</strong> para orientar correctamente al cliente.
                               </span>
                             </label>
@@ -870,9 +870,9 @@ export default function BrokerOnboardingClient() {
                                 type="checkbox"
                                 checked={checks.terms}
                                 onChange={() => toggleCheck(selectedService.id, "terms")}
-                                className="mt-0.5 w-4 h-4 rounded border-gray-700 bg-black text-cyan-500 focus:ring-cyan-500 cursor-pointer"
+                                className="mt-0.5 w-4 h-4 rounded border-gray-700 bg-black text-cyan-500 focus:ring-cyan-500 cursor-pointer shrink-0"
                               />
-                              <span className="group-hover:text-white transition-colors">
+                              <span className="group-hover:text-white transition-colors leading-relaxed">
                                 Acepto los <strong>términos de originación y políticas de comisión</strong> de E360 Hub.
                               </span>
                             </label>
@@ -880,99 +880,97 @@ export default function BrokerOnboardingClient() {
                         );
                       })()}
                     </div>
+
+                    {/* Caja de Enlace de Formulario Desbloqueable */}
+                    {(() => {
+                      const isUpcoming = (selectedService.status as string) === "upcoming";
+                      const hasValidUrl = selectedService.formLink.startsWith("http");
+                      const checks = checkedServices[selectedService.id] || { reqs: false, process: false, terms: false };
+                      const isUnlocked = !isUpcoming && hasValidUrl && checks.reqs && checks.process && checks.terms;
+
+                      return (
+                        <div className="pt-2">
+                          <div className={`border rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 transition-all ${
+                            isUnlocked 
+                              ? "bg-black/80 border-cyan-500/60 shadow-[0_0_25px_rgba(0,224,240,0.15)]" 
+                              : "bg-black/40 border-gray-800 opacity-90"
+                          }`}>
+                            <div className="min-w-0 flex-grow">
+                              <p className="text-[9px] text-gray-400 uppercase tracking-widest font-extrabold">Enlace del Formulario Oficial</p>
+                              <p className="text-xs font-mono mt-1 truncate">
+                                {isUpcoming ? (
+                                  <span className="text-purple-400 font-semibold">🔒 Próximamente disponible</span>
+                                ) : !hasValidUrl ? (
+                                  <span className="text-amber-400 font-semibold">🚧 Formulario en desarrollo (Próximamente)</span>
+                                ) : isUnlocked ? (
+                                  <span className="text-cyan-400 font-bold">{selectedService.formLink}</span>
+                                ) : (
+                                  <span className="text-amber-400/90 font-semibold">🔒 Marca las 3 casillas arriba para desbloquear</span>
+                                )}
+                              </p>
+                            </div>
+                            
+                            <div className="flex gap-2 shrink-0">
+                              <button 
+                                disabled={!isUnlocked}
+                                onClick={() => isUnlocked && handleCopyLink(selectedService.formLink, selectedService.id)}
+                                className={`px-3.5 py-2.5 rounded-xl transition-all text-xs font-bold flex items-center justify-center gap-1.5 ${
+                                  isUnlocked 
+                                    ? "bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white cursor-pointer" 
+                                    : "bg-gray-950 border border-gray-900 text-gray-600 cursor-not-allowed opacity-50"
+                                }`}
+                              >
+                                {copiedId === selectedService.id ? (
+                                  <>
+                                    <Check size={14} className="text-emerald-400" />
+                                    <span className="text-emerald-400">Copiado</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={14} />
+                                    <span>Copiar</span>
+                                  </>
+                                )}
+                              </button>
+                              
+                              {isUnlocked ? (
+                                <a 
+                                  href={selectedService.formLink} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-[0_0_20px_rgba(0,224,240,0.3)] cursor-pointer"
+                                >
+                                  <span>Abrir Formulario</span>
+                                  <ChevronRight size={14} />
+                                </a>
+                              ) : (
+                                <button 
+                                  disabled 
+                                  className="px-4 py-2.5 bg-gray-800/80 text-gray-500 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed opacity-60"
+                                >
+                                  <span>{!hasValidUrl ? "En Desarrollo" : "Bloqueado"}</span>
+                                  <Lock size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Botón de Llamar al Soporte Directo */}
+                    <div className="pt-1">
+                      <a 
+                        href={selectedService.supportPhone} 
+                        className="w-full bg-[#0A182D] hover:bg-red-500/10 border border-gray-800 hover:border-red-500/30 text-gray-300 hover:text-red-400 py-3 rounded-xl text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                      >
+                        <Phone size={14} className="group-hover:animate-bounce text-cyan-400 group-hover:text-red-400" /> 
+                        Llamar a Soporte ({selectedService.supportPhoneFormatted})
+                      </a>
+                    </div>
+
                   </div>
                 )}
-
-              </div>
-
-              {/* Sección Inferior de Acciones / CTAs */}
-              <div className="p-6 border-t border-gray-800/80 bg-[#05101F]/70 space-y-4">
-                
-                {(() => {
-                  const isUpcoming = selectedService.status === "upcoming";
-                  const hasValidUrl = selectedService.formLink.startsWith("http");
-                  const checks = checkedServices[selectedService.id] || { reqs: false, process: false, terms: false };
-                  const isUnlocked = !isUpcoming && hasValidUrl && checks.reqs && checks.process && checks.terms;
-
-                  return (
-                    <>
-                      {/* Caja del Formulario con botón para copiar enlace */}
-                      <div className={`border rounded-xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 transition-all ${
-                        isUnlocked 
-                          ? "bg-black/60 border-cyan-500/50 shadow-[0_0_20px_rgba(0,224,240,0.1)]" 
-                          : "bg-black/20 border-gray-900 opacity-75"
-                      }`}>
-                        <div className="min-w-0 flex-grow">
-                          <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Enlace del Formulario</p>
-                          <p className="text-xs font-mono mt-1 truncate">
-                            {isUpcoming ? (
-                              <span className="text-purple-400 font-semibold">🔒 Próximamente disponible</span>
-                            ) : !hasValidUrl ? (
-                              <span className="text-amber-400 font-semibold">🚧 Formulario en desarrollo (Próximamente)</span>
-                            ) : isUnlocked ? (
-                              <span className="text-cyan-400 font-bold">{selectedService.formLink}</span>
-                            ) : (
-                              <span className="text-amber-400/90 font-semibold">🔒 Marca las 3 casillas para desbloquear</span>
-                            )}
-                          </p>
-                        </div>
-                        
-                        <div className="flex gap-2 shrink-0">
-                          <button 
-                            disabled={!isUnlocked}
-                            onClick={() => isUnlocked && handleCopyLink(selectedService.formLink, selectedService.id)}
-                            className={`px-3 py-2.5 rounded-xl transition-all text-xs font-bold flex items-center justify-center gap-1.5 ${
-                              isUnlocked 
-                                ? "bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white cursor-pointer" 
-                                : "bg-gray-950 border border-gray-900 text-gray-600 cursor-not-allowed opacity-50"
-                            }`}
-                          >
-                            {copiedId === selectedService.id ? (
-                              <>
-                                <Check size={14} className="text-green-400" />
-                                <span className="text-green-400">Copiado</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy size={14} />
-                                <span>Copiar</span>
-                              </>
-                            )}
-                          </button>
-                          
-                          {isUnlocked ? (
-                            <a 
-                              href={selectedService.formLink} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors shadow-[0_0_15px_rgba(0,224,240,0.2)]"
-                            >
-                              <span>Abrir Formulario</span>
-                              <ChevronRight size={14} />
-                            </a>
-                          ) : (
-                            <button 
-                              disabled 
-                              className="px-4 py-2.5 bg-gray-800 text-gray-500 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed opacity-50"
-                            >
-                              <span>{!hasValidUrl ? "En Desarrollo" : "Bloqueado"}</span>
-                              <Lock size={14} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
-
-                {/* Botón de Llamar al Soporte Específico */}
-                <a 
-                  href={selectedService.supportPhone} 
-                  className="w-full bg-[#05101F] hover:bg-red-500/10 border border-gray-800 hover:border-red-500/30 text-white hover:text-red-400 py-3.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 group cursor-pointer"
-                >
-                  <Phone size={14} className="group-hover:animate-bounce" /> 
-                  Llamar a Soporte ({selectedService.supportPhoneFormatted})
-                </a>
 
               </div>
 

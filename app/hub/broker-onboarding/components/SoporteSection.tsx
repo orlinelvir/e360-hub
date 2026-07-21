@@ -29,8 +29,8 @@ interface SoporteSectionProps {
 
 const faqsData = [
   {
-    question: "¿Cómo accedo a mi subcuenta GoHighLevel (GHL)?",
-    answer: "Cada broker autorizado de Emprende 360 recibe un correo de invitación a su subcuenta de GHL con su Location ID exclusivo. Si no has recibido la invitación, abre un ticket de soporte o solicita el reenvío desde la sección 'Mi Perfil'."
+    question: "¿Cómo accedo a mi subcuenta StartPoint CRM?",
+    answer: "Cada broker autorizado de Emprende 360 recibe un correo de invitación a su subcuenta de CRM con su Location ID exclusivo. Si no has recibido la invitación, abre un ticket de soporte o solicita el reenvío desde la sección 'Mi Perfil'."
   },
   {
     question: "¿Cuándo y cómo recibo el pago de mis comisiones?",
@@ -163,20 +163,20 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
                 Soporte & Asistencia VIP 1 a 1
               </h2>
               <p className="text-xs text-gray-400 mt-1 max-w-xl leading-relaxed">
-                Asistencia inmediata para underwriting, comisiones, subcuentas GHL o agendamiento de citas prioritarias con nuestros especialistas.
+                Asistencia inmediata para underwriting, comisiones, subcuentas CRM o agendamiento de citas prioritarias con nuestros especialistas.
               </p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
             <a
-              href="https://wa.me/18003605626"
+              href="https://wa.me/12013652055"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-5 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
             >
               <MessageSquare size={16} />
-              <span>WhatsApp VIP Directo</span>
+              <span>WhatsApp VIP (+1 201-365-2055)</span>
             </a>
 
             <button
@@ -184,7 +184,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
               className="w-full sm:w-auto px-5 py-3.5 bg-gradient-to-r from-cyan-400 to-blue-600 hover:opacity-90 text-black font-extrabold rounded-xl text-xs transition-opacity flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,224,240,0.2)]"
             >
               <Calendar size={16} />
-              <span>Agendar Llamada GHL</span>
+              <span>Agendar Llamada CRM</span>
             </button>
           </div>
         </div>
@@ -194,48 +194,97 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
       <div>
         <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <Phone size={16} />
-          <span>Líneas Directas de Soporte Telefónico</span>
+          <span>Líneas Directas de Soporte (Llamadas, WhatsApp & SMS)</span>
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* CANAL PRINCIPAL */}
+          {/* CANAL PRINCIPAL VIP */}
           <a
-            href="tel:+12013652055"
+            href="https://wa.me/12013652055"
+            target="_blank"
+            rel="noopener noreferrer"
             className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-cyan-500/40 hover:border-cyan-400 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
           >
             <div>
               <div className="w-10 h-10 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400 mb-3 group-hover:bg-cyan-500/20">
-                <Briefcase size={20} />
+                <Headphones size={20} />
               </div>
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 font-extrabold text-[9px] uppercase tracking-wider rounded">Canal Fundamental</span>
+                <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 font-extrabold text-[9px] uppercase tracking-wider rounded">Soporte VIP General</span>
               </div>
-              <h4 className="font-bold text-white text-sm">Atención Principal Brokers & Underwriting</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Línea directa para aprobación de casos, comisiones y consultas urgentes</p>
+              <h4 className="font-bold text-white text-sm">Plataforma, CRM & Asistencia</h4>
+              <p className="text-[11px] text-gray-400 mt-1">Soporte técnico, inicio y configuración. *(No comisiones ni aprobaciones)*.</p>
             </div>
-            <p className="text-xs font-mono font-bold text-cyan-400 mt-4 pt-3 border-t border-gray-800/80">
-              +1 (201) 365-2055
+            <p className="text-xs font-mono font-bold text-cyan-400 mt-4 pt-3 border-t border-gray-800/80 flex items-center justify-between">
+              <span>+1 (201) 365-2055</span>
+              <span className="text-[10px] text-emerald-400 font-sans font-semibold">WA / SMS</span>
             </p>
           </a>
 
-          {/* CANAL SECUNDARIO */}
+          {/* CANAL SECUNDARIO: COMISIONES & APROBACIONES */}
           <a
-            href="tel:+19172845636"
-            className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-gray-800 hover:border-purple-500/40 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
+            href="https://wa.me/19172845636"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-purple-500/40 hover:border-purple-400 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
           >
             <div>
               <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400 mb-3 group-hover:bg-purple-500/20">
                 <ShieldCheck size={20} />
               </div>
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 font-extrabold text-[9px] uppercase tracking-wider rounded">Canal Secundario</span>
+                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 font-extrabold text-[9px] uppercase tracking-wider rounded">Comisiones & Casos</span>
               </div>
-              <h4 className="font-bold text-white text-sm">Soporte Operativo & Asistencia GHL</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Asistencia de subcuentas, tickets generales y documentación</p>
+              <h4 className="font-bold text-white text-sm">Aprobaciones & Underwriting</h4>
+              <p className="text-[11px] text-gray-400 mt-1">Atención exclusiva para estatus de casos, comisiones y aprobaciones.</p>
             </div>
-            <p className="text-xs font-mono font-bold text-purple-400 mt-4 pt-3 border-t border-gray-800/80">
-              +1 (917) 284-5636
+            <p className="text-xs font-mono font-bold text-purple-400 mt-4 pt-3 border-t border-gray-800/80 flex items-center justify-between">
+              <span>+1 (917) 284-5636</span>
+              <span className="text-[10px] text-emerald-400 font-sans font-semibold">WA / SMS</span>
+            </p>
+          </a>
+
+          {/* INMIGRACIÓN & TAXES */}
+          <a
+            href="https://wa.me/19087332891"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-emerald-500/40 hover:border-emerald-400 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 mb-3 group-hover:bg-emerald-500/20">
+                <Calculator size={20} />
+              </div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 font-extrabold text-[9px] uppercase tracking-wider rounded">Taxes & Legal</span>
+              </div>
+              <h4 className="font-bold text-white text-sm">Impuestos & Inmigración</h4>
+              <p className="text-[11px] text-gray-400 mt-1">Línea directa para gestiones fiscales, declaraciones y servicios de USCIS.</p>
+            </div>
+            <p className="text-xs font-mono font-bold text-emerald-400 mt-4 pt-3 border-t border-gray-800/80 flex items-center justify-between">
+              <span>+1 (908) 733-2891</span>
+              <span className="text-[10px] text-emerald-400 font-sans font-semibold">WA / SMS</span>
+            </p>
+          </a>
+
+          {/* UNDERWRITER JAMES MCA */}
+          <a
+            href="tel:+16464729408"
+            className="bg-[#0A182D]/60 hover:bg-[#0A182D]/90 border border-amber-500/40 hover:border-amber-400 p-5 rounded-2xl transition-all group shadow-sm flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400 mb-3 group-hover:bg-amber-500/20">
+                <Briefcase size={20} />
+              </div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 font-extrabold text-[9px] uppercase tracking-wider rounded">MCA James</span>
+              </div>
+              <h4 className="font-bold text-white text-sm">Préstamo Negocio (&lt; 680 FICO)</h4>
+              <p className="text-[11px] text-gray-400 mt-1">Underwriter James (Cliq Capital) para evaluación de MCA y flujo de caja.</p>
+            </div>
+            <p className="text-xs font-mono font-bold text-amber-400 mt-4 pt-3 border-t border-gray-800/80">
+              +1 (646) 472-9408
             </p>
           </a>
 
@@ -349,7 +398,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
             >
               <div className="flex items-center justify-between pb-4 border-b border-gray-800 mb-6">
                 <div>
-                  <h2 className="text-xl font-extrabold text-white">Agendar Cita de Soporte (GHL)</h2>
+                  <h2 className="text-xl font-extrabold text-white">Agendar Cita de Soporte (CRM)</h2>
                   <p className="text-xs text-gray-400 mt-0.5">Sesión de coaching o ayuda técnica 1 a 1</p>
                 </div>
                 <button
@@ -419,7 +468,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
                       type="submit"
                       className="px-6 py-2.5 bg-gradient-to-r from-cyan-400 to-blue-600 text-black font-extrabold rounded-xl text-xs"
                     >
-                      Confirmar Cita en GHL
+                      Confirmar Cita en CRM
                     </button>
                   </div>
                 </form>
@@ -482,7 +531,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
                     >
                       <option value="commission">Comisiones</option>
                       <option value="underwriting">Underwriting / Requisitos</option>
-                      <option value="ghl_crm">GoHighLevel CRM</option>
+                      <option value="ghl_crm">StartPoint CRM</option>
                       <option value="general">Consulta General</option>
                     </select>
                   </div>

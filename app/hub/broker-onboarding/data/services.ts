@@ -41,7 +41,7 @@ export const servicesData: ServiceDetail[] = [
     description: "Merchant Cash Advance (MCA) y préstamos empresariales rápidos basados en flujo de caja para clientes con puntaje de crédito inferior a 680. Underwriter asignado: James (Cliq Capital).",
     requirements: [
       "Mínimo 6 meses operando el negocio (1 año ideal)",
-      "Depósitos bancarios mensuales consistentes de $10,000+",
+      "Depósitos bancarios mensuales consistentes de $5,000 o más",
       "Frecuencia de 10+ depósitos mensuales en la cuenta de negocio",
       "Saldo promedio positivo y sin NSF (fondos insuficientes) excesivos",
       "Identificación oficial vigente del dueño (Pasaporte o ID)",
@@ -49,7 +49,7 @@ export const servicesData: ServiceDetail[] = [
       "Voided check y número EIN del negocio"
     ],
     process: [
-      "Precalificar al cliente respondiendo a las 6 preguntas clave de volumen e historial.",
+      "Precalificar al cliente respondiendo a las 4 preguntas clave de volumen e historial.",
       "Recopilar documentos básicos (Solicitud de financiamiento firmada, ID, EIN, 3 estados de cuenta, voided check).",
       "Revisar estados de cuenta (analizar volumen, NSF, y saldos negativos recurrentes antes de someter).",
       "Someter aplicación completa en la plataforma de Emprende 360.",
@@ -85,8 +85,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Precalificación inmediata. Aprobación y desembolso en 3 a 7 días hábiles.",
     comission: "Comisión del 2% al 5% sobre el valor total financiado.",
     formLink: "https://link.apisystem.tech/widget/form/9SjtRRXOxQjb7J5GphD9",
-    supportPhone: "tel:+18003605626",
-    supportPhoneFormatted: "+1 (800) 360-5626"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "personal-loan",
@@ -111,8 +111,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Precalificación inmediata. Aprobación y desembolso en 24-48 horas.",
     comission: "Honorario fijo garantizado por referido aprobado y financiado.",
     formLink: "https://api.leadconnectorhq.com/widget/form/Qgnp3xRhHOWeUW4dUE63?notrack=true",
-    supportPhone: "tel:+18003605626",
-    supportPhoneFormatted: "+1 (800) 360-5626"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "business-credit-cards",
@@ -130,15 +130,15 @@ export const servicesData: ServiceDetail[] = [
     ],
     process: [
       "Precalificar el reporte de crédito del dueño del negocio.",
-      "Completar la aplicación oficial a través del enlace del widget GHL.",
+      "Completar la aplicación oficial a través del enlace del widget CRM.",
       "El equipo procesa las solicitudes estratégicas con múltiples bancos asociados.",
       "Recepción y activación de las tarjetas de crédito corporativas en 7-14 días."
     ],
     timeframe: "Precalificación en 24 horas. Aprobación y entrega en 7 a 14 días.",
     comission: "Comisión fija sobre el volumen total de crédito aprobado para el negocio.",
     formLink: "https://api.leadconnectorhq.com/widget/form/rYyJUvwRiMc0bsznMjOd?notrack=true",
-    supportPhone: "tel:+18003605626",
-    supportPhoneFormatted: "+1 (800) 360-5626"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "mortgage-loan",
@@ -164,8 +164,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "DSCR/Dinero Duro: 5-30 días. FHA/Convencionales: 30-45 días. Nueva construcción: 45-90 días.",
     comission: "Comisión basada en la tabla de puntos de originación del préstamo.",
     formLink: "https://api.leadconnectorhq.com/widget/form/K9P2nfr7uoerIVXdS2hi",
-    supportPhone: "tel:+18003604663",
-    supportPhoneFormatted: "+1 (800) 360-4663"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "credit-repair",
@@ -190,8 +190,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Actualizaciones y rondas de disputa cada 30 días. Duración de 6 a 12 meses.",
     comission: "100% del pago de inicio y de la cuota mensual de $50 cobrada al cliente.",
     formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607372",
-    supportPhoneFormatted: "+1 (800) 360-7372"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "incorporation",
@@ -217,8 +217,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Entrega de documentos completos en 24 a 72 horas hábiles tras la radicación.",
     comission: "Comisión fija de $150 sobre los honorarios base del servicio de registro.",
     formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003602677",
-    supportPhoneFormatted: "+1 (800) 360-2677"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "payroll",
@@ -241,8 +241,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Lanzamiento previsto para el próximo mes.",
     comission: "Comisión por cuenta activada y residual recurrente por mes de actividad.",
     formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607297",
-    supportPhoneFormatted: "+1 (800) 360-7297"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "pos-services",
@@ -265,8 +265,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Lanzamiento previsto para el próximo mes.",
     comission: "Bono único por instalación física + comisión residual mensual de por vida sobre el volumen.",
     formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607273",
-    supportPhoneFormatted: "+1 (800) 360-7273"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "auto-insurance",
@@ -289,8 +289,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Cotización en menos de 24 horas. Emisión de cobertura en minutos tras el pago.",
     comission: "Comisión completa directa de la póliza (si tiene licencia) o bono por referido (sin licencia).",
     formLink: "https://api.leadconnectorhq.com/widget/form/Ofq6tPlRhtLS5P8nipYe",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "commercial-auto-insurance",
@@ -314,8 +314,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Cotizaciones en 24 a 48 horas hábiles.",
     comission: "Comisión sobre la prima comercial adjudicada o tarifa de referido.",
     formLink: "https://api.leadconnectorhq.com/widget/form/LTDvyVbeNDxgawUvtxmt",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "home-insurance",
@@ -338,8 +338,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Cotizaciones de seguros de hogar listas en 24 a 48 horas.",
     comission: "Comisión sobre prima anual (con licencia) o tarifa de referido (sin licencia).",
     formLink: "https://api.leadconnectorhq.com/widget/form/4wTIAcBmi4DuuoyIccvk",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "business-insurance",
@@ -363,8 +363,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Cotizaciones comerciales toman de 24 a 48 horas hábiles.",
     comission: "Comisión comercial según la póliza adjudicada (o referido a agentes de E360).",
     formLink: "https://api.leadconnectorhq.com/widget/form/YWiqKYGs4JzNfzklDwZo",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "workers-comp",
@@ -388,8 +388,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Cotización e inspección de riesgo en 24 a 48 horas.",
     comission: "Comisión sobre prima de nómina contratada por la empresa.",
     formLink: "https://api.leadconnectorhq.com/widget/form/RzPn2LF1d6tXzGM5X8PI",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "immigration-services",
@@ -413,8 +413,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Preparación de expedientes en 3 a 7 días hábiles tras recopilación completa.",
     comission: "Comisión fija de referido del 30% sobre el valor del servicio preparado.",
     formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003604664",
-    supportPhoneFormatted: "+1 (800) 360-4664"
+    supportPhone: "tel:+19087332891",
+    supportPhoneFormatted: "+1 (908) 733-2891 (Llamadas / WhatsApp)"
   },
   {
     id: "tax-preparation",
@@ -437,8 +437,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "En temporada (Ene-Abr): 24 a 72 horas. Fuera de temporada: 3 a 5 días hábiles.",
     comission: "Porcentaje sobre el costo base de preparación cobrado por E360.",
     formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003608293",
-    supportPhoneFormatted: "+1 (800) 360-8293"
+    supportPhone: "tel:+19087332891",
+    supportPhoneFormatted: "+1 (908) 733-2891 (Llamadas / WhatsApp)"
   },
   {
     id: "life-insurance",
@@ -462,8 +462,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Planes simplificados: emisión inmediata. Planes médicos: de 2 a 4 semanas.",
     comission: "Sólo brokers con licencia de vida activa: 80% al 100% de la prima pagada el primer año.",
     formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   },
   {
     id: "health-insurance",
@@ -486,7 +486,7 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Inscripción en 20 minutos. Cobertura activa el primer día del mes entrante.",
     comission: "Sólo brokers con licencia de salud activa: comisión mensual recurrente por miembro inscrito.",
     formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+18003607233",
-    supportPhoneFormatted: "+1 (800) 360-7233"
+    supportPhone: "tel:+19172845636",
+    supportPhoneFormatted: "+1 (917) 284-5636"
   }
 ];

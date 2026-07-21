@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Globe, 
@@ -36,9 +36,19 @@ export default function GHLOnboardingWizardModal({
   const [errorMsg, setErrorMsg] = useState("");
   const [isReconfiguring, setIsReconfiguring] = useState(false);
 
+  useEffect(() => {
+    if (isOpen) {
+      setLocationId(currentLocationId);
+      setApiKey(currentApiKey);
+      setStep(1);
+      setErrorMsg("");
+      setIsReconfiguring(false);
+    }
+  }, [isOpen, currentLocationId, currentApiKey]);
+
   if (!isOpen) return null;
 
-  const isAlreadyConnected = Boolean(currentLocationId || locationId) && !isReconfiguring && step === 1;
+  const isAlreadyConnected = Boolean(currentLocationId) && !isReconfiguring && step === 1;
 
   const handleNextStep1 = () => {
     if (!locationId.trim()) {
