@@ -61,6 +61,7 @@ export default function BrokerOnboardingClient() {
   const [checkedServices, setCheckedServices] = useState<Record<string, { reqs: boolean; process: boolean; terms: boolean }>>({});
 
   const [isWizardOpen, setIsWizardOpen] = useState<boolean>(false);
+  const [wizardSaved, setWizardSaved] = useState<boolean>(false);
   const [userLocationId, setUserLocationId] = useState<string>("");
   const [userApiKey, setUserApiKey] = useState<string>("");
 
@@ -83,6 +84,7 @@ export default function BrokerOnboardingClient() {
   const handleSaveGHLWizard = async (locId: string, key: string) => {
     setUserLocationId(locId);
     setUserApiKey(key);
+    setWizardSaved(true);
     if (user) {
       try {
         await updateBrokerProfile(user.uid, {
@@ -992,7 +994,12 @@ export default function BrokerOnboardingClient() {
 
       <GHLOnboardingWizardModal
         isOpen={isWizardOpen}
-        onClose={() => setIsWizardOpen(false)}
+        onClose={() => {
+          setIsWizardOpen(false);
+          if (wizardSaved) {
+            window.location.reload();
+          }
+        }}
         onSaveCredentials={handleSaveGHLWizard}
         currentLocationId={userLocationId}
         currentApiKey={userApiKey}

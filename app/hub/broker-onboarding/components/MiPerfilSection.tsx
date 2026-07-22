@@ -136,6 +136,24 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
     }, 1500);
   };
 
+  const handleSaveCRMConfig = async () => {
+    if (!user) return;
+    try {
+      await updateBrokerProfile(user.uid, {
+        ghlLocationId: profile.ghlLocationId || "",
+        ghlApiKey: profile.ghlApiKey || "",
+        ghlConnected: Boolean(profile.ghlLocationId && profile.ghlApiKey)
+      });
+      setIsSavedToast(true);
+      setTimeout(() => {
+        setIsSavedToast(false);
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      console.error("Error al guardar credenciales CRM en el perfil:", err);
+    }
+  };
+
   const referralUrl = `https://emprende360.com/ref/${profile.referralSlug}`;
 
   const copyReferralLink = () => {
@@ -233,6 +251,14 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
 
           <div className="flex items-center gap-3 w-full md:w-auto">
             <button
+              onClick={handleSaveCRMConfig}
+              className="flex-1 md:flex-none px-4 py-2.5 bg-gradient-to-r from-cyan-400 to-blue-600 text-black font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(0,224,240,0.2)] hover:opacity-90"
+            >
+              <Save size={14} />
+              <span>Guardar Config</span>
+            </button>
+
+            <button
               onClick={handleSyncGHL}
               disabled={isSyncingGHL}
               className="flex-1 md:flex-none px-4 py-2.5 bg-[#05101F] hover:bg-gray-800 border border-gray-800 text-gray-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -262,7 +288,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
             </label>
             <input 
               type="text"
-              value={profile.ghlLocationId}
+              value={profile.ghlLocationId || ""}
               onChange={(e) => setProfile(prev => ({ ...prev, ghlLocationId: e.target.value }))}
               placeholder="Ej. veYvJ38dK..."
               className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs font-mono text-cyan-400 focus:outline-none focus:border-cyan-500"
@@ -274,8 +300,8 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
             </label>
             <input 
               type="password"
-              value={profile.ghlSubaccountEmail}
-              onChange={(e) => setProfile(prev => ({ ...prev, ghlSubaccountEmail: e.target.value }))}
+              value={profile.ghlApiKey || ""}
+              onChange={(e) => setProfile(prev => ({ ...prev, ghlApiKey: e.target.value }))}
               placeholder="••••••••••••••••"
               className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs font-mono text-gray-300 focus:outline-none focus:border-cyan-500"
             />
@@ -360,6 +386,22 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
 
       </div>
 
+    </div>
+
+      {/* Toast de Guardado */}
+      <AnimatePresence>
+        {isSavedToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-black px-6 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-[0_0_30px_rgba(16,185,129,0.3)] flex items-center gap-2"
+          >
+            <CheckCircle2 size={16} />
+            <span>Configuración Guardada Exitosamente</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
