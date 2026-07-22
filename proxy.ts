@@ -29,12 +29,6 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Si ya está autenticado e intenta acceder a la página de entrada, redirigir al hub
-  // (evita que un broker logueado vea el login de nuevo)
-  if (isEntryPage && isAuthenticated) {
-    return NextResponse.redirect(new URL("/hub/broker-onboarding", request.url));
-  }
-
   return NextResponse.next();
 }
 
