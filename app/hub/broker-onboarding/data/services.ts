@@ -45,12 +45,12 @@ export const servicesData: ServiceDetail[] = [
       "Frecuencia de 10+ depósitos mensuales en la cuenta de negocio",
       "Saldo promedio positivo y sin NSF (fondos insuficientes) excesivos",
       "Identificación oficial vigente del dueño (Pasaporte o ID)",
-      "Últimos 3 estados de cuenta bancarios de la empresa",
+      "Últimos 4 estados de cuenta bancarios de la empresa",
       "Voided check y número EIN del negocio"
     ],
     process: [
       "Precalificar al cliente respondiendo a las 4 preguntas clave de volumen e historial.",
-      "Recopilar documentos básicos (Solicitud de financiamiento firmada, ID, EIN, 3 estados de cuenta, voided check).",
+      "Recopilar documentos básicos (Solicitud de financiamiento firmada, ID, EIN, 4 estados de cuenta, voided check).",
       "Revisar estados de cuenta (analizar volumen, NSF, y saldos negativos recurrentes antes de someter).",
       "Someter aplicación completa en la plataforma de Emprende 360.",
       "Recibir oferta en 24-48 horas, presentar al cliente, firmar y fondear en 24-72 horas."

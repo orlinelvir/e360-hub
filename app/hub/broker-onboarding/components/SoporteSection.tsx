@@ -38,7 +38,7 @@ const faqsData = [
   },
   {
     question: "¿Qué documentación necesita un cliente para Préstamo de Negocio (MCA)?",
-    answer: "El cliente debe presentar: 1) Últimos 3 estados de cuenta bancarios de la empresa, 2) Identificación oficial vigente del dueño, 3) Número EIN y Voided Check de la cuenta corporativa."
+    answer: "El cliente debe presentar: 1) Últimos 4 estados de cuenta bancarios de la empresa, 2) Identificación oficial vigente del dueño, 3) Número EIN y Voided Check de la cuenta corporativa."
   },
   {
     question: "¿Puedo referir clientes si no tengo licencias de seguros?",
