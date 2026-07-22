@@ -386,8 +386,6 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
 
       </div>
 
-    </div>
-
       {/* Toast de Guardado */}
       <AnimatePresence>
         {isSavedToast && (
