@@ -73,6 +73,13 @@ export default function BrokerOnboardingClient() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (profile) {
+      setUserLocationId(profile.ghlLocationId || "");
+      setUserApiKey(profile.ghlApiKey || "");
+    }
+  }, [profile]);
+
   const handleSaveGHLWizard = async (locId: string, key: string) => {
     setUserLocationId(locId);
     setUserApiKey(key);
@@ -661,7 +668,11 @@ export default function BrokerOnboardingClient() {
 
             {activeTab === "clientes" && (
               <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
-                <MisClientesSection brokerName={brokerName} />
+                <MisClientesSection 
+                  brokerName={brokerName} 
+                  crmLocationId={userLocationId}
+                  crmApiKey={userApiKey}
+                />
               </main>
             )}
 

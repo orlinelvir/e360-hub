@@ -33,6 +33,8 @@ import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
 
 interface MisClientesSectionProps {
   brokerName: string;
+  crmLocationId: string;
+  crmApiKey: string;
 }
 
 const initialMockClients: ClientLead[] = [];
@@ -46,7 +48,7 @@ const stageLabels: Record<PipelineStage, { label: string; color: string; bg: str
   paid: { label: "Comisión Pagada", color: "text-green-400", bg: "bg-green-500/10 border-green-500/30" }
 };
 
-export default function MisClientesSection({ brokerName }: MisClientesSectionProps) {
+export default function MisClientesSection({ brokerName, crmLocationId, crmApiKey }: MisClientesSectionProps) {
   const { user } = useAuth();
   const { fetchContacts, createContact, loading: ghlLoading } = useGHLContacts();
 
@@ -58,8 +60,8 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Credenciales CRM del broker (cargadas desde Firestore vía client SDK)
-  const [brokerCredentials, setBrokerCredentials] = useState<CRMCredentials>({ locationId: "", apiKey: "" });
+  // Estado para capturar y mostrar errores de sincronización con el CRM
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Formulario nuevo cliente
   const [newClientName, setNewClientName] = useState("");
@@ -83,8 +85,8 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
   };
 
   const handleSyncGHLWithCredentials = async (creds: CRMCredentials) => {
-
     setIsSyncingGHL(true);
+    setSyncError(null);
     try {
       const contacts = await fetchContacts(undefined, creds);
       if (contacts && Array.isArray(contacts)) {
@@ -108,16 +110,17 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
           saveClients(ghlMappedLeads);
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error al sincronizar con el CRM:", e);
+      setSyncError(e.message || "Error al consultar contactos de tu subcuenta CRM.");
     } finally {
       setIsSyncingGHL(false);
     }
   };
 
-  // Sincronización manual desde el botón (usa credenciales ya cargadas en estado)
+  // Sincronización manual desde el botón (usa credenciales pasadas por props)
   const handleSyncGHL = async () => {
-    handleSyncGHLWithCredentials(brokerCredentials);
+    handleSyncGHLWithCredentials({ locationId: crmLocationId, apiKey: crmApiKey });
   };
 
   useEffect(() => {
@@ -130,22 +133,12 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
       console.error("Error cargando clientes de Firestore:", err);
     });
 
-    // Cargar credenciales CRM del broker y luego sincronizar
-    getBrokerProfile(user.uid).then((profile) => {
-      const creds: CRMCredentials = {
-        locationId: profile.ghlLocationId || "",
-        apiKey: profile.ghlApiKey || ""
-      };
-      setBrokerCredentials(creds);
-      // Solo sincronizar si el broker ya tiene credenciales configuradas
-      if (creds.locationId && creds.apiKey) {
-        handleSyncGHLWithCredentials(creds);
-      }
-    }).catch((err: any) => {
-      console.error("Error cargando perfil de broker para credenciales CRM:", err);
-    });
+    // Solo sincronizar si el broker ya tiene credenciales configuradas
+    if (crmLocationId && crmApiKey) {
+      handleSyncGHLWithCredentials({ locationId: crmLocationId, apiKey: crmApiKey });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, crmLocationId, crmApiKey]);
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,8 +154,8 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
     let ghlId = `ghl_cnt_${Math.floor(1000000 + Math.random() * 9000000)}`;
     try {
       const crmHeaders: HeadersInit = { "Content-Type": "application/json" };
-      if (brokerCredentials.locationId) crmHeaders["x-crm-location-id"] = brokerCredentials.locationId;
-      if (brokerCredentials.apiKey) crmHeaders["x-crm-api-key"] = brokerCredentials.apiKey;
+      if (crmLocationId) crmHeaders["x-crm-location-id"] = crmLocationId;
+      if (crmApiKey) crmHeaders["x-crm-api-key"] = crmApiKey;
 
       const ghlRes = await fetch("/api/ghl/contacts", {
         method: "POST",
@@ -346,6 +339,29 @@ export default function MisClientesSection({ brokerName }: MisClientesSectionPro
           </div>
         </div>
       </div>
+
+      {syncError && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3.5 shadow-inner">
+          <div className="p-2.5 bg-red-500/20 rounded-xl text-red-400 border border-red-500/30 shrink-0">
+            <AlertCircle size={20} />
+          </div>
+          <div className="flex-grow">
+            <h4 className="text-xs font-bold text-red-300 uppercase tracking-wider flex items-center gap-2">
+              <span>Error de Sincronización CRM</span>
+              <span className="bg-red-500/20 text-red-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-red-500/40">CRM API ERROR</span>
+            </h4>
+            <p className="text-xs text-red-200/80 mt-1 leading-relaxed">
+              {syncError}
+            </p>
+          </div>
+          <button 
+            onClick={() => setSyncError(null)}
+            className="text-xs text-gray-500 hover:text-white px-2 py-1 cursor-pointer"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {/* METRICAS Y KPIS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

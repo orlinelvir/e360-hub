@@ -18,6 +18,8 @@ interface BrokerUserProfile {
   email: string;
   displayName?: string;
   ghlLocationId?: string;
+  ghlApiKey?: string;
+  ghlConnected?: boolean;
   tier?: string;
   phone?: string;
   nmlsId?: string;
