@@ -82,14 +82,16 @@ export default function BrokerOnboardingClient() {
   }, [profile]);
 
   const handleSaveGHLWizard = async (locId: string, key: string) => {
-    setUserLocationId(locId);
-    setUserApiKey(key);
+    const trimmedLoc = locId.trim();
+    const trimmedKey = key.trim();
+    setUserLocationId(trimmedLoc);
+    setUserApiKey(trimmedKey);
     setWizardSaved(true);
     if (user) {
       try {
         await updateBrokerProfile(user.uid, {
-          ghlLocationId: locId,
-          ghlApiKey: key,
+          ghlLocationId: trimmedLoc,
+          ghlApiKey: trimmedKey,
           ghlConnected: true
         });
       } catch (err) {

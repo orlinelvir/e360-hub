@@ -138,12 +138,19 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
 
   const handleSaveCRMConfig = async () => {
     if (!user) return;
+    const trimmedLocId = (profile.ghlLocationId || "").trim();
+    const trimmedApiKey = (profile.ghlApiKey || "").trim();
     try {
       await updateBrokerProfile(user.uid, {
-        ghlLocationId: profile.ghlLocationId || "",
-        ghlApiKey: profile.ghlApiKey || "",
-        ghlConnected: Boolean(profile.ghlLocationId && profile.ghlApiKey)
+        ghlLocationId: trimmedLocId,
+        ghlApiKey: trimmedApiKey,
+        ghlConnected: Boolean(trimmedLocId && trimmedApiKey)
       });
+      setProfile(prev => ({
+        ...prev,
+        ghlLocationId: trimmedLocId,
+        ghlApiKey: trimmedApiKey
+      }));
       setIsSavedToast(true);
       setTimeout(() => {
         setIsSavedToast(false);
