@@ -4,7 +4,7 @@ service cloud.firestore {
 
     // Función auxiliar para verificar roles
     function getRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return get(/databases/$(database)/documents/brokers/$(request.auth.uid)).data.role;
     }
 
     function isAuthenticated() {

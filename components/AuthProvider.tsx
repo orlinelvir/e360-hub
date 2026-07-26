@@ -20,6 +20,7 @@ interface BrokerUserProfile {
   ghlLocationId?: string;
   ghlApiKey?: string;
   ghlConnected?: boolean;
+  role?: string;
   tier?: string;
   phone?: string;
   nmlsId?: string;
@@ -72,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               email: currentUser.email || "",
               displayName: currentUser.displayName || "Broker E360",
               ghlLocationId: process.env.NEXT_PUBLIC_GHL_DEFAULT_LOCATION_ID || "LOC-E360-DEFAULT",
+              role: "broker",
               tier: "Senior Broker VIP",
               createdAt: new Date().toISOString()
             };
@@ -102,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       displayName: name,
       ghlLocationId: process.env.NEXT_PUBLIC_GHL_DEFAULT_LOCATION_ID || "LOC-E360-DEFAULT",
+      role: "broker",
       tier: "Junior Broker",
       createdAt: new Date().toISOString()
     };

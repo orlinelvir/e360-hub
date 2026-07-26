@@ -1,0 +1,122 @@
+================================================================================
+           ROADMAP Y GUÍA DE TRABAJO - E360 HUB (INTEGRACIÓN GHL)
+================================================================================
+Fecha de Emisión: 2026-07-25
+Creado por: Antigravity AI Coding Assistant
+Objetivo: Continuación de la Fase 2 en la nueva laptop (2026-07-26)
+
+Este documento contiene un resumen completo de los archivos creados/modificados hoy,
+la explicación de la arquitectura estratégica de doble vía (Hub-First Intake), y 
+el paso a paso detallado de lo que debemos codificar mañana en la nueva laptop.
+
+--------------------------------------------------------------------------------
+1. RESUMEN DE CAMBIOS REALIZADOS HOY (FASE 1 COMPLETADA)
+--------------------------------------------------------------------------------
+
+*   [lib/firebase-admin.ts]
+    - MODIFICADO: Se corrigió el bypass crítico de verificación de firma de JWT.
+    - DETALLE: El método 'verifyAuthToken' ahora solo permite el fallback desverificado
+      (decodeJwtUnverified) si detecta de forma estricta que estamos en desarrollo local
+      (process.env.NODE_ENV === "development"). Si la firma del token falla por cualquier
+      motivo en producción, se deniega el acceso con 401 Unauthorized de forma segura.
+
+*   [proxy.ts]
+    - RESTAURADO: Se mantuvo el nombre 'proxy.ts' y la función exportada 'proxy'.
+    - DETALLE: Next.js 16.2.4 ha descontinuado la palabra reservada 'middleware.ts'
+      a favor de 'proxy.ts'. Al mantener esta estructura, el proyecto compila al 100% 
+      sin advertencias de deprecación y las redirecciones de seguridad a /hub/*
+      funcionan a nivel del Edge de forma nativa.
+
+*   [components/AuthProvider.tsx]
+    - MODIFICADO: Se agregó el campo 'role' con valor 'broker' al objeto 'newProfile'
+      tanto en la lógica de inicio de sesión con Google como en la creación de cuenta
+      por correo y contraseña.
+
+*   [firestore.rules]
+    - MODIFICADO: Se corrigió la función 'getRole()' para que consulte la colección
+      '/brokers' en lugar de la inexistente '/users':
+      "return get(/databases/$(database)/documents/brokers/$(request.auth.uid)).data.role;"
+    - NOTA: Para aplicar las nuevas reglas a Firebase, mañana se debe ejecutar:
+      "npm run deploy:rules"
+
+--------------------------------------------------------------------------------
+2. ARQUITECTURA ESTRATÉGICA PARA MAÑANA (HUB-FIRST INTAKE - DOBLE SYNC)
+--------------------------------------------------------------------------------
+
+*   EL PROBLEMA ACTUAL: Los brokers usan formularios globales de E360 en GHL. El equipo
+    de operaciones debe validar manualmente a qué broker corresponde cada lead.
+*   LA ESTRATEGIA: Admisión Directa en el Hub. El formulario se llena dentro de E360 Hub.
+    Al enviar, el backend de Next.js guarda localmente en Firestore y luego hace una
+    doble sincronización en GHL:
+    - Destino A (Broker CRM): Si tiene su token PIT conectado, crea el contacto y
+      la oportunidad en su CRM StartPoint personal.
+    - Destino B (E360 Central CRM): Crea el contacto y la oportunidad en la subcuenta
+      central de E360 correspondiente al servicio (Finanzas o Seguros).
+*   ATRIBUCIÓN AUTOMÁTICA (Cero validación manual):
+    Al escribir en el CRM de E360, se inyectan campos personalizados con los datos del
+    broker: E360_Broker_ID, E360_Broker_Name, E360_Broker_Email.
+
+*   SCOPES DE PRIVATE INTEGRATIONS EN GHL QUE DEBE TENER EL BROKER (Total: 8):
+    1.  contacts.readonly
+    2.  contacts.write
+    3.  opportunities.readonly
+    4.  opportunities.write
+    5.  pipelines.readonly
+    6.  locations.readonly (Nuevo: Para validar la subcuenta en el Wizard)
+    7.  locations/customFields.readonly (Recomendado)
+    8.  locations/tags.readonly (Recomendado)
+
+--------------------------------------------------------------------------------
+3. PASO A PASO PARA MAÑANA (IMPLEMENTACIÓN DE LA FASE 2)
+--------------------------------------------------------------------------------
+
+PASO 1: CONFIGURAR VARIABLES DE ENTORNO EN LA NUEVA LAPTOP
+En el archivo [.env.local] de desarrollo y en la configuración de Vercel en prod:
+- Configurar las credenciales centrales de la agencia E360:
+  GHL_E360_FINANCIAL_LOCATION_ID=tu_location_id_financieros
+  GHL_E360_FINANCIAL_API_KEY=pit-tu_token_financieros
+  GHL_E360_INSURANCE_LOCATION_ID=tu_location_id_seguros
+  GHL_E360_INSURANCE_API_KEY=pit-tu_token_seguros
+
+PASO 2: EXTENDER API HELPER DE GHL [lib/ghl.ts]
+Añadir soporte para interactuar con Oportunidades y Pipelines de GHL v2:
+- Crear la función:
+  "createGHLOpportunity(oppData, locationId, apiKey)" (POST /opportunities)
+- Crear la función:
+  "updateGHLOpportunity(oppId, updateData, apiKey)" (PUT /opportunities/{id})
+- Crear la función:
+  "getGHLPipelines(locationId, apiKey)" (GET /pipelines)
+- Crear la función:
+  "getGHLSubaccountDetails(apiKey)" (GET /locations/...) para validar el token.
+
+PASO 3: CREAR ENDPOINT DE ADMISIÓN [app/api/services/submit/route.ts]
+Implementar el manejador de peticiones POST que reciba el formulario del Hub:
+1. Verificar la sesión del broker vía verifyAuthToken(request).
+2. Guardar el lead localmente en Firestore: /brokers/{uid}/clients con estado 'pending_sync'.
+3. Si el broker tiene GHL configurado, llamar de forma asíncrona a la API del broker:
+   - Crear contacto y crear oportunidad en su StartPoint.
+4. Identificar la subcuenta central de E360 destino según la categoría del servicio
+   (ej. préstamo = financiero; seguro = seguros).
+5. Llamar a la API de E360 Central:
+   - Crear contacto y oportunidad.
+   - Insertar en los campos personalizados del contacto la atribución:
+     Broker Name, Broker Email, Broker ID.
+6. Si todo tiene éxito, actualizar el estado del lead a 'synced' en Firestore.
+7. Manejar excepciones con un bloque try-catch fail-safe (si falla GHL, el lead en Firestore
+   debe quedar en 'failed_sync' para que el broker no lo pierda y el admin pueda revisarlo).
+
+PASO 4: CREAR RUTA API DE CAMBIO DE ETAPA [app/api/ghl/opportunities/route.ts]
+Implementar PATCH para sincronizar el pipeline:
+- Recibe opportunityId y la nueva etapa (stage).
+- Llama a updateGHLOpportunity en GHL.
+- Si tiene éxito, actualiza Firestore localmente.
+
+PASO 5: CONECTAR INTERFAZ DEL PIPELINE [MisClientesSection.tsx]
+- Actualizar la función handleUpdateStage para que llame a nuestro nuevo endpoint
+  PATCH /api/ghl/opportunities y sincronice los cambios del Drag-and-Drop con GHL.
+
+PASO 6: AÑADIR CHECKLIST VISUAL Y PRUEBA DE CONEXIÓN EN EL WIZARD
+- Modificar [GHLOnboardingWizardModal.tsx] para mostrar de forma limpia los 8 scopes.
+- Crear una API '/api/ghl/validate' que use 'getGHLSubaccountDetails' para verificar
+  el token ingresado por el broker en tiempo real y mostrar alertas de éxito/error.
+================================================================================
