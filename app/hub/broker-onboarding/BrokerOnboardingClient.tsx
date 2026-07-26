@@ -14,6 +14,7 @@ import {
   User, 
   FileText, 
   X,
+  AlertCircle,
   CheckCircle2,
   Clock,
   Coins,
@@ -969,6 +970,14 @@ export default function BrokerOnboardingClient() {
                               )}
                             </div>
                           </div>
+                          {isUnlocked && (
+                            <div className="mt-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 flex items-start gap-2.5">
+                              <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                              <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                                <strong>Nota importante:</strong> Cada aplicación que completes en este formulario externo no aparecerá automáticamente en la sección de <strong>"Mis Clientes"</strong>. Hasta nuevo aviso, estar pendiente en el chat de la comunidad.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       );
                     })()}

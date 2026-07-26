@@ -340,6 +340,21 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
         </div>
       </div>
 
+      {/* AVISO: APLICACIONES EXTERNAS NO SE REGISTRAN AUTOMÁTICAMENTE */}
+      <div className="bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-transparent border border-cyan-500/30 rounded-2xl p-4 flex items-start gap-3.5 shadow-inner">
+        <div className="p-2.5 bg-cyan-500/20 rounded-xl text-cyan-400 border border-cyan-500/30 shrink-0 mt-0.5">
+          <AlertCircle size={20} />
+        </div>
+        <div>
+          <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+            Importante: Registro de Aplicaciones Externas
+          </h4>
+          <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+            Las aplicaciones o cotizaciones enviadas a través de los formularios externos de servicios (como Seguros, POS, etc.) <strong>no aparecerán automáticamente en este listado</strong>. Hasta nuevo aviso, estar pendiente en el chat de la comunidad.
+          </p>
+        </div>
+      </div>
+
       {syncError && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3.5 shadow-inner">
           <div className="p-2.5 bg-red-500/20 rounded-xl text-red-400 border border-red-500/30 shrink-0">

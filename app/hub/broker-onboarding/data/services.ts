@@ -288,7 +288,7 @@ export const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Cotización en menos de 24 horas. Emisión de cobertura en minutos tras el pago.",
     comission: "Comisión completa directa de la póliza (si tiene licencia) o bono por referido (sin licencia).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/Ofq6tPlRhtLS5P8nipYe",
+    formLink: "https://api.leadconnectorhq.com/widget/form/E8DVdcBCS2GwqB7EqgI1",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636"
   },
@@ -313,7 +313,7 @@ export const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Cotizaciones en 24 a 48 horas hábiles.",
     comission: "Comisión sobre la prima comercial adjudicada o tarifa de referido.",
-    formLink: "https://api.leadconnectorhq.com/widget/form/LTDvyVbeNDxgawUvtxmt",
+    formLink: "https://api.leadconnectorhq.com/widget/form/60emAjUAUDqQYyNl0Zld",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636"
   },
@@ -337,7 +337,7 @@ export const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Cotizaciones de seguros de hogar listas en 24 a 48 horas.",
     comission: "Comisión sobre prima anual (con licencia) o tarifa de referido (sin licencia).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/4wTIAcBmi4DuuoyIccvk",
+    formLink: "https://api.leadconnectorhq.com/widget/form/Yig6zhFlJ3M0GHbsD4oH",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636"
   },
@@ -362,7 +362,7 @@ export const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Cotizaciones comerciales toman de 24 a 48 horas hábiles.",
     comission: "Comisión comercial según la póliza adjudicada (o referido a agentes de E360).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/YWiqKYGs4JzNfzklDwZo",
+    formLink: "https://api.leadconnectorhq.com/widget/form/gwG8U5ZnUFKsLFp0uXe3",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636"
   },
@@ -387,7 +387,7 @@ export const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Cotización e inspección de riesgo en 24 a 48 horas.",
     comission: "Comisión sobre prima de nómina contratada por la empresa.",
-    formLink: "https://api.leadconnectorhq.com/widget/form/RzPn2LF1d6tXzGM5X8PI",
+    formLink: "https://api.leadconnectorhq.com/widget/form/W7oUNvRvQ9NMjTnmx0YV",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636"
   },
