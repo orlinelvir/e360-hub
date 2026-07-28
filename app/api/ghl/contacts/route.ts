@@ -1,55 +1,8 @@
 import { NextResponse } from "next/server";
 import { getGHLContacts, createGHLContact, CRMError } from "@/lib/ghl";
-import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { verifyAuthToken } from "@/lib/firebase-admin";
 import { isRateLimited } from "@/lib/rate-limit";
-
-/**
- * Resuelve las credenciales CRM del broker en este orden de prioridad:
- * 1. Firestore (Admin SDK) — fuente de verdad si las credenciales de servicio están configuradas
- * 2. Headers x-crm-location-id / x-crm-api-key — fallback para entornos sin Firebase Admin SDK
- * 3. Variables de entorno globales — último recurso
- */
-async function resolveBrokerCredentials(
-  uid: string,
-  request: Request
-): Promise<{ locationId: string | undefined; apiKey: string | undefined }> {
-  let locationId: string | undefined = undefined;
-  let apiKey: string | undefined = undefined;
-
-  // Prioridad 1: Firestore Admin SDK (Credenciales guardadas del broker)
-  try {
-    if (adminDb) {
-      const brokerSnap = await adminDb.collection("brokers").doc(uid).get();
-      if (brokerSnap.exists) {
-        const data = brokerSnap.data();
-        if (data?.ghlLocationId) locationId = data.ghlLocationId.trim();
-        if (data?.ghlApiKey) apiKey = data.ghlApiKey.trim();
-      }
-    }
-  } catch (e) {
-    console.warn("No se pudo consultar Firestore Admin para credenciales del broker:", e);
-  }
-
-  // Prioridad 2: Headers enviados por el cliente (broker autenticado)
-  if (!locationId) {
-    const headerLocationId = request.headers.get("x-crm-location-id");
-    if (headerLocationId) locationId = headerLocationId.trim();
-  }
-  if (!apiKey) {
-    const headerApiKey = request.headers.get("x-crm-api-key");
-    if (headerApiKey) apiKey = headerApiKey.trim();
-  }
-
-  // Prioridad 3: Variables de entorno globales (último recurso)
-  if (!locationId) {
-    locationId = (process.env.GHL_DEFAULT_LOCATION_ID || "").trim() || undefined;
-  }
-  if (!apiKey) {
-    apiKey = (process.env.GHL_PRIVATE_KEY || process.env.GHL_AGENCY_API_KEY || "").trim() || undefined;
-  }
-
-  return { locationId, apiKey };
-}
+import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);

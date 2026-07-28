@@ -3,7 +3,6 @@ import { auth } from "@/lib/firebase";
 
 export interface CRMCredentials {
   locationId?: string;
-  apiKey?: string;
 }
 
 /**
@@ -52,9 +51,7 @@ export function useGHLContacts() {
 
       const headers: HeadersInit = {};
       if (credentials?.locationId) headers["x-crm-location-id"] = credentials.locationId;
-      if (credentials?.apiKey) headers["x-crm-api-key"] = credentials.apiKey;
 
-      // Obtener y adjuntar el token de autenticación de Firebase en la cabecera
       if (auth.currentUser) {
         try {
           const token = await auth.currentUser.getIdToken();
@@ -86,9 +83,7 @@ export function useGHLContacts() {
     try {
       const headers: HeadersInit = { "Content-Type": "application/json" };
       if (credentials?.locationId) headers["x-crm-location-id"] = credentials.locationId;
-      if (credentials?.apiKey) headers["x-crm-api-key"] = credentials.apiKey;
 
-      // Obtener y adjuntar el token de autenticación de Firebase
       if (auth.currentUser) {
         try {
           const token = await auth.currentUser.getIdToken();

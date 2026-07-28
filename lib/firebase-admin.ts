@@ -96,12 +96,11 @@ export async function verifyAuthToken(request: Request) {
     if (adminAuth && isServiceAccountConfigured) {
       const decodedToken = await adminAuth.verifyIdToken(token);
       return decodedToken;
-    } else if (process.env.NODE_ENV === "development") {
-      // Fallback EXCLUSIVO para desarrollo local si aún no se han agregado las credenciales de Firebase Admin
-      console.warn("⚠️ Utilizando fallback de JWT no verificado en entorno de DESARROLLO.");
+    } else if (process.env.NODE_ENV === "development" && process.env.ALLOW_UNVERIFIED_JWT === "true") {
+      console.warn("⚠️ Utilizando fallback de JWT no verificado en DESARROLLO (ALLOW_UNVERIFIED_JWT=true).");
       return decodeJwtUnverified(token);
     } else {
-      console.error("❌ Firebase Admin no está configurado y el fallback de JWT no verificado está deshabilitado en producción.");
+      console.error("❌ Firebase Admin no está configurado. Configura FIREBASE_CLIENT_EMAIL y FIREBASE_PRIVATE_KEY en .env.local.");
       return null;
     }
   } catch (error) {

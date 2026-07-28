@@ -12,25 +12,12 @@ import {
   Check, 
   Lock, 
   User, 
-  FileText, 
   X,
   AlertCircle,
   CheckCircle2,
   Clock,
   Coins,
   ShieldCheck,
-  Building,
-  CreditCard,
-  Home,
-  Briefcase,
-  Users,
-  Smile,
-  Activity,
-  Calculator,
-  Laptop,
-  Car,
-  HeartPulse,
-  Heart,
   Sparkles
 } from "lucide-react";
 
@@ -42,7 +29,6 @@ import MiPerfilSection from "./components/MiPerfilSection";
 import GHLOnboardingWizardModal from "./components/GHLOnboardingWizardModal";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
-import { updateBrokerProfile } from "@/lib/services/broker-service";
 
 export default function BrokerOnboardingClient() {
   const [mounted, setMounted] = useState<boolean>(false);
@@ -90,13 +76,17 @@ export default function BrokerOnboardingClient() {
     setWizardSaved(true);
     if (user) {
       try {
-        await updateBrokerProfile(user.uid, {
-          ghlLocationId: trimmedLoc,
-          ghlApiKey: trimmedKey,
-          ghlConnected: true
+        const token = await user.getIdToken();
+        await fetch("/api/broker/ghl-credentials", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ghlLocationId: trimmedLoc, ghlApiKey: trimmedKey }),
         });
       } catch (err) {
-        console.error("Error al guardar subcuenta GHL y API Key en Firestore:", err);
+        console.error("Error al guardar subcuenta GHL y API Key:", err);
       }
     }
   };
@@ -259,22 +249,6 @@ export default function BrokerOnboardingClient() {
               
               <div className="flex flex-col items-center mb-8">
                 <div className="relative h-12 w-44 mb-6">
-                  <Image 
-                    src="/logo.png" 
-                    alt="E360 Logo" 
-                    fill
-                    priority
-                    className="object-contain" 
-                  />
-                </div>
-                <h2 className="text-xl font-bold text-center tracking-tight">Acceso Exclusivo para Brokers</h2>
-                <p className="text-xs text-gray-400 text-center mt-2 leading-relaxed">
-                  Ingresa tus credenciales oficiales de E360 Hub para desbloquear la guía rápida de servicios.
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center mb-6">
-                <div className="relative h-12 w-44 mb-4">
                   <Image 
                     src="/logo.png" 
                     alt="E360 Logo" 
@@ -1008,7 +982,11 @@ export default function BrokerOnboardingClient() {
         onClose={() => {
           setIsWizardOpen(false);
           if (wizardSaved) {
-            window.location.reload();
+            setWizardSaved(false);
+            if (profile) {
+              setUserLocationId(profile.ghlLocationId || "");
+              setUserApiKey(profile.ghlApiKey || "");
+            }
           }
         }}
         onSaveCredentials={handleSaveGHLWizard}

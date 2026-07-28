@@ -58,7 +58,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (currentUser) {
         try {
           const token = await currentUser.getIdToken(true);
-          document.cookie = `e360_token=${token}; path=/; SameSite=Lax; Secure`;
+          await fetch("/api/auth/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+          });
           
           // Ejecutar migración de datos heredados en localStorage a Firestore
           await migrateLocalStorageToFirestore(currentUser.uid);
@@ -72,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               uid: currentUser.uid,
               email: currentUser.email || "",
               displayName: currentUser.displayName || "Broker E360",
-              ghlLocationId: process.env.NEXT_PUBLIC_GHL_DEFAULT_LOCATION_ID || "LOC-E360-DEFAULT",
+              ghlLocationId: "",
               role: "broker",
               tier: "Senior Broker VIP",
               createdAt: new Date().toISOString()
@@ -84,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error("Error al cargar perfil de Firestore:", e);
         }
       } else {
-        document.cookie = `e360_token=; path=/; max-age=0; SameSite=Lax; Secure`;
+        await fetch("/api/auth/session", { method: "DELETE" });
         setProfile(null);
       }
       setLoading(false);

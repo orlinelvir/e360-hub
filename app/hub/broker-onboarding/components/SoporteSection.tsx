@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Headphones, 
@@ -22,6 +22,8 @@ import {
   Construction
 } from "lucide-react";
 import { SupportTicket } from "../types";
+import { useAuth } from "@/components/AuthProvider";
+import { getBrokerTickets, createBrokerTicket, SupportTicketData } from "@/lib/services/broker-service";
 
 interface SoporteSectionProps {
   brokerName: string;
@@ -50,10 +52,6 @@ const faqsData = [
   }
 ];
 
-import { useEffect } from "react";
-import { useAuth } from "@/components/AuthProvider";
-import { getBrokerTickets, createBrokerTicket, SupportTicketData } from "@/lib/services/broker-service";
-
 export default function SoporteSection({ brokerName }: SoporteSectionProps) {
   const { user } = useAuth();
   const [searchFaq, setSearchFaq] = useState("");
@@ -61,7 +59,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
 
   // Modal Agendamiento
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("2026-07-22");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTime, setSelectedTime] = useState("10:00 AM");
   const [bookingSuccess, setBookingSuccess] = useState(false);
 

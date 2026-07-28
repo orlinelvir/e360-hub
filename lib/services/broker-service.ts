@@ -48,7 +48,7 @@ export async function getBrokerProfile(uid: string, defaultName?: string, defaul
     email: defaultEmail || "",
     phone: "",
     tier: "Senior Broker VIP",
-    ghlLocationId: process.env.NEXT_PUBLIC_GHL_DEFAULT_LOCATION_ID || "LOC-E360-DEFAULT",
+    ghlLocationId: "",
     ghlConnected: false,
     payoutMethod: "zelle",
     payoutDetails: {},

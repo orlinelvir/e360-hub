@@ -37,8 +37,6 @@ interface MisClientesSectionProps {
   crmApiKey: string;
 }
 
-const initialMockClients: ClientLead[] = [];
-
 const stageLabels: Record<PipelineStage, { label: string; color: string; bg: string }> = {
   lead: { label: "Nuevo Lead", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30" },
   qualification: { label: "En Calificación", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/30" },
@@ -120,7 +118,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
   // Sincronización manual desde el botón (usa credenciales pasadas por props)
   const handleSyncGHL = async () => {
-    handleSyncGHLWithCredentials({ locationId: crmLocationId, apiKey: crmApiKey });
+    handleSyncGHLWithCredentials({ locationId: crmLocationId });
   };
 
   useEffect(() => {
@@ -135,9 +133,8 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
     // Solo sincronizar si el broker ya tiene credenciales configuradas
     if (crmLocationId && crmApiKey) {
-      handleSyncGHLWithCredentials({ locationId: crmLocationId, apiKey: crmApiKey });
+      handleSyncGHLWithCredentials({ locationId: crmLocationId });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, crmLocationId, crmApiKey]);
 
   const handleAddClient = async (e: React.FormEvent) => {
@@ -155,7 +152,6 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     try {
       const crmHeaders: HeadersInit = { "Content-Type": "application/json" };
       if (crmLocationId) crmHeaders["x-crm-location-id"] = crmLocationId;
-      if (crmApiKey) crmHeaders["x-crm-api-key"] = crmApiKey;
 
       const ghlRes = await fetch("/api/ghl/contacts", {
         method: "POST",

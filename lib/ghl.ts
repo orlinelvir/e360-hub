@@ -25,7 +25,7 @@ export interface GHLContactPayload {
  * Obtiene el encabezado de autorización usando la API Key individual del broker o del servidor
  */
 function getHeaders(customApiKey?: string) {
-  const apiKey = (customApiKey || process.env.GHL_PRIVATE_KEY || process.env.GHL_AGENCY_API_KEY || "").trim();
+  const apiKey = (customApiKey || "").trim();
   return {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${apiKey}`,
@@ -49,7 +49,7 @@ function parseErrorMessage(status: number, text: string): string {
  * Busca o lista los contactos/leads de una locación específica del CRM usando las credenciales del broker
  */
 export async function getGHLContacts(locationId?: string, query?: string, customApiKey?: string) {
-  const locId = (locationId || process.env.GHL_DEFAULT_LOCATION_ID || "").trim();
+  const locId = (locationId || "").trim();
   if (!locId) {
     throw new CRMError("Location ID del CRM no configurado.", 400);
   }
@@ -62,7 +62,6 @@ export async function getGHLContacts(locationId?: string, query?: string, custom
   const response = await fetch(url.toString(), {
     method: "GET",
     headers: getHeaders(customApiKey),
-    next: { revalidate: 60 }
   });
 
   if (!response.ok) {
@@ -77,7 +76,7 @@ export async function getGHLContacts(locationId?: string, query?: string, custom
  * Registra un nuevo cliente/lead directamente en la subcuenta del broker en GHL
  */
 export async function createGHLContact(contactData: GHLContactPayload, locationId?: string, customApiKey?: string) {
-  const locId = (locationId || process.env.GHL_DEFAULT_LOCATION_ID || "").trim();
+  const locId = (locationId || "").trim();
   if (!locId) {
     throw new CRMError("Location ID del CRM no configurado.", 400);
   }
@@ -107,8 +106,7 @@ export async function createGHLContact(contactData: GHLContactPayload, locationI
  * Obtiene las Oportunidades / Pipelines activas de GHL para el broker
  */
 export async function getGHLOpportunities(locationId?: string, pipelineId?: string, customApiKey?: string) {
-  const locId = (locationId || process.env.GHL_DEFAULT_LOCATION_ID || "").trim();
-  const pipeId = pipelineId || process.env.GHL_MAIN_PIPELINE_ID;
+  const locId = (locationId || "").trim();
 
   if (!locId) {
     throw new CRMError("Location ID del CRM no configurado.", 400);
@@ -116,7 +114,7 @@ export async function getGHLOpportunities(locationId?: string, pipelineId?: stri
 
   const url = new URL(`${GHL_API_BASE}/opportunities/search`);
   url.searchParams.append("location_id", locId);
-  if (pipeId) url.searchParams.append("pipeline_id", pipeId);
+  if (pipelineId) url.searchParams.append("pipeline_id", pipelineId);
 
   const response = await fetch(url.toString(), {
     method: "GET",

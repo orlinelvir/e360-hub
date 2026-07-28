@@ -36,7 +36,7 @@ const createCleanProfile = (name: string): BrokerProfileData => ({
   email: "broker@emprende360.com",
   phone: "+1 (800) 360-5626",
   brokerId: "BRK-360-001",
-  ghlLocationId: process.env.NEXT_PUBLIC_GHL_DEFAULT_LOCATION_ID || "",
+  ghlLocationId: "",
   ghlSubaccountEmail: "",
   ghlConnected: false,
   tier: "Senior Broker",
@@ -141,20 +141,25 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
     const trimmedLocId = (profile.ghlLocationId || "").trim();
     const trimmedApiKey = (profile.ghlApiKey || "").trim();
     try {
-      await updateBrokerProfile(user.uid, {
-        ghlLocationId: trimmedLocId,
-        ghlApiKey: trimmedApiKey,
-        ghlConnected: Boolean(trimmedLocId && trimmedApiKey)
+      const token = await user.getIdToken();
+      const res = await fetch("/api/broker/ghl-credentials", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ghlLocationId: trimmedLocId, ghlApiKey: trimmedApiKey }),
       });
+      if (!res.ok) throw new Error("Error al guardar credenciales");
       setProfile(prev => ({
         ...prev,
         ghlLocationId: trimmedLocId,
-        ghlApiKey: trimmedApiKey
+        ghlApiKey: trimmedApiKey,
+        ghlConnected: Boolean(trimmedLocId && trimmedApiKey),
       }));
       setIsSavedToast(true);
       setTimeout(() => {
         setIsSavedToast(false);
-        window.location.reload();
       }, 1500);
     } catch (err) {
       console.error("Error al guardar credenciales CRM en el perfil:", err);
