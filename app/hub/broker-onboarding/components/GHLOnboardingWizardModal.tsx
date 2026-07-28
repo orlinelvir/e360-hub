@@ -35,6 +35,8 @@ export default function GHLOnboardingWizardModal({
   const [showHelpGuide, setShowHelpGuide] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isReconfiguring, setIsReconfiguring] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<{ valid: boolean; locationName?: string; error?: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -59,14 +61,36 @@ export default function GHLOnboardingWizardModal({
     setStep(2);
   };
 
-  const handleNextStep2 = () => {
+  const handleNextStep2 = async () => {
     if (!apiKey.trim()) {
       setErrorMsg("Por favor ingresa tu Private Integration Key (pit-xxxx) de tu subcuenta.");
       return;
     }
+    
     setErrorMsg("");
-    onSaveCredentials(locationId.trim(), apiKey.trim());
-    setStep(3);
+    setIsValidating(true);
+    setValidationResult(null);
+
+    try {
+      const res = await fetch("/api/ghl/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locationId: locationId.trim(), apiKey: apiKey.trim() }),
+      });
+      const result = await res.json();
+      setValidationResult(result);
+
+      if (result.valid) {
+        onSaveCredentials(locationId.trim(), apiKey.trim());
+        setStep(3);
+      } else {
+        setErrorMsg(result.error || "Credenciales inválidas. Verifica tu Location ID y Token PIT.");
+      }
+    } catch (err) {
+      setErrorMsg("Error al validar credenciales. Intenta de nuevo.");
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   return (
@@ -240,7 +264,55 @@ export default function GHLOnboardingWizardModal({
                     <ol className="text-xs text-gray-300 space-y-2 list-decimal list-inside leading-relaxed pl-1">
                       <li>En tu subcuenta en StartPoint, ve a <strong>Settings ⚙️</strong> ➔ <strong>Private Integrations</strong>.</li>
                       <li>Haz clic en <strong>+ Create Private Integration</strong>.</li>
-                      <li>Selecciona los permisos <strong>Contacts</strong> y <strong>Opportunities</strong> (Read/Write).</li>
+                      <li>Selecciona <strong>TODOS</strong> estos permisos (scopes):</li>
+                    </ol>
+
+                    <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-3 mt-2">
+                      <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2">
+                        Scopes requeridos (8):
+                      </p>
+                      <div className="grid grid-cols-2 gap-1.5 text-[11px] text-gray-300">
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
+                          <span>contacts.readonly</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
+                          <span>contacts.write</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
+                          <span>opportunities.readonly</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
+                          <span>opportunities.write</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
+                          <span>pipelines.readonly</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
+                          <span>locations.readonly</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
+                          <span>locations/customFields.readonly</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
+                          <span>locations/tags.readonly</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-amber-400/90 mt-2 flex items-start gap-1.5">
+                      <span className="shrink-0">⚠️</span>
+                      <span>Si no seleccionas todos los scopes, la sincronización de contactos fallará con error 403.</span>
+                    </p>
+
+                    <ol className="text-xs text-gray-300 space-y-2 list-decimal list-inside leading-relaxed pl-1" start={4}>
                       <li>Copia la llave generada que inicia con <strong className="text-cyan-400 font-mono">pit-xxxx</strong>.</li>
                     </ol>
                   </div>
@@ -260,13 +332,20 @@ export default function GHLOnboardingWizardModal({
                       />
                     </div>
                     {errorMsg && <p className="text-xs text-red-400 font-semibold mt-2">⚠️ {errorMsg}</p>}
+                    {isValidating && (
+                      <p className="text-xs text-cyan-400 font-semibold mt-2 flex items-center gap-2">
+                        <span className="w-3 h-3 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin" />
+                        Validando credenciales...
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-gray-800">
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-gray-300 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+                      disabled={isValidating}
+                      className="px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-gray-300 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                     >
                       <ChevronLeft size={16} />
                       <span>Atrás</span>
@@ -275,10 +354,11 @@ export default function GHLOnboardingWizardModal({
                     <button
                       type="button"
                       onClick={handleNextStep2}
-                      className="px-6 py-3 bg-gradient-to-r from-emerald-400 to-cyan-500 text-black font-extrabold text-xs uppercase rounded-xl flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                      disabled={isValidating}
+                      className="px-6 py-3 bg-gradient-to-r from-emerald-400 to-cyan-500 text-black font-extrabold text-xs uppercase rounded-xl flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50"
                     >
                       <CheckCircle2 size={16} />
-                      <span>Guardar y Conectar CRM</span>
+                      <span>{isValidating ? "Validando..." : "Validar y Conectar CRM"}</span>
                     </button>
                   </div>
                 </div>

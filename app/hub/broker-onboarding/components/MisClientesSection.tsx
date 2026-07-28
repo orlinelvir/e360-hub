@@ -352,7 +352,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
       </div>
 
       {syncError && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3.5 shadow-inner">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-5 flex items-start gap-3.5 shadow-inner">
           <div className="p-2.5 bg-red-500/20 rounded-xl text-red-400 border border-red-500/30 shrink-0">
             <AlertCircle size={20} />
           </div>
@@ -361,13 +361,21 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
               <span>Error de Sincronización CRM</span>
               <span className="bg-red-500/20 text-red-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-red-500/40">CRM API ERROR</span>
             </h4>
-            <p className="text-xs text-red-200/80 mt-1 leading-relaxed">
+            <p className="text-xs text-red-200/80 mt-2 leading-relaxed">
               {syncError}
             </p>
+            <div className="mt-3 pt-3 border-t border-red-500/20">
+              <p className="text-[10px] text-red-300/70 font-semibold uppercase tracking-wider mb-1.5">Posibles soluciones:</p>
+              <ul className="text-[11px] text-red-200/70 space-y-1 list-disc list-inside">
+                <li>Verifica que tu Token PIT tenga los 8 scopes requeridos (contacts, opportunities, pipelines, locations)</li>
+                <li>Reconfigura tus credenciales en el Wizard CRM (botón "Guía CRM" arriba)</li>
+                <li>Si el error persiste, contacta a soporte VIP por WhatsApp</li>
+              </ul>
+            </div>
           </div>
           <button 
             onClick={() => setSyncError(null)}
-            className="text-xs text-gray-500 hover:text-white px-2 py-1 cursor-pointer"
+            className="text-xs text-gray-500 hover:text-white px-2 py-1 cursor-pointer shrink-0"
           >
             Cerrar
           </button>

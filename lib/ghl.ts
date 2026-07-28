@@ -39,7 +39,19 @@ function parseErrorMessage(status: number, text: string): string {
   }
   try {
     const json = JSON.parse(text);
-    return json.message || json.error || `Error en servidor CRM (${status})`;
+    const msg = json.message || json.error || json.msg || "";
+    
+    if (status === 401) {
+      return "Token PIT inválido o expirado. Verifica que copiaste correctamente tu Private Integration Token.";
+    }
+    if (status === 403) {
+      return "Permisos insuficientes. Tu Token PIT no tiene los scopes necesarios. Necesitas: contacts.readonly, contacts.write, opportunities.readonly, opportunities.write.";
+    }
+    if (status === 404) {
+      return "Location ID no encontrado. Verifica que copiaste correctamente tu Location ID de StartPoint CRM.";
+    }
+    
+    return msg || `Error en servidor CRM (${status})`;
   } catch {
     return `Error en servidor CRM (${status}): ${text.substring(0, 150)}`;
   }
@@ -127,4 +139,44 @@ export async function getGHLOpportunities(locationId?: string, pipelineId?: stri
   }
 
   return response.json();
+}
+
+export async function validateGHLCredentials(locationId: string, apiKey: string): Promise<{
+  valid: boolean;
+  locationName?: string;
+  error?: string;
+}> {
+  const locId = locationId.trim();
+  const key = apiKey.trim();
+
+  if (!locId || !key) {
+    return { valid: false, error: "Location ID y Token PIT son requeridos." };
+  }
+
+  try {
+    const url = new URL(`${GHL_API_BASE}/locations/${locId}`);
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: getHeaders(key),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return { 
+        valid: true, 
+        locationName: data.location?.name || "Subcuenta verificada" 
+      };
+    }
+
+    const errorText = await response.text();
+    return { 
+      valid: false, 
+      error: parseErrorMessage(response.status, errorText) 
+    };
+  } catch (err: any) {
+    return { 
+      valid: false, 
+      error: `Error de conexión: ${err.message || "No se pudo conectar con GHL"}` 
+    };
+  }
 }

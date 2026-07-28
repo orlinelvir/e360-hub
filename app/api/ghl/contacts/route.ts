@@ -51,13 +51,21 @@ export async function GET(request: Request) {
     const rawData = await getGHLContacts(authorizedLocationId, query, brokerApiKey);
     return NextResponse.json({ data: rawData, contacts: rawData.contacts || [], error: null });
   } catch (error: any) {
-    console.error("CRM Contacts API Error:", error);
     const status = error.status || 500;
     const safeMsg = typeof error?.message === "string" && !error.message.includes("<html")
       ? error.message
       : "Error al comunicarse con el servidor CRM";
+    
+    console.error("CRM Contacts API Error:", {
+      uid: user.uid,
+      locationId: authorizedLocationId?.substring(0, 8) + "...",
+      ghlStatus: status,
+      ghlMessage: safeMsg,
+      hasApiKey: Boolean(brokerApiKey),
+    });
+    
     return NextResponse.json(
-      { data: null, error: safeMsg, code: "CRM_API_ERROR" },
+      { data: null, error: safeMsg, code: "CRM_API_ERROR", ghlStatus: status },
       { status }
     );
   }
