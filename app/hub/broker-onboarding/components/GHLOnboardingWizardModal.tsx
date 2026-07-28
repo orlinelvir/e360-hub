@@ -269,40 +269,46 @@ export default function GHLOnboardingWizardModal({
 
                     <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-3 mt-2">
                       <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2">
-                        Scopes requeridos (8):
+                        Scopes obligatorios (6):
                       </p>
-                      <div className="grid grid-cols-2 gap-1.5 text-[11px] text-gray-300">
+                      <div className="grid grid-cols-1 gap-1.5 text-[11px] text-gray-300">
                         <div className="flex items-center gap-1.5">
                           <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
-                          <span>contacts.readonly</span>
+                          <span><strong className="text-white">View Contacts</strong> — contacts.readonly</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
-                          <span>contacts.write</span>
+                          <span><strong className="text-white">Edit Contacts</strong> — contacts.write</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
-                          <span>opportunities.readonly</span>
+                          <span><strong className="text-white">View Opportunities</strong> — opportunities.readonly</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
-                          <span>opportunities.write</span>
+                          <span><strong className="text-white">Edit Opportunities</strong> — opportunities.write</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
-                          <span>pipelines.readonly</span>
+                          <span><strong className="text-white">pipelinesreadonly</strong> — pipelines.readonly</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
-                          <span>locations.readonly</span>
+                          <span><strong className="text-white">View Locations</strong> — locations.readonly</span>
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2 mt-3">
+                        Recomendados (2):
+                      </p>
+                      <div className="grid grid-cols-1 gap-1.5 text-[11px] text-gray-300">
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
+                          <span><strong className="text-white">View Custom Fields</strong> — locations/customFields.readonly</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
-                          <span>locations/customFields.readonly</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <CheckCircle2 size={12} className="text-cyan-500 shrink-0" />
-                          <span>locations/tags.readonly</span>
+                          <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
+                          <span><strong className="text-white">View Tags</strong> — locations/tags.readonly</span>
                         </div>
                       </div>
                     </div>
