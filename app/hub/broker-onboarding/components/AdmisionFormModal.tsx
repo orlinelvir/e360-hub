@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, UserPlus, Loader2 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 interface AdmisionFormModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export default function AdmisionFormModal({
   serviceCategory,
   onSuccess
 }: AdmisionFormModalProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -38,9 +40,18 @@ export default function AdmisionFormModal({
     setIsSubmitting(true);
 
     try {
+      if (!user) {
+        throw new Error("No hay sesión activa");
+      }
+
+      const token = await user.getIdToken();
+
       const response = await fetch("/api/services/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           ...formData,
           service: serviceTitle,
