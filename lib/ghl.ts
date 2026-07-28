@@ -141,6 +141,69 @@ export async function getGHLOpportunities(locationId?: string, pipelineId?: stri
   return response.json();
 }
 
+export interface GHLOpportunityPayload {
+  pipelineId: string;
+  locationId: string;
+  name: string;
+  pipelineStageId?: string;
+  status?: string;
+  contactId?: string;
+  monetaryValue?: number;
+  assignedTo?: string;
+}
+
+export async function createGHLOpportunity(oppData: GHLOpportunityPayload, customApiKey?: string) {
+  const response = await fetch(`${GHL_API_BASE}/opportunities`, {
+    method: "POST",
+    headers: getHeaders(customApiKey),
+    body: JSON.stringify(oppData)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+  }
+
+  return response.json();
+}
+
+export async function updateGHLOpportunity(oppId: string, updateData: Partial<GHLOpportunityPayload>, customApiKey?: string) {
+  const response = await fetch(`${GHL_API_BASE}/opportunities/${oppId}`, {
+    method: "PUT",
+    headers: getHeaders(customApiKey),
+    body: JSON.stringify(updateData)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+  }
+
+  return response.json();
+}
+
+export async function getGHLPipelines(locationId: string, customApiKey?: string) {
+  const locId = locationId.trim();
+  if (!locId) {
+    throw new CRMError("Location ID del CRM no configurado.", 400);
+  }
+
+  const url = new URL(`${GHL_API_BASE}/pipelines/lookup`);
+  url.searchParams.append("locationId", locId);
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: getHeaders(customApiKey)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+  }
+
+  return response.json();
+}
+
 export async function validateGHLCredentials(locationId: string, apiKey: string): Promise<{
   valid: boolean;
   locationName?: string;

@@ -219,7 +219,9 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     }
   };
 
-  const handleUpdateStage = (id: string, newStage: PipelineStage) => {
+  const handleUpdateStage = async (id: string, newStage: PipelineStage) => {
+    const client = clients.find(c => c.id === id);
+    
     const updated = clients.map(c => {
       if (c.id === id) {
         return {
@@ -237,6 +239,27 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
         stage: newStage,
         lastActivity: `Actualizado a '${stageLabels[newStage].label}' hoy`
       });
+    }
+
+    if (client?.ghlContactId && crmLocationId && crmApiKey) {
+      try {
+        const token = await user?.getIdToken();
+        await fetch("/api/ghl/opportunities", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+            "x-crm-location-id": crmLocationId,
+          },
+          body: JSON.stringify({
+            opportunityId: client.ghlContactId,
+            stage: newStage,
+            clientId: id
+          })
+        });
+      } catch (error) {
+        console.error("Error syncing stage to GHL:", error);
+      }
     }
   };
 
