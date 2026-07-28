@@ -13,6 +13,7 @@ import {
   Key, 
   Building2
 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 interface GHLOnboardingWizardModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export default function GHLOnboardingWizardModal({
   currentLocationId = "",
   currentApiKey = ""
 }: GHLOnboardingWizardModalProps) {
+  const { user } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [locationId, setLocationId] = useState(currentLocationId);
   const [apiKey, setApiKey] = useState(currentApiKey);
@@ -72,9 +74,18 @@ export default function GHLOnboardingWizardModal({
     setValidationResult(null);
 
     try {
+      if (!user) {
+        throw new Error("No hay sesión activa");
+      }
+
+      const token = await user.getIdToken();
+
       const res = await fetch("/api/ghl/validate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ locationId: locationId.trim(), apiKey: apiKey.trim() }),
       });
       const result = await res.json();

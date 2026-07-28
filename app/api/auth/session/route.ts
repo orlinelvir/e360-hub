@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
-import { verifyAuthToken } from "@/lib/firebase-admin";
 
 export async function POST(request: Request) {
-  const user = await verifyAuthToken(request);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
   try {
     const body = await request.json();
     const { token } = body;
@@ -25,8 +19,9 @@ export async function POST(request: Request) {
     });
 
     return response;
-  } catch {
-    return NextResponse.json({ error: "Error al establecer sesi\u00f3n" }, { status: 500 });
+  } catch (error) {
+    console.error("Session error:", error);
+    return NextResponse.json({ error: "Error al establecer sesión" }, { status: 500 });
   }
 }
 
