@@ -125,9 +125,9 @@ export async function POST(request: Request) {
           source: "E360 Hub - Central",
           tags: ["E360 Hub Lead", "Broker Attribution"],
           customFields: [
-            { id: "E360_Broker_ID", key: "E360_Broker_ID", value: user.uid },
-            { id: "E360_Broker_Name", key: "E360_Broker_Name", value: brokerName },
-            { id: "E360_Broker_Email", key: "E360_Broker_Email", value: brokerEmail }
+            { id: "Ro68oxRsiDgWQWJ0c0uO", key: "E360_Broker_ID", value: user.uid },
+            { id: "MgfZiiWQpH60JLH7le9i", key: "E360_Broker_Name", value: brokerName },
+            { id: "RdiSyHKjSCYOsGSfG1vh", key: "E360_Broker_Email", value: brokerEmail }
           ]
         };
 

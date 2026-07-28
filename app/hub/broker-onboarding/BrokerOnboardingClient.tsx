@@ -27,6 +27,7 @@ import MisClientesSection from "./components/MisClientesSection";
 import SoporteSection from "./components/SoporteSection";
 import MiPerfilSection from "./components/MiPerfilSection";
 import GHLOnboardingWizardModal from "./components/GHLOnboardingWizardModal";
+import AdmisionFormModal from "./components/AdmisionFormModal";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -51,6 +52,8 @@ export default function BrokerOnboardingClient() {
   const [wizardSaved, setWizardSaved] = useState<boolean>(false);
   const [userLocationId, setUserLocationId] = useState<string>("");
   const [userApiKey, setUserApiKey] = useState<string>("");
+
+  const [isAdmisionOpen, setIsAdmisionOpen] = useState<boolean>(false);
 
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
 
@@ -924,15 +927,24 @@ export default function BrokerOnboardingClient() {
                               </button>
                               
                               {isUnlocked ? (
-                                <a 
-                                  href={selectedService.formLink} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-[0_0_20px_rgba(0,224,240,0.3)] cursor-pointer"
-                                >
-                                  <span>Abrir Formulario</span>
-                                  <ChevronRight size={14} />
-                                </a>
+                                <div className="flex gap-2">
+                                  <a 
+                                    href={selectedService.formLink} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-[0_0_20px_rgba(0,224,240,0.3)] cursor-pointer"
+                                  >
+                                    <span>Abrir Formulario</span>
+                                    <ChevronRight size={14} />
+                                  </a>
+                                  <button
+                                    onClick={() => setIsAdmisionOpen(true)}
+                                    className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"
+                                  >
+                                    <User size={14} />
+                                    <span>Admitir Cliente</span>
+                                  </button>
+                                </div>
                               ) : (
                                 <button 
                                   disabled 
@@ -993,6 +1005,20 @@ export default function BrokerOnboardingClient() {
         currentLocationId={userLocationId}
         currentApiKey={userApiKey}
       />
+
+      {selectedService && (
+        <AdmisionFormModal
+          isOpen={isAdmisionOpen}
+          onClose={() => setIsAdmisionOpen(false)}
+          serviceTitle={selectedService.title}
+          serviceCategory={selectedService.category}
+          onSuccess={() => {
+            if (activeTab === "clientes") {
+              // Refresh will happen automatically when user navigates to Mis Clientes
+            }
+          }}
+        />
+      )}
 
     </div>
   );
