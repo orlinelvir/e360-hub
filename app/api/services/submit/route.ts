@@ -75,10 +75,13 @@ export async function POST(request: Request) {
 
         const brokerContact = await createGHLContact(contactData, brokerLocationId, brokerApiKey);
         brokerContactId = brokerContact.contact?.id || null;
+        console.log("Broker Contact Created:", { contactId: brokerContactId, response: JSON.stringify(brokerContact).substring(0, 200) });
 
         if (brokerContactId) {
           const pipelines = await getGHLPipelines(brokerLocationId, brokerApiKey);
-          const pipeline = pipelines.pipelines?.[0];
+          console.log("Broker Pipelines Response:", JSON.stringify(pipelines).substring(0, 500));
+          
+          const pipeline = pipelines.pipelines?.[0] || pipelines.data?.[0] || pipelines[0];
 
           if (pipeline) {
             const oppData = {
@@ -92,6 +95,9 @@ export async function POST(request: Request) {
 
             const brokerOpp = await createGHLOpportunity(oppData, brokerApiKey);
             brokerOpportunityId = brokerOpp.opportunity?.id || null;
+            console.log("Broker Opportunity Created:", { opportunityId: brokerOpportunityId, response: JSON.stringify(brokerOpp).substring(0, 200) });
+          } else {
+            console.warn("No pipeline found for broker:", { pipelines: JSON.stringify(pipelines).substring(0, 300) });
           }
         }
       } catch (error) {
@@ -133,10 +139,13 @@ export async function POST(request: Request) {
 
         const centralContact = await createGHLContact(contactData, centralLocationId, centralApiKey);
         centralContactId = centralContact.contact?.id || null;
+        console.log("Central Contact Created:", { contactId: centralContactId, response: JSON.stringify(centralContact).substring(0, 200) });
 
         if (centralContactId) {
           const pipelines = await getGHLPipelines(centralLocationId, centralApiKey);
-          const pipeline = pipelines.pipelines?.[0];
+          console.log("Central Pipelines Response:", JSON.stringify(pipelines).substring(0, 500));
+          
+          const pipeline = pipelines.pipelines?.[0] || pipelines.data?.[0] || pipelines[0];
 
           if (pipeline) {
             const oppData = {
@@ -150,6 +159,9 @@ export async function POST(request: Request) {
 
             const centralOpp = await createGHLOpportunity(oppData, centralApiKey);
             centralOpportunityId = centralOpp.opportunity?.id || null;
+            console.log("Central Opportunity Created:", { opportunityId: centralOpportunityId, response: JSON.stringify(centralOpp).substring(0, 200) });
+          } else {
+            console.warn("No pipeline found for central:", { pipelines: JSON.stringify(pipelines).substring(0, 300) });
           }
         }
       } catch (error) {

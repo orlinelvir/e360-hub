@@ -265,12 +265,18 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
   const filteredClients = useMemo(() => {
     return clients.filter(c => {
+      const name = c.name || '';
+      const email = c.email || '';
+      const phone = c.phone || '';
+      const serviceName = c.serviceName || '';
+      const id = c.id || '';
+      
       const matchesSearch = 
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.phone.includes(searchQuery) ||
-        c.serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.id.toLowerCase().includes(searchQuery.toLowerCase());
+        name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        phone.includes(searchQuery) ||
+        serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        id.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesStage = selectedStage === "all" || c.stage === selectedStage;
       return matchesSearch && matchesStage;

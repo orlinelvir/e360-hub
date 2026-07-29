@@ -3,12 +3,12 @@ import { verifyAuthToken } from "@/lib/firebase-admin";
 import { validateGHLCredentials } from "@/lib/ghl";
 
 export async function POST(request: Request) {
-  const user = await verifyAuthToken(request);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
   try {
+    const user = await verifyAuthToken(request);
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { locationId, apiKey } = body;
 
@@ -35,7 +35,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("GHL Validation Error:", error);
+    console.error("GHL Validation Error:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      error: error
+    });
     return NextResponse.json(
       { valid: false, error: "Error al validar credenciales" },
       { status: 500 }
