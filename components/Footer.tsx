@@ -67,7 +67,7 @@ export default function Footer() {
               </li>
               <li className="flex items-start gap-3 text-gray-400 text-sm">
                 <MapPin size={16} className="text-cyan-400 shrink-0 mt-0.5" />
-                <span className="leading-relaxed">550 Broad St<br/>Newark, NJ 07102, USA</span>
+                <span className="leading-relaxed">Newark, NJ, USA</span>
               </li>
             </ul>
           </div>
