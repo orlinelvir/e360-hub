@@ -7,6 +7,7 @@ import {
   createUserWithEmailAndPassword, 
   signInWithPopup, 
   signOut,
+  sendPasswordResetEmail,
   User 
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -34,6 +35,7 @@ interface AuthContextType {
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -44,6 +46,7 @@ const AuthContext = createContext<AuthContextType>({
   loginWithEmail: async () => {},
   registerWithEmail: async () => {},
   loginWithGoogle: async () => {},
+  resetPassword: async () => {},
   logout: async () => {},
 });
 
@@ -107,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       uid: cred.user.uid,
       email,
       displayName: name,
-      ghlLocationId: process.env.NEXT_PUBLIC_GHL_DEFAULT_LOCATION_ID || "LOC-E360-DEFAULT",
+      ghlLocationId: "",
       role: "broker",
       tier: "Junior Broker",
       createdAt: new Date().toISOString()
@@ -120,12 +123,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithPopup(auth, googleProvider);
   };
 
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
   const logout = async () => {
     await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, loginWithEmail, registerWithEmail, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, profile, loading, loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );

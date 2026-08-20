@@ -204,6 +204,31 @@ export async function getGHLPipelines(locationId: string, customApiKey?: string)
   return response.json();
 }
 
+export async function getGHLPipelineStages(locationId: string, pipelineId: string, customApiKey?: string) {
+  const locId = locationId.trim();
+  if (!locId) {
+    throw new CRMError("Location ID del CRM no configurado.", 400);
+  }
+  if (!pipelineId) {
+    throw new CRMError("Pipeline ID del CRM no configurado.", 400);
+  }
+
+  const url = new URL(`${GHL_API_BASE}/pipelines/${pipelineId}/stages`);
+  url.searchParams.append("locationId", locId);
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: getHeaders(customApiKey)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+  }
+
+  return response.json();
+}
+
 export async function validateGHLCredentials(locationId: string, apiKey: string): Promise<{
   valid: boolean;
   locationName?: string;

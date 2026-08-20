@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, 
@@ -51,6 +51,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   const { fetchContacts, createContact, loading: ghlLoading } = useGHLContacts();
 
   const [clients, setClients] = useState<ClientLead[]>([]);
+  const clientsRef = useRef<ClientLead[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStage, setSelectedStage] = useState<string>("all");
   const [selectedClient, setSelectedClient] = useState<ClientLead | null>(null);
@@ -71,6 +72,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
 
   const saveClients = async (updated: ClientLead[]) => {
+    clientsRef.current = updated;
     setClients(updated);
     if (!user) return;
     for (const c of updated) {
@@ -105,7 +107,18 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
         }));
 
         if (ghlMappedLeads.length > 0) {
-          saveClients(ghlMappedLeads);
+          const ghlIds = new Set(ghlMappedLeads.map(l => l.ghlContactId).filter(Boolean));
+          const ghlEmails = new Set(
+            ghlMappedLeads.map(l => (l.email || "").toLowerCase()).filter(e => e && e !== "sin_correo@crm.com")
+          );
+
+          const localOnly = clientsRef.current.filter(c => {
+            if (c.ghlContactId && ghlIds.has(c.ghlContactId)) return false;
+            if (c.email && ghlEmails.has(c.email.toLowerCase())) return false;
+            return true;
+          });
+
+          saveClients([...ghlMappedLeads, ...localOnly]);
         }
       }
     } catch (e: any) {
@@ -126,6 +139,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
     // Cargar clientes guardados en Firestore
     getBrokerClients(user.uid).then((storedClients: any[]) => {
+      clientsRef.current = storedClients as ClientLead[];
       setClients(storedClients as ClientLead[]);
     }).catch((err: any) => {
       console.error("Error cargando clientes de Firestore:", err);
@@ -241,7 +255,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
       });
     }
 
-    if (client?.ghlContactId && crmLocationId && crmApiKey) {
+    if (client?.ghlOpportunityId && crmLocationId && crmApiKey) {
       try {
         const token = await user?.getIdToken();
         await fetch("/api/ghl/opportunities", {
@@ -252,7 +266,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
             "x-crm-location-id": crmLocationId,
           },
           body: JSON.stringify({
-            opportunityId: client.ghlContactId,
+            opportunityId: client.ghlOpportunityId,
             stage: newStage,
             clientId: id
           })

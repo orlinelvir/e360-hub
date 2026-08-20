@@ -30,6 +30,7 @@ export default function AdmisionFormModal({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [success, setSuccess] = useState(false);
 
   if (!isOpen) return null;
@@ -37,6 +38,7 @@ export default function AdmisionFormModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setWarning("");
     setIsSubmitting(true);
 
     try {
@@ -64,6 +66,10 @@ export default function AdmisionFormModal({
         throw new Error(data.error || "Error al procesar la solicitud");
       }
 
+      const data = await response.json();
+      if (data.warning) {
+        setWarning(data.warning);
+      }
       setSuccess(true);
       setTimeout(() => {
         onSuccess();
@@ -77,7 +83,8 @@ export default function AdmisionFormModal({
           notes: ""
         });
         setSuccess(false);
-      }, 2000);
+        setWarning("");
+      }, data.warning ? 5000 : 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
@@ -201,11 +208,17 @@ export default function AdmisionFormModal({
             </div>
           )}
 
-          {success && (
+          {success && !warning && (
             <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
               <p className="text-sm text-green-400">
-                ✓ Cliente admitido exitosamente. Sincronizando con CRM...
+                ✓ Cliente admitido y sincronizado con el CRM exitosamente.
               </p>
+            </div>
+          )}
+
+          {success && warning && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+              <p className="text-sm text-amber-400">⚠️ {warning}</p>
             </div>
           )}
 

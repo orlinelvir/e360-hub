@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { adminAuth } from "@/lib/firebase-admin";
 
 export async function POST(request: Request) {
   try {
@@ -7,6 +8,19 @@ export async function POST(request: Request) {
 
     if (!token || typeof token !== "string") {
       return NextResponse.json({ error: "Token requerido" }, { status: 400 });
+    }
+
+    if (adminAuth) {
+      try {
+        await adminAuth.verifyIdToken(token);
+      } catch {
+        return NextResponse.json({ error: "Token inválido o expirado" }, { status: 401 });
+      }
+    } else if (process.env.NODE_ENV === "development" && process.env.ALLOW_UNVERIFIED_JWT === "true") {
+      console.warn("⚠️ Sesión establecida sin verificación de token en DESARROLLO (ALLOW_UNVERIFIED_JWT=true).");
+    } else {
+      console.error("❌ Firebase Admin no está configurado. Configura FIREBASE_CLIENT_EMAIL y FIREBASE_PRIVATE_KEY.");
+      return NextResponse.json({ error: "Servidor no configurado" }, { status: 500 });
     }
 
     const response = NextResponse.json({ success: true });

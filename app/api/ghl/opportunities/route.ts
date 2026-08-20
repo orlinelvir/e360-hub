@@ -3,6 +3,12 @@ import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 import { updateGHLOpportunity, CRMError } from "@/lib/ghl";
 
+function mapStageToGHLStatus(stage: string): string {
+  if (stage === "approved" || stage === "paid") return "won";
+  if (stage === "rejected") return "lost";
+  return "open";
+}
+
 export async function PATCH(request: Request) {
   const user = await verifyAuthToken(request);
   if (!user) {
@@ -15,7 +21,7 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { opportunityId, stage, pipelineStageId, clientId } = body;
+    const { opportunityId, stage, ghlStatus, pipelineStageId, clientId } = body;
 
     if (!opportunityId || !stage) {
       return NextResponse.json(
@@ -33,7 +39,9 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const updateData: Record<string, unknown> = { status: stage };
+    const updateData: Record<string, unknown> = {
+      status: ghlStatus || mapStageToGHLStatus(stage)
+    };
     if (pipelineStageId) {
       updateData.pipelineStageId = pipelineStageId;
     }

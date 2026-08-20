@@ -190,8 +190,8 @@ export const servicesData: ServiceDetail[] = [
     timeframe: "Actualizaciones y rondas de disputa cada 30 días. Duración de 6 a 12 meses.",
     comission: "100% del pago de inicio y de la cuota mensual de $50 cobrada al cliente.",
     formLink: "Formulario en desarrollo",
-    supportPhone: "tel:+19172845636",
-    supportPhoneFormatted: "+1 (917) 284-5636"
+    supportPhone: "https://wa.me/12013652055?text=Hola,%20necesito%20soporte%20con%20un%20caso%20de%20Reparaci%C3%B3n%20de%20Cr%C3%A9dito",
+    supportPhoneFormatted: "+1 (201) 365-2055 (WhatsApp)"
   },
   {
     id: "incorporation",

@@ -23,6 +23,7 @@ export interface ClientLead {
   createdAt: string;
   lastActivity: string;
   ghlContactId: string;
+  ghlOpportunityId?: string;
   notes: string;
 }
 

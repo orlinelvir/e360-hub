@@ -1,8 +1,46 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
-import { createGHLContact, createGHLOpportunity, getGHLPipelines, CRMError } from "@/lib/ghl";
-import { decrypt, isEncrypted } from "@/lib/crypto";
+import { createGHLContact, createGHLOpportunity, getGHLPipelines, getGHLPipelineStages } from "@/lib/ghl";
+
+async function createOpportunityInPipeline(opts: {
+  locationId: string;
+  apiKey: string;
+  contactId: string;
+  name: string;
+  monetaryValue: number;
+}): Promise<string | null> {
+  const { locationId, apiKey, contactId, name, monetaryValue } = opts;
+
+  const pipelines = await getGHLPipelines(locationId, apiKey);
+  const pipeline = pipelines.pipelines?.[0] || pipelines.data?.[0] || (Array.isArray(pipelines) ? pipelines[0] : undefined);
+
+  if (!pipeline?.id) {
+    console.warn("No pipeline found:", { pipelines: JSON.stringify(pipelines).substring(0, 300) });
+    return null;
+  }
+
+  const stagesRes = await getGHLPipelineStages(locationId, pipeline.id, apiKey);
+  const stage = stagesRes.pipelineStages?.[0] || stagesRes.stages?.[0] || (Array.isArray(stagesRes) ? stagesRes[0] : undefined);
+
+  if (!stage?.id) {
+    console.warn("No pipeline stage found:", { stages: JSON.stringify(stagesRes).substring(0, 300) });
+    return null;
+  }
+
+  const oppData = {
+    pipelineId: pipeline.id,
+    pipelineStageId: stage.id,
+    locationId,
+    name,
+    contactId,
+    monetaryValue,
+    status: "open"
+  };
+
+  const opp = await createGHLOpportunity(oppData, apiKey);
+  return opp.opportunity?.id || null;
+}
 
 export async function POST(request: Request) {
   const user = await verifyAuthToken(request);
@@ -42,16 +80,27 @@ export async function POST(request: Request) {
     const brokerName = brokerData?.displayName || brokerData?.email || "Broker";
     const brokerEmail = brokerData?.email || "";
 
+    const amountNum = Number(amount) || 0;
+    const fullName = `${firstName} ${lastName || ""}`.trim();
+
     const leadRef = await adminDb.collection("brokers").doc(user.uid).collection("clients").add({
+      name: fullName,
       firstName,
       lastName: lastName || "",
       email,
       phone: phone || "",
+      serviceId: "hub-admision",
+      serviceName: service || "General",
       service: service || "General",
-      amount: amount || 0,
+      amount: amountNum,
+      estimatedCommission: amountNum > 0 ? Math.round(amountNum * 0.05) : 250,
+      stage: "lead",
       notes: notes || "",
-      status: "pending_sync",
       createdAt: new Date().toISOString(),
+      lastActivity: "Admitido desde E360 Hub",
+      ghlContactId: "",
+      ghlOpportunityId: "",
+      status: "pending_sync",
       brokerId: user.uid,
       brokerName,
       brokerEmail
@@ -75,30 +124,17 @@ export async function POST(request: Request) {
 
         const brokerContact = await createGHLContact(contactData, brokerLocationId, brokerApiKey);
         brokerContactId = brokerContact.contact?.id || null;
-        console.log("Broker Contact Created:", { contactId: brokerContactId, response: JSON.stringify(brokerContact).substring(0, 200) });
+        console.log("Broker Contact Created:", { contactId: brokerContactId });
 
         if (brokerContactId) {
-          const pipelines = await getGHLPipelines(brokerLocationId, brokerApiKey);
-          console.log("Broker Pipelines Response:", JSON.stringify(pipelines).substring(0, 500));
-          
-          const pipeline = pipelines.pipelines?.[0] || pipelines.data?.[0] || pipelines[0];
-
-          if (pipeline) {
-            const oppData = {
-              pipelineId: pipeline.id,
-              locationId: brokerLocationId,
-              name: `${firstName} ${lastName || ""}`.trim(),
-              contactId: brokerContactId,
-              monetaryValue: amount || 0,
-              status: "open"
-            };
-
-            const brokerOpp = await createGHLOpportunity(oppData, brokerApiKey);
-            brokerOpportunityId = brokerOpp.opportunity?.id || null;
-            console.log("Broker Opportunity Created:", { opportunityId: brokerOpportunityId, response: JSON.stringify(brokerOpp).substring(0, 200) });
-          } else {
-            console.warn("No pipeline found for broker:", { pipelines: JSON.stringify(pipelines).substring(0, 300) });
-          }
+          brokerOpportunityId = await createOpportunityInPipeline({
+            locationId: brokerLocationId,
+            apiKey: brokerApiKey,
+            contactId: brokerContactId,
+            name: fullName,
+            monetaryValue: amountNum
+          });
+          console.log("Broker Opportunity Created:", { opportunityId: brokerOpportunityId });
         }
       } catch (error) {
         console.error("Error syncing to broker CRM:", error);
@@ -108,7 +144,10 @@ export async function POST(request: Request) {
     const isFinancial = service?.toLowerCase().includes("loan") ||
                        service?.toLowerCase().includes("credit") ||
                        service?.toLowerCase().includes("funding") ||
-                       service?.toLowerCase().includes("financial");
+                       service?.toLowerCase().includes("financial") ||
+                       service?.toLowerCase().includes("préstamo") ||
+                       service?.toLowerCase().includes("crédito") ||
+                       service?.toLowerCase().includes("fondeo");
 
     const centralLocationId = isFinancial
       ? process.env.GHL_E360_FINANCIAL_LOCATION_ID
@@ -139,40 +178,31 @@ export async function POST(request: Request) {
 
         const centralContact = await createGHLContact(contactData, centralLocationId, centralApiKey);
         centralContactId = centralContact.contact?.id || null;
-        console.log("Central Contact Created:", { contactId: centralContactId, response: JSON.stringify(centralContact).substring(0, 200) });
+        console.log("Central Contact Created:", { contactId: centralContactId });
 
         if (centralContactId) {
-          const pipelines = await getGHLPipelines(centralLocationId, centralApiKey);
-          console.log("Central Pipelines Response:", JSON.stringify(pipelines).substring(0, 500));
-          
-          const pipeline = pipelines.pipelines?.[0] || pipelines.data?.[0] || pipelines[0];
-
-          if (pipeline) {
-            const oppData = {
-              pipelineId: pipeline.id,
-              locationId: centralLocationId,
-              name: `${firstName} ${lastName || ""}`.trim(),
-              contactId: centralContactId,
-              monetaryValue: amount || 0,
-              status: "open"
-            };
-
-            const centralOpp = await createGHLOpportunity(oppData, centralApiKey);
-            centralOpportunityId = centralOpp.opportunity?.id || null;
-            console.log("Central Opportunity Created:", { opportunityId: centralOpportunityId, response: JSON.stringify(centralOpp).substring(0, 200) });
-          } else {
-            console.warn("No pipeline found for central:", { pipelines: JSON.stringify(pipelines).substring(0, 300) });
-          }
+          centralOpportunityId = await createOpportunityInPipeline({
+            locationId: centralLocationId,
+            apiKey: centralApiKey,
+            contactId: centralContactId,
+            name: fullName,
+            monetaryValue: amountNum
+          });
+          console.log("Central Opportunity Created:", { opportunityId: centralOpportunityId });
         }
       } catch (error) {
         console.error("Error syncing to central CRM:", error);
       }
     }
 
-    const finalStatus = (brokerContactId || centralContactId) ? "synced" : "failed_sync";
+    const brokerSynced = Boolean(brokerContactId);
+    const centralSynced = Boolean(centralContactId);
+    const finalStatus = (brokerSynced || centralSynced) ? "synced" : "failed_sync";
 
     await leadRef.update({
       status: finalStatus,
+      ghlContactId: brokerContactId || "",
+      ghlOpportunityId: brokerOpportunityId || "",
       brokerContactId,
       brokerOpportunityId,
       centralContactId,
@@ -184,8 +214,11 @@ export async function POST(request: Request) {
       success: true,
       leadId: leadRef.id,
       status: finalStatus,
-      brokerSync: Boolean(brokerContactId),
-      centralSync: Boolean(centralContactId)
+      brokerSync: brokerSynced,
+      centralSync: centralSynced,
+      warning: finalStatus === "failed_sync"
+        ? "El cliente se guardó en E360 Hub, pero no se pudo sincronizar con el CRM. Verifica tus credenciales en 'Mi Perfil' o contacta a soporte."
+        : undefined
     });
 
   } catch (error) {

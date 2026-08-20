@@ -33,7 +33,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 export default function BrokerOnboardingClient() {
   const [mounted, setMounted] = useState<boolean>(false);
-  const { user, profile, loading: authLoading, loginWithEmail, registerWithEmail, loginWithGoogle, logout } = useAuth();
+  const { user, profile, loading: authLoading, loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword, logout } = useAuth();
   
   const [registerName, setRegisterName] = useState<string>("");
   const [emailInput, setEmailInput] = useState<string>("");
@@ -41,6 +41,7 @@ export default function BrokerOnboardingClient() {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string>("");
+  const [resetInfo, setResetInfo] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ActiveTab>("inicio");
   
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -124,12 +125,49 @@ export default function BrokerOnboardingClient() {
       console.error("Error de autenticación Firebase:", err);
       if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
         setLoginError("Credenciales incorrectas. Verifique correo y contraseña.");
+      } else if (err.code === "auth/invalid-email") {
+        setLoginError("El formato del correo electrónico no es válido.");
       } else if (err.code === "auth/email-already-in-use") {
         setLoginError("Este correo ya está registrado en E360 App.");
       } else if (err.code === "auth/weak-password") {
         setLoginError("La contraseña debe tener al menos 6 caracteres.");
+      } else if (err.code === "auth/too-many-requests") {
+        setLoginError("Demasiados intentos. Espera unos minutos o restablece tu contraseña.");
+      } else if (err.code === "auth/operation-not-allowed") {
+        setLoginError("Este método de acceso no está habilitado. Contacta a soporte.");
+      } else if (err.code === "auth/network-request-failed") {
+        setLoginError("Error de conexión. Revisa tu internet e intenta de nuevo.");
       } else {
         setLoginError(err.message || "Error al autenticar con Firebase.");
+      }
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setLoginError("");
+    setResetInfo("");
+    const targetEmail = emailInput.trim();
+    if (!targetEmail) {
+      setLoginError("Escribe tu correo arriba y luego presiona 'Recuperar contraseña'.");
+      return;
+    }
+    setIsLoadingAuth(true);
+    try {
+      await resetPassword(targetEmail);
+      setResetInfo(`Enviamos un enlace de recuperación a ${targetEmail}. Revisa tu bandeja y la carpeta de spam.`);
+    } catch (err: unknown) {
+      const fbErr = err as { code?: string; message?: string };
+      console.error("Error al restablecer contraseña:", err);
+      if (fbErr.code === "auth/invalid-email") {
+        setLoginError("El formato del correo electrónico no es válido.");
+      } else if (fbErr.code === "auth/user-not-found") {
+        setLoginError("No existe una cuenta con ese correo. Verifica o regístrate.");
+      } else if (fbErr.code === "auth/too-many-requests") {
+        setLoginError("Demasiadas solicitudes. Intenta de nuevo en unos minutos.");
+      } else {
+        setLoginError(fbErr.message || "No se pudo enviar el correo de recuperación.");
       }
     } finally {
       setIsLoadingAuth(false);
@@ -359,6 +397,12 @@ export default function BrokerOnboardingClient() {
                   </p>
                 )}
 
+                {resetInfo && (
+                  <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/20">
+                    ✓ {resetInfo}
+                  </p>
+                )}
+
                 <button 
                   type="submit"
                   disabled={isLoadingAuth}
@@ -368,14 +412,25 @@ export default function BrokerOnboardingClient() {
                 </button>
               </form>
 
-              <div className="mt-4 flex items-center justify-center text-xs text-gray-400">
+              <div className="mt-4 flex flex-col items-center gap-2 text-xs text-gray-400">
                 <button
                   type="button"
-                  onClick={() => { setIsSignUp(!isSignUp); setLoginError(""); }}
+                  onClick={() => { setIsSignUp(!isSignUp); setLoginError(""); setResetInfo(""); }}
                   className="text-cyan-400 hover:underline font-medium text-[11px] cursor-pointer"
                 >
                   {isSignUp ? "¿Ya tienes cuenta? Inicia Sesión" : "¿Nuevo Broker? Regístrate aquí"}
                 </button>
+
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    disabled={isLoadingAuth}
+                    className="text-gray-500 hover:text-gray-300 font-medium text-[11px] cursor-pointer transition-colors disabled:opacity-50"
+                  >
+                    ¿Olvidaste tu contraseña? Recupérala aquí
+                  </button>
+                )}
               </div>
 
               <div className="mt-8 text-center">
@@ -972,10 +1027,11 @@ export default function BrokerOnboardingClient() {
                     <div className="pt-1">
                       <a 
                         href={selectedService.supportPhone} 
+                        {...(selectedService.supportPhone.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                         className="w-full bg-[#0A182D] hover:bg-red-500/10 border border-gray-800 hover:border-red-500/30 text-gray-300 hover:text-red-400 py-3 rounded-xl text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 group cursor-pointer"
                       >
                         <Phone size={14} className="group-hover:animate-bounce text-cyan-400 group-hover:text-red-400" /> 
-                        Llamar a Soporte ({selectedService.supportPhoneFormatted})
+                        {selectedService.supportPhone.startsWith("http") ? "Contactar Soporte" : "Llamar a Soporte"} ({selectedService.supportPhoneFormatted})
                       </a>
                     </div>
 

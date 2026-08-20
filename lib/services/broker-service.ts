@@ -25,6 +25,7 @@ export interface ClientLeadData {
   createdAt: string;
   lastActivity?: string;
   ghlContactId?: string;
+  ghlOpportunityId?: string;
   notes?: string;
 }
 
