@@ -16,18 +16,26 @@ function getAdminApp() {
     : undefined;
 
   if (projectId && clientEmail && privateKey) {
-    isServiceAccountConfigured = true;
     try {
-      return initializeApp({
+      const app = initializeApp({
         credential: cert({
           projectId,
           clientEmail,
           privateKey,
         }),
       });
+      isServiceAccountConfigured = true;
+      return app;
     } catch (e) {
-      console.warn("Error al inicializar Firebase Admin con Service Account Cert:", e);
+      console.error("❌ Error al inicializar Firebase Admin con Service Account Cert. Revisa que FIREBASE_PRIVATE_KEY esté completa y con saltos de línea correctos en Vercel.", e);
     }
+  } else {
+    console.error("❌ Firebase Admin: faltan credenciales de servicio.", {
+      hasProjectId: Boolean(projectId),
+      hasClientEmail: Boolean(clientEmail),
+      hasPrivateKey: Boolean(privateKey),
+      privateKeyLength: privateKey?.length || 0,
+    });
   }
 
   // Intento de inicialización por defecto (Google Application Default Credentials o projectId)

@@ -298,8 +298,8 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   }, [clients, searchQuery, selectedStage]);
 
   // Cálculos de métricas
-  const totalVolume = useMemo(() => clients.reduce((acc, curr) => acc + curr.amount, 0), [clients]);
-  const totalCommissions = useMemo(() => clients.reduce((acc, curr) => acc + curr.estimatedCommission, 0), [clients]);
+  const totalVolume = useMemo(() => clients.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0), [clients]);
+  const totalCommissions = useMemo(() => clients.reduce((acc, curr) => acc + (Number(curr.estimatedCommission) || 0), 0), [clients]);
   const conversionRate = useMemo(() => {
     if (clients.length === 0) return 0;
     const closed = clients.filter(c => c.stage === "approved" || c.stage === "paid").length;
@@ -545,7 +545,9 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredClients.map((client) => {
-            const stageInfo = stageLabels[client.stage];
+            const stageInfo = stageLabels[client.stage] || stageLabels.lead;
+            const safeAmount = Number(client.amount) || 0;
+            const safeCommission = Number(client.estimatedCommission) || 0;
             return (
               <motion.div
                 key={client.id}
@@ -576,11 +578,11 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-800/60">
                       <div>
                         <p className="text-[9px] text-gray-500 uppercase font-semibold">Monto</p>
-                        <p className="font-bold text-white">${client.amount.toLocaleString()}</p>
+                        <p className="font-bold text-white">${safeAmount.toLocaleString()}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[9px] text-gray-500 uppercase font-semibold">Comisión Est.</p>
-                        <p className="font-bold text-emerald-400">${client.estimatedCommission.toLocaleString()}</p>
+                        <p className="font-bold text-emerald-400">${safeCommission.toLocaleString()}</p>
                       </div>
                     </div>
                   </div>
@@ -721,11 +723,11 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Monto Solicitado:</span>
-                      <span className="font-bold text-white">${selectedClient.amount.toLocaleString()}</span>
+                      <span className="font-bold text-white">${(Number(selectedClient.amount) || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Comisión Estimada Broker:</span>
-                      <span className="font-bold text-emerald-400">${selectedClient.estimatedCommission.toLocaleString()}</span>
+                      <span className="font-bold text-emerald-400">${(Number(selectedClient.estimatedCommission) || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Fecha de Ingreso:</span>
