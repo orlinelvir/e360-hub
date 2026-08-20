@@ -12,6 +12,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "npx tsx --test tests/*.test.ts",
+    "grant-admin": "npx tsx scripts/grant-admin.ts",
     "deploy:rules": "firebase deploy --only firestore:rules"
   },
   "dependencies": {

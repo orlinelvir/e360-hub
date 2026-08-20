@@ -229,6 +229,48 @@ export async function getGHLPipelineStages(locationId: string, pipelineId: strin
   return response.json();
 }
 
+export interface AgencyLocation {
+  id: string;
+  name: string;
+  companyId?: string;
+  state?: string;
+  country?: string;
+  timezone?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+}
+
+export async function getAgencyLocations(companyId: string, agencyApiKey: string): Promise<{ locations: AgencyLocation[]; total: number }> {
+  const cid = companyId.trim();
+  const key = agencyApiKey.trim();
+
+  if (!cid) {
+    throw new CRMError("Agency ID (companyId) no configurado.", 400);
+  }
+  if (!key) {
+    throw new CRMError("Agency API Key no configurada.", 400);
+  }
+
+  const url = new URL(`${GHL_API_BASE}/locations/search`);
+  url.searchParams.append("companyId", cid);
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: getHeaders(key)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+  }
+
+  const data = await response.json();
+  const locations: AgencyLocation[] = data.locations || [];
+  return { locations, total: locations.length };
+}
+
 export async function validateGHLCredentials(locationId: string, apiKey: string): Promise<{
   valid: boolean;
   locationName?: string;
