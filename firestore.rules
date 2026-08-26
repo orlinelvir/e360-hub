@@ -22,6 +22,20 @@ service cloud.firestore {
       // Clientes y Leads scoped por Broker
       match /clients/{clientId} {
         allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+
+        // Caso de Reparación de Crédito: contiene credenciales cifradas de terceros
+        // (CRC/MyFreeScoreNow) y últimos 4 SSN. Solo el backend (Admin SDK, que
+        // ignora estas reglas) puede escribir; el broker dueño y el admin pueden leer.
+        match /creditRepairCase/{caseId} {
+          allow read: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+          allow write: if false;
+        }
+
+        // Rondas mensuales del fee de $10 de Reparación de Crédito
+        match /feeRounds/{roundId} {
+          allow read: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+          allow write: if false;
+        }
       }
 
       // Tickets de soporte scoped por Broker
@@ -68,6 +82,13 @@ service cloud.firestore {
       allow create: if request.auth != null && getRole() == 'admin';
       // El usuario puede marcar como leída (update)
       allow update: if request.auth != null && resource.data.recipientId == request.auth.uid;
+    }
+
+    // 5. Auditoría de subcuentas GHL auto-aprovisionadas desde el Snapshot
+    // (solo el webhook, vía Admin SDK, escribe aquí; admin lee para auditar)
+    match /provisionedSubaccounts/{docId} {
+      allow read: if request.auth != null && getRole() == 'admin';
+      allow write: if false;
     }
   }
 }

@@ -48,11 +48,12 @@ export async function GET(request: Request) {
   try {
     const rawData = await getGHLOpportunities(authorizedLocationId, pipelineId, brokerApiKey);
     return NextResponse.json({ data: rawData, error: null });
-  } catch (error: any) {
+  } catch (error) {
     console.error("CRM Pipelines API Error:", error);
-    const status = error.status || 500;
-    const safeMsg = typeof error?.message === "string" && !error.message.includes("<html")
-      ? error.message
+    const status = error instanceof CRMError ? error.status : 500;
+    const message = error instanceof Error ? error.message : "";
+    const safeMsg = message && !message.includes("<html")
+      ? message
       : "Error al consultar pipeline del CRM";
     return NextResponse.json(
       { data: null, error: safeMsg, code: "CRM_API_ERROR" },

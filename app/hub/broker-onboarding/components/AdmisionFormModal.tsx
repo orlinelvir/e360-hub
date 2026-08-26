@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 interface AdmisionFormModalProps {
   isOpen: boolean;
   onClose: () => void;
+  serviceId: string;
   serviceTitle: string;
   serviceCategory: string;
   onSuccess: () => void;
@@ -15,8 +16,8 @@ interface AdmisionFormModalProps {
 export default function AdmisionFormModal({
   isOpen,
   onClose,
+  serviceId,
   serviceTitle,
-  serviceCategory,
   onSuccess
 }: AdmisionFormModalProps) {
   const { user } = useAuth();
@@ -56,6 +57,7 @@ export default function AdmisionFormModal({
         },
         body: JSON.stringify({
           ...formData,
+          serviceId,
           service: serviceTitle,
           amount: formData.amount ? parseFloat(formData.amount) : 0
         })

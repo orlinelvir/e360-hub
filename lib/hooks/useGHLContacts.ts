@@ -5,6 +5,15 @@ export interface CRMCredentials {
   locationId?: string;
 }
 
+export interface GHLContactCreatePayload {
+  firstName: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  service?: string;
+  amount?: number;
+}
+
 /**
  * Función auxiliar para realizar peticiones HTTP con reintentos automáticos
  * ante errores de red temporales o fallos 5xx del servidor.
@@ -69,15 +78,15 @@ export function useGHLContacts() {
       }
 
       return data.contacts || [];
-    } catch (err: any) {
-      setError(err.message || "Error de conexión con el servidor CRM.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error de conexión con el servidor CRM.");
       return [];
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const createContact = useCallback(async (contactPayload: any, credentials?: CRMCredentials) => {
+  const createContact = useCallback(async (contactPayload: GHLContactCreatePayload, credentials?: CRMCredentials) => {
     setLoading(true);
     setError(null);
     try {
@@ -105,8 +114,8 @@ export function useGHLContacts() {
       }
 
       return data.contact;
-    } catch (err: any) {
-      setError(err.message || "Error al crear contacto en el CRM.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear contacto en el CRM.");
       throw err;
     } finally {
       setLoading(false);

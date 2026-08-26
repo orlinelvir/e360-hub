@@ -50,10 +50,11 @@ export async function GET(request: Request) {
   try {
     const rawData = await getGHLContacts(authorizedLocationId, query, brokerApiKey);
     return NextResponse.json({ data: rawData, contacts: rawData.contacts || [], error: null });
-  } catch (error: any) {
-    const status = error.status || 500;
-    const safeMsg = typeof error?.message === "string" && !error.message.includes("<html")
-      ? error.message
+  } catch (error) {
+    const status = error instanceof CRMError ? error.status : 500;
+    const message = error instanceof Error ? error.message : "";
+    const safeMsg = message && !message.includes("<html")
+      ? message
       : "Error al comunicarse con el servidor CRM";
     
     console.error("CRM Contacts API Error:", {
@@ -131,11 +132,12 @@ export async function POST(request: Request) {
 
     const newContact = await createGHLContact(contactData, authorizedLocationId, brokerApiKey);
     return NextResponse.json({ data: { success: true, contact: newContact }, contact: newContact, error: null });
-  } catch (error: any) {
+  } catch (error) {
     console.error("CRM Create Contact API Error:", error);
-    const status = error.status || 500;
-    const safeMsg = typeof error?.message === "string" && !error.message.includes("<html")
-      ? error.message
+    const status = error instanceof CRMError ? error.status : 500;
+    const message = error instanceof Error ? error.message : "";
+    const safeMsg = message && !message.includes("<html")
+      ? message
       : "Error al registrar cliente en el CRM";
     return NextResponse.json(
       { data: null, error: safeMsg, code: "CRM_API_ERROR" },

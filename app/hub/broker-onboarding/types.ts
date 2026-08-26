@@ -1,6 +1,4 @@
-import { ComponentType } from "react";
-
-export type ActiveTab = "inicio" | "clientes" | "soporte" | "perfil";
+export type ActiveTab = "inicio" | "clientes" | "soporte" | "perfil" | "admin";
 
 export type PipelineStage = 
   | "lead"

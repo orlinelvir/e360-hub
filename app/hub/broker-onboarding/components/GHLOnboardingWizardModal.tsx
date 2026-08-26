@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Globe, 
-  ExternalLink, 
-  CheckCircle2, 
-  ChevronRight, 
-  ChevronLeft, 
-  HelpCircle, 
-  MessageSquare, 
-  Key, 
+import {
+  Globe,
+  ExternalLink,
+  CheckCircle2,
+  ChevronRight,
+  ChevronLeft,
+  MessageSquare,
+  Key,
   Building2
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
@@ -34,13 +33,15 @@ export default function GHLOnboardingWizardModal({
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [locationId, setLocationId] = useState(currentLocationId);
   const [apiKey, setApiKey] = useState(currentApiKey);
-  const [showHelpGuide, setShowHelpGuide] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isReconfiguring, setIsReconfiguring] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState<{ valid: boolean; locationName?: string; error?: string } | null>(null);
 
-  useEffect(() => {
+  // Reinicia el estado interno del wizard cada vez que se vuelve a abrir
+  // (el componente permanece montado entre aperturas, por eso no basta el estado inicial).
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setLocationId(currentLocationId);
       setApiKey(currentApiKey);
@@ -48,7 +49,7 @@ export default function GHLOnboardingWizardModal({
       setErrorMsg("");
       setIsReconfiguring(false);
     }
-  }, [isOpen, currentLocationId, currentApiKey]);
+  }
 
   if (!isOpen) return null;
 
@@ -71,7 +72,6 @@ export default function GHLOnboardingWizardModal({
     
     setErrorMsg("");
     setIsValidating(true);
-    setValidationResult(null);
 
     try {
       if (!user) {
@@ -89,7 +89,6 @@ export default function GHLOnboardingWizardModal({
         body: JSON.stringify({ locationId: locationId.trim(), apiKey: apiKey.trim() }),
       });
       const result = await res.json();
-      setValidationResult(result);
 
       if (result.valid) {
         onSaveCredentials(locationId.trim(), apiKey.trim());
@@ -97,7 +96,7 @@ export default function GHLOnboardingWizardModal({
       } else {
         setErrorMsg(result.error || "Credenciales inválidas. Verifica tu Location ID y Token PIT.");
       }
-    } catch (err) {
+    } catch {
       setErrorMsg("Error al validar credenciales. Intenta de nuevo.");
     } finally {
       setIsValidating(false);

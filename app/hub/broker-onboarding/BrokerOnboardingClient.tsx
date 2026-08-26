@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
-import { 
+import {
   Search, 
   ChevronRight, 
   Phone, 
@@ -26,14 +25,20 @@ import { servicesData, ServiceDetail } from "./data/services";
 import MisClientesSection from "./components/MisClientesSection";
 import SoporteSection from "./components/SoporteSection";
 import MiPerfilSection from "./components/MiPerfilSection";
+import AdminPanelSection from "./components/AdminPanelSection";
 import GHLOnboardingWizardModal from "./components/GHLOnboardingWizardModal";
 import AdmisionFormModal from "./components/AdmisionFormModal";
+import CreditRepairIntakeModal from "./components/CreditRepairIntakeModal";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function BrokerOnboardingClient() {
-  const [mounted, setMounted] = useState<boolean>(false);
-  const { user, profile, loading: authLoading, loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword, logout } = useAuth();
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const { user, profile, loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword, logout } = useAuth();
   
   const [registerName, setRegisterName] = useState<string>("");
   const [emailInput, setEmailInput] = useState<string>("");
@@ -60,17 +65,16 @@ export default function BrokerOnboardingClient() {
 
   const isAuthenticated = Boolean(user);
   const brokerName = profile?.displayName || user?.displayName || user?.email?.split("@")[0] || "Broker E360";
+  const isAdmin = profile?.role === "admin";
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
+  const [prevProfile, setPrevProfile] = useState(profile);
+  if (profile !== prevProfile) {
+    setPrevProfile(profile);
     if (profile) {
       setUserLocationId(profile.ghlLocationId || "");
       setUserApiKey(profile.ghlApiKey || "");
     }
-  }, [profile]);
+  }
 
   const handleSaveGHLWizard = async (locId: string, key: string) => {
     const trimmedLoc = locId.trim();
@@ -121,24 +125,25 @@ export default function BrokerOnboardingClient() {
         }
         await loginWithEmail(emailInput.trim(), passwordInput.trim());
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const fbErr = err as { code?: string; message?: string };
       console.error("Error de autenticación Firebase:", err);
-      if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+      if (fbErr.code === "auth/invalid-credential" || fbErr.code === "auth/user-not-found" || fbErr.code === "auth/wrong-password") {
         setLoginError("Credenciales incorrectas. Verifique correo y contraseña.");
-      } else if (err.code === "auth/invalid-email") {
+      } else if (fbErr.code === "auth/invalid-email") {
         setLoginError("El formato del correo electrónico no es válido.");
-      } else if (err.code === "auth/email-already-in-use") {
+      } else if (fbErr.code === "auth/email-already-in-use") {
         setLoginError("Este correo ya está registrado en E360 App.");
-      } else if (err.code === "auth/weak-password") {
+      } else if (fbErr.code === "auth/weak-password") {
         setLoginError("La contraseña debe tener al menos 6 caracteres.");
-      } else if (err.code === "auth/too-many-requests") {
+      } else if (fbErr.code === "auth/too-many-requests") {
         setLoginError("Demasiados intentos. Espera unos minutos o restablece tu contraseña.");
-      } else if (err.code === "auth/operation-not-allowed") {
+      } else if (fbErr.code === "auth/operation-not-allowed") {
         setLoginError("Este método de acceso no está habilitado. Contacta a soporte.");
-      } else if (err.code === "auth/network-request-failed") {
+      } else if (fbErr.code === "auth/network-request-failed") {
         setLoginError("Error de conexión. Revisa tu internet e intenta de nuevo.");
       } else {
-        setLoginError(err.message || "Error al autenticar con Firebase.");
+        setLoginError(fbErr.message || "Error al autenticar con Firebase.");
       }
     } finally {
       setIsLoadingAuth(false);
@@ -179,16 +184,17 @@ export default function BrokerOnboardingClient() {
     setLoginError("");
     try {
       await loginWithGoogle();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const fbErr = err as { code?: string; message?: string };
       console.error("Google Auth Error:", err);
-      if (err.code === "auth/operation-not-allowed") {
+      if (fbErr.code === "auth/operation-not-allowed") {
         setLoginError("Google Sign-In no está activado en tu consola de Firebase.");
-      } else if (err.code === "auth/unauthorized-domain") {
+      } else if (fbErr.code === "auth/unauthorized-domain") {
         setLoginError("Este dominio de la web no está autorizado en tu consola de Firebase.");
-      } else if (err.code === "auth/popup-closed-by-user") {
+      } else if (fbErr.code === "auth/popup-closed-by-user") {
         setLoginError("La ventana de inicio de sesión con Google fue cerrada.");
       } else {
-        setLoginError(err.message || "No se pudo iniciar sesión con Google.");
+        setLoginError(fbErr.message || "No se pudo iniciar sesión con Google.");
       }
     } finally {
       setIsLoadingAuth(false);
@@ -469,7 +475,8 @@ export default function BrokerOnboardingClient() {
                     { id: "inicio", label: "Inicio / Servicios" },
                     { id: "clientes", label: "Mis Clientes (CRM)" },
                     { id: "soporte", label: "Soporte VIP" },
-                    { id: "perfil", label: "Mi Perfil" }
+                    { id: "perfil", label: "Mi Perfil" },
+                    ...(isAdmin ? [{ id: "admin", label: "Panel Admin" }] : [])
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -533,7 +540,8 @@ export default function BrokerOnboardingClient() {
                   { id: "inicio", label: "Inicio" },
                   { id: "clientes", label: "Clientes" },
                   { id: "soporte", label: "Soporte" },
-                  { id: "perfil", label: "Perfil" }
+                  { id: "perfil", label: "Perfil" },
+                  ...(isAdmin ? [{ id: "admin", label: "Admin" }] : [])
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -722,6 +730,12 @@ export default function BrokerOnboardingClient() {
             {activeTab === "perfil" && (
               <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
                 <MiPerfilSection brokerName={brokerName} />
+              </main>
+            )}
+
+            {activeTab === "admin" && isAdmin && (
+              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+                <AdminPanelSection />
               </main>
             )}
 
@@ -1015,7 +1029,7 @@ export default function BrokerOnboardingClient() {
                             <div className="mt-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 flex items-start gap-2.5">
                               <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
                               <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                                <strong>Nota importante:</strong> Cada aplicación que completes en este formulario externo no aparecerá automáticamente en la sección de <strong>"Mis Clientes"</strong>. Hasta nuevo aviso, estar pendiente en el chat de la comunidad.
+                                <strong>Nota importante:</strong> Cada aplicación que completes en este formulario externo no aparecerá automáticamente en la sección de <strong>&ldquo;Mis Clientes&rdquo;</strong>. Hasta nuevo aviso, estar pendiente en el chat de la comunidad.
                               </p>
                             </div>
                           )}
@@ -1062,10 +1076,23 @@ export default function BrokerOnboardingClient() {
         currentApiKey={userApiKey}
       />
 
-      {selectedService && (
+      {selectedService && selectedService.id === "credit-repair" && (
+        <CreditRepairIntakeModal
+          isOpen={isAdmisionOpen}
+          onClose={() => setIsAdmisionOpen(false)}
+          onSuccess={() => {
+            if (activeTab === "clientes") {
+              // Refresh will happen automatically when user navigates to Mis Clientes
+            }
+          }}
+        />
+      )}
+
+      {selectedService && selectedService.id !== "credit-repair" && (
         <AdmisionFormModal
           isOpen={isAdmisionOpen}
           onClose={() => setIsAdmisionOpen(false)}
+          serviceId={selectedService.id}
           serviceTitle={selectedService.title}
           serviceCategory={selectedService.category}
           onSuccess={() => {

@@ -1,12 +1,13 @@
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  collection, 
-  getDocs, 
-  addDoc, 
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  getDocs,
+  addDoc,
   query,
-  orderBy
+  orderBy,
+  FirestoreError
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { BrokerProfileData } from "@/app/hub/broker-onboarding/types";
@@ -67,8 +68,8 @@ export async function getBrokerProfile(uid: string, defaultName?: string, defaul
 
     await setDoc(ref, defaultProfile);
     return defaultProfile;
-  } catch (err: any) {
-    if (err?.code === "permission-denied") {
+  } catch (err) {
+    if (err instanceof FirestoreError && err.code === "permission-denied") {
       console.warn("⚠️ Permiso denegado en Firestore al leer perfil. Despliega firestore.rules en tu consola de Firebase.");
     } else {
       console.error("Error al obtener perfil desde Firestore:", err);
@@ -84,8 +85,8 @@ export async function updateBrokerProfile(uid: string, data: Partial<BrokerProfi
   try {
     const ref = doc(db, "brokers", uid);
     await setDoc(ref, data, { merge: true });
-  } catch (err: any) {
-    if (err?.code === "permission-denied") {
+  } catch (err) {
+    if (err instanceof FirestoreError && err.code === "permission-denied") {
       console.warn("⚠️ Permiso denegado en Firestore al actualizar perfil. Verifica que tus firestore.rules estén desplegadas.");
     } else {
       console.error("Error al actualizar perfil en Firestore:", err);
@@ -106,8 +107,8 @@ export async function getBrokerClients(uid: string): Promise<ClientLeadData[]> {
       id: d.id,
       ...d.data()
     } as ClientLeadData));
-  } catch (err: any) {
-    if (err?.code === "permission-denied") {
+  } catch (err) {
+    if (err instanceof FirestoreError && err.code === "permission-denied") {
       console.warn("⚠️ Permiso denegado en Firestore al consultar clientes. Asegúrate de publicar firestore.rules.");
     } else {
       console.warn("Aviso al consultar clientes en Firestore:", err);
@@ -130,8 +131,8 @@ export async function saveBrokerClient(uid: string, client: ClientLeadData): Pro
       const docRef = await addDoc(ref, client);
       return docRef.id;
     }
-  } catch (err: any) {
-    if (err?.code === "permission-denied") {
+  } catch (err) {
+    if (err instanceof FirestoreError && err.code === "permission-denied") {
       console.warn("⚠️ Permiso denegado en Firestore al guardar cliente.");
     } else {
       console.error("Error al guardar cliente en Firestore:", err);
@@ -153,8 +154,8 @@ export async function getBrokerTickets(uid: string): Promise<SupportTicketData[]
       id: d.id,
       ...d.data()
     } as SupportTicketData));
-  } catch (err: any) {
-    if (err?.code === "permission-denied") {
+  } catch (err) {
+    if (err instanceof FirestoreError && err.code === "permission-denied") {
       console.warn("⚠️ Permiso denegado en Firestore al leer tickets de soporte.");
     } else {
       console.warn("Aviso al leer tickets de soporte:", err);
@@ -171,8 +172,8 @@ export async function createBrokerTicket(uid: string, ticket: SupportTicketData)
     const ref = collection(db, "brokers", uid, "tickets");
     const docRef = await addDoc(ref, ticket);
     return docRef.id;
-  } catch (err: any) {
-    if (err?.code === "permission-denied") {
+  } catch (err) {
+    if (err instanceof FirestoreError && err.code === "permission-denied") {
       console.warn("⚠️ Permiso denegado en Firestore al crear ticket de soporte.");
     } else {
       console.error("Error al crear ticket en Firestore:", err);

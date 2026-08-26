@@ -1,16 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { 
-  ArrowRight, 
-  ShieldCheck, 
-  FileSearch, 
-  TrendingUp, 
+import {
+  ArrowRight,
+  ShieldCheck,
+  FileSearch,
+  TrendingUp,
   CheckCircle2,
-  AlertTriangle,
-  HelpCircle,
   Clock,
-  Zap,
   Info
 } from "lucide-react";
 
@@ -132,7 +129,7 @@ export default function CreditRepairClient() {
                 <div className="mt-1 bg-blue-900/50 p-2 rounded-lg text-cyan-400 h-fit border border-cyan-500/20"><ShieldCheck size={24}/></div>
                 <div>
                   <h4 className="font-bold text-lg">2. Disputas Factuales (FCRA/FDCPA)</h4>
-                  <p className="text-sm text-gray-400">Desarrollamos estrategias legales como "pay-for-delete" y limpieza de identidad para proteger tus derechos.</p>
+                  <p className="text-sm text-gray-400">Desarrollamos estrategias legales como &ldquo;pay-for-delete&rdquo; y limpieza de identidad para proteger tus derechos.</p>
                 </div>
               </motion.div>
 

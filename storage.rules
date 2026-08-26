@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Todas las subidas (comprobantes de pago, etc.) pasan por el backend
+    // (Admin SDK, que ignora estas reglas) para poder validar auth, tipo y
+    // tamaño de archivo antes de guardarlos. Sin acceso directo del cliente.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

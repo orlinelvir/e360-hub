@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npx tsx --test tests/*.test.ts",
     "grant-admin": "npx tsx scripts/grant-admin.ts",
-    "deploy:rules": "firebase deploy --only firestore:rules"
+    "deploy:rules": "firebase deploy --only firestore:rules,storage"
   },
   "dependencies": {
     "firebase": "^12.16.0",

@@ -2,17 +2,15 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  ArrowRight, 
-  Briefcase, 
-  FileText, 
-  Globe, 
-  Key, 
-  ShieldCheck, 
-  Calculator, 
-  Info, 
-  Coins, 
-  Clock 
+import {
+  ArrowRight,
+  Briefcase,
+  FileText,
+  Globe,
+  Key,
+  ShieldCheck,
+  Calculator,
+  Clock
 } from "lucide-react";
 
 // Estructura de tarifas oficiales por estado según las guías
@@ -87,7 +85,7 @@ export default function IncorporationClient() {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-[#0A182D] border border-gray-800 rounded-2xl p-8 hover:border-cyan-500/50 transition-all">
             <FileText className="text-cyan-400 mb-6" size={32} />
             <h3 className="text-xl font-bold mb-3">Obtención de EIN (IRS)</h3>
-            <p className="text-gray-400 text-sm">El "seguro social" de tu empresa. Indispensable para abrir cuentas bancarias corporativas, pagar nómina y aplicar a fondeo.</p>
+            <p className="text-gray-400 text-sm">El &ldquo;seguro social&rdquo; de tu empresa. Indispensable para abrir cuentas bancarias corporativas, pagar nómina y aplicar a fondeo.</p>
           </motion.div>
 
           {/* DUNS Number */}

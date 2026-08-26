@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, CreditCard, Landmark, Zap, User, Clock, Calendar, BarChart3, Info } from "lucide-react";
+import { ArrowRight, CreditCard, Landmark, Zap, User, Info } from "lucide-react";
 import ProductModal from "@/components/ProductModal";
 
 const products = [
@@ -108,11 +108,13 @@ const products = [
   }
 ];
 
+type Product = (typeof products)[number];
+
 export default function FundingClient() {
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleOpenModal = (product: any) => {
+  const handleOpenModal = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };

@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    // Un package-lock.json huérfano en la carpeta padre ("E360 Website/") hace que
+    // Turbopack infiera mal la raíz del workspace. Se fija explícitamente aquí.
+    root: import.meta.dirname,
+  },
   images: {
     remotePatterns: [
       {

@@ -1,23 +1,27 @@
-import { 
-  User, 
-  CreditCard, 
-  Home, 
-  Briefcase, 
-  Users, 
-  Calculator, 
-  Laptop, 
-  Car, 
-  HeartPulse, 
-  Heart, 
-  ShieldCheck, 
-  Building 
+import {
+  User,
+  CreditCard,
+  Home,
+  Briefcase,
+  Users,
+  Calculator,
+  Laptop,
+  Car,
+  HeartPulse,
+  Heart,
+  ShieldCheck,
+  Building,
+  type LucideIcon
 } from "lucide-react";
 
 export interface ServiceDetail {
   id: string;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   category: "financial" | "professional";
+  // Departamento GHL central al que se duplica el lead (dual-sync Hub-First Intake).
+  // Independiente de "category" (que solo controla la columna donde se muestra en el catálogo).
+  centralDepartment: "financial" | "insurance" | "corporate";
   status: "active" | "delay" | "paused" | "upcoming";
   statusLabel: string;
   description: string;
@@ -36,6 +40,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Préstamo de Negocio (< 680 FICO / MCA)",
     icon: Briefcase,
     category: "financial",
+    centralDepartment: "financial",
     status: "active",
     statusLabel: "Activo",
     description: "Merchant Cash Advance (MCA) y préstamos empresariales rápidos basados en flujo de caja para clientes con puntaje de crédito inferior a 680. Underwriter asignado: James (Cliq Capital).",
@@ -66,6 +71,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Préstamo Empresarial Convencional (> 700 FICO)",
     icon: Briefcase,
     category: "financial",
+    centralDepartment: "financial",
     status: "active",
     statusLabel: "Activo",
     description: "Financiamiento empresarial de categoría A-Paper con las mejores tasas bancarias y plazos extendidos para dueños de negocio con excelente puntaje de crédito (700+ FICO).",
@@ -93,6 +99,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Préstamo Personal",
     icon: User,
     category: "financial",
+    centralDepartment: "financial",
     status: "active",
     statusLabel: "Activo",
     description: "Financiamiento personal sin garantías para perfiles sólidos (A-Paper) que buscan liquidez inmediata con tasas competitivas y plazos cómodos.",
@@ -119,6 +126,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Tarjetas de Crédito de Negocio",
     icon: CreditCard,
     category: "financial",
+    centralDepartment: "financial",
     status: "active",
     statusLabel: "Activo",
     description: "Líneas de crédito rotativas empresariales al 0% de interés introductorio por 12 a 24 meses para capital de trabajo y expansión del negocio sin afectar el crédito personal.",
@@ -145,6 +153,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Préstamo Hipotecario / Bienes Raíces",
     icon: Home,
     category: "financial",
+    centralDepartment: "financial",
     status: "active",
     statusLabel: "Activo",
     description: "Financiamiento integral para bienes raíces (residenciales y comerciales) adaptado a cada perfil: FHA, Convencionales, VA, DSCR (inversionistas sin verificar ingresos) y Dinero Duro.",
@@ -172,6 +181,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Reparación de Crédito",
     icon: CreditCard,
     category: "financial",
+    centralDepartment: "financial",
     status: "active",
     statusLabel: "Activo",
     description: "Programa integral de disputa y remoción de cuentas derogatorias del reporte de crédito utilizando la Ley de Crédito Justo (FCRA) para elevar el score de crédito del cliente.",
@@ -189,7 +199,7 @@ export const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Actualizaciones y rondas de disputa cada 30 días. Duración de 6 a 12 meses.",
     comission: "100% del pago de inicio y de la cuota mensual de $50 cobrada al cliente.",
-    formLink: "Formulario en desarrollo",
+    formLink: "https://api.leadconnectorhq.com/widget/form/hXr9MAZMR8AHID3LC5cg",
     supportPhone: "https://wa.me/12013652055?text=Hola,%20necesito%20soporte%20con%20un%20caso%20de%20Reparaci%C3%B3n%20de%20Cr%C3%A9dito",
     supportPhoneFormatted: "+1 (201) 365-2055 (WhatsApp)"
   },
@@ -198,6 +208,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Registro de Compañía",
     icon: Building,
     category: "financial",
+    centralDepartment: "corporate",
     status: "active",
     statusLabel: "Activo",
     description: "Servicio de constitución y registro oficial de LLCs, Corporaciones (Corp) o Nonprofits en cualquiera de los 50 estados de USA. Incluye EIN y Acuerdo Operativo.",
@@ -225,6 +236,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Servicios de Nómina",
     icon: Calculator,
     category: "financial",
+    centralDepartment: "corporate",
     status: "upcoming",
     statusLabel: "Próximamente",
     description: "Configuración, manejo de payroll y automatización para el pago de empleados y contratistas, asegurando el cumplimiento tributario laboral local y federal. Disponible muy pronto.",
@@ -249,6 +261,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Servicios de POS",
     icon: CreditCard,
     category: "financial",
+    centralDepartment: "corporate",
     status: "upcoming",
     statusLabel: "Próximamente",
     description: "Instalación de terminales de pago con tarjeta e integración de procesamiento de merchant account con tarifas garantizadas y soporte técnico local. Disponible muy pronto.",
@@ -273,6 +286,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Seguro de Auto Personal",
     icon: Car,
     category: "professional",
+    centralDepartment: "insurance",
     status: "active",
     statusLabel: "Activo",
     description: "Pólizas de seguro automotriz personal, cotizando y comparando precios con las aseguradoras más importantes de USA.",
@@ -297,6 +311,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Seguro Comercial de Auto & Trucking",
     icon: Car,
     category: "professional",
+    centralDepartment: "insurance",
     status: "active",
     statusLabel: "Activo",
     description: "Pólizas de seguro comercial automotriz y de transporte pesado (Trucking / Flotillas) para camiones de carga, semi-remolques y vehículos corporativos.",
@@ -322,6 +337,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Seguro de Casa (Homeowners)",
     icon: Home,
     category: "professional",
+    centralDepartment: "insurance",
     status: "active",
     statusLabel: "Activo",
     description: "Seguros residenciales (homeowners) para proteger la estructura física de la vivienda, propiedad personal y responsabilidad civil del asegurado.",
@@ -346,6 +362,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Seguro de Negocio (General Liability)",
     icon: Laptop,
     category: "professional",
+    centralDepartment: "insurance",
     status: "active",
     statusLabel: "Activo",
     description: "Cobertura de Responsabilidad Civil General (Commercial General Liability - CGL), BOP y propiedad comercial para blindar la operación del negocio ante reclamos y demandas.",
@@ -371,6 +388,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Seguro de Compensación de Trabajadores",
     icon: ShieldCheck,
     category: "professional",
+    centralDepartment: "insurance",
     status: "active",
     statusLabel: "Activo",
     description: "Seguro obligatorio de Workers' Compensation para proteger la salud de los empleados y blindar al empleador ante lesiones o accidentes dentro del área de trabajo.",
@@ -396,6 +414,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Servicios de Inmigración",
     icon: Users,
     category: "professional",
+    centralDepartment: "corporate",
     status: "active",
     statusLabel: "Activo",
     description: "Asistencia no legal en la preparación y envío de documentación oficial para trámites ante el USCIS (DACA, renovación de permisos de trabajo, cartas de patrocinio). NO incluye representación jurídica.",
@@ -421,6 +440,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Preparación de Impuestos",
     icon: Calculator,
     category: "professional",
+    centralDepartment: "corporate",
     status: "active",
     statusLabel: "Activo",
     description: "Declaración anual y trimestral de taxes personales y corporativos. Trámite de nuevo número ITIN, enmiendas y corrección de impuestos de años anteriores.",
@@ -445,6 +465,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Seguro de Vida",
     icon: Heart,
     category: "professional",
+    centralDepartment: "insurance",
     status: "active",
     statusLabel: "Activo",
     description: "Pólizas de seguro de vida individuales a término o permanente para la protección patrimonial y financiera de la familia del tomador.",
@@ -470,6 +491,7 @@ export const servicesData: ServiceDetail[] = [
     title: "Membresía de Seguro Médico",
     icon: HeartPulse,
     category: "professional",
+    centralDepartment: "insurance",
     status: "active",
     statusLabel: "Activo",
     description: "Planes de seguro médico individuales, familiares y comerciales (Planes bajo el Obamacare - Mercado de Seguros de Salud, y seguros privados).",

@@ -1,40 +1,50 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Users, 
-  Search, 
-  Plus, 
-  ExternalLink, 
-  RefreshCw, 
-  DollarSign, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Phone, 
-  Mail, 
-  MessageSquare, 
-  ChevronRight, 
-  X, 
-  Filter, 
-  Calendar, 
-  Building, 
-  FileText,
+import {
+  Users,
+  Search,
+  Plus,
+  ExternalLink,
+  RefreshCw,
+  DollarSign,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Phone,
+  Mail,
+  MessageSquare,
+  ChevronRight,
+  X,
+  Building,
   Copy,
   Check,
   Construction
 } from "lucide-react";
 import { ClientLead, PipelineStage } from "../types";
 import { useAuth } from "@/components/AuthProvider";
-import { getBrokerClients, saveBrokerClient, ClientLeadData, getBrokerProfile } from "@/lib/services/broker-service";
+import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
 import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
 
 interface MisClientesSectionProps {
   brokerName: string;
   crmLocationId: string;
   crmApiKey: string;
+}
+
+interface GHLRawContact {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  customFields?: { key?: string; value?: unknown }[];
+  tags?: string[];
+  dateAdded?: string;
+  source?: string;
 }
 
 const stageLabels: Record<PipelineStage, { label: string; color: string; bg: string }> = {
@@ -48,7 +58,7 @@ const stageLabels: Record<PipelineStage, { label: string; color: string; bg: str
 
 export default function MisClientesSection({ brokerName, crmLocationId, crmApiKey }: MisClientesSectionProps) {
   const { user } = useAuth();
-  const { fetchContacts, createContact, loading: ghlLoading } = useGHLContacts();
+  const { fetchContacts } = useGHLContacts();
 
   const [clients, setClients] = useState<ClientLead[]>([]);
   const clientsRef = useRef<ClientLead[]>([]);
@@ -71,7 +81,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   const [newClientNotes, setNewClientNotes] = useState("");
 
 
-  const saveClients = async (updated: ClientLead[]) => {
+  const saveClients = useCallback(async (updated: ClientLead[]) => {
     clientsRef.current = updated;
     setClients(updated);
     if (!user) return;
@@ -82,22 +92,22 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
         console.error("Error guardando cliente en Firestore:", err);
       }
     }
-  };
+  }, [user]);
 
-  const handleSyncGHLWithCredentials = async (creds: CRMCredentials) => {
+  const handleSyncGHLWithCredentials = useCallback(async (creds: CRMCredentials) => {
     setIsSyncingGHL(true);
     setSyncError(null);
     try {
       const contacts = await fetchContacts(undefined, creds);
       if (contacts && Array.isArray(contacts)) {
-        const ghlMappedLeads: ClientLead[] = contacts.map((cnt: any, idx: number) => ({
+        const ghlMappedLeads: ClientLead[] = contacts.map((cnt: GHLRawContact, idx: number) => ({
           id: cnt.id || `CLI-${idx}`,
           name: `${cnt.firstName || ""} ${cnt.lastName || ""}`.trim() || cnt.name || "Cliente CRM",
           email: cnt.email || "sin_correo@crm.com",
           phone: cnt.phone || "+1 (917) 284-5636",
           serviceId: "business-loan",
           serviceName: "Cliente StartPoint CRM",
-          amount: cnt.customFields?.find((f: any) => f.key === "monto_estimado")?.value || 25000,
+          amount: Number(cnt.customFields?.find((f) => f.key === "monto_estimado")?.value) || 25000,
           estimatedCommission: 1250,
           stage: cnt.tags?.includes("Aprobado") ? "approved" : cnt.tags?.includes("Sometido") ? "submitted" : "lead",
           createdAt: cnt.dateAdded ? cnt.dateAdded.split("T")[0] : new Date().toISOString().split("T")[0],
@@ -121,13 +131,13 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
           saveClients([...ghlMappedLeads, ...localOnly]);
         }
       }
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error al sincronizar con el CRM:", e);
-      setSyncError(e.message || "Error al consultar contactos de tu subcuenta CRM.");
+      setSyncError(e instanceof Error ? e.message : "Error al consultar contactos de tu subcuenta CRM.");
     } finally {
       setIsSyncingGHL(false);
     }
-  };
+  }, [fetchContacts, saveClients]);
 
   // Sincronización manual desde el botón (usa credenciales pasadas por props)
   const handleSyncGHL = async () => {
@@ -138,18 +148,22 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     if (!user) return;
 
     // Cargar clientes guardados en Firestore
-    getBrokerClients(user.uid).then((storedClients: any[]) => {
+    getBrokerClients(user.uid).then((storedClients) => {
       clientsRef.current = storedClients as ClientLead[];
       setClients(storedClients as ClientLead[]);
-    }).catch((err: any) => {
+    }).catch((err) => {
       console.error("Error cargando clientes de Firestore:", err);
     });
 
-    // Solo sincronizar si el broker ya tiene credenciales configuradas
+    // Solo sincronizar si el broker ya tiene credenciales configuradas (diferido para no
+    // disparar la sincronización de forma síncrona durante el efecto)
     if (crmLocationId && crmApiKey) {
-      handleSyncGHLWithCredentials({ locationId: crmLocationId });
+      const timer = setTimeout(() => {
+        handleSyncGHLWithCredentials({ locationId: crmLocationId });
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [user, crmLocationId, crmApiKey]);
+  }, [user, crmLocationId, crmApiKey, handleSyncGHLWithCredentials]);
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,7 +176,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     const lastName = nameParts.slice(1).join(" ");
 
     // Enviar al CRM backend incluyendo las credenciales del broker en los headers
-    let ghlId = `ghl_cnt_${Math.floor(1000000 + Math.random() * 9000000)}`;
+    let ghlId = `ghl_cnt_${crypto.randomUUID()}`;
     try {
       const crmHeaders: HeadersInit = { "Content-Type": "application/json" };
       if (crmLocationId) crmHeaders["x-crm-location-id"] = crmLocationId;
@@ -188,7 +202,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     }
 
     const newLead: ClientLead = {
-      id: `CLI-${Math.floor(100 + Math.random() * 900)}`,
+      id: `CLI-${crypto.randomUUID()}`,
       name: newClientName.trim(),
       email: newClientEmail.trim() || "contacto@cliente.com",
       phone: newClientPhone.trim(),
@@ -411,7 +425,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
               <p className="text-[10px] text-red-300/70 font-semibold uppercase tracking-wider mb-1.5">Posibles soluciones:</p>
               <ul className="text-[11px] text-red-200/70 space-y-1 list-disc list-inside">
                 <li>Verifica que tu Token PIT tenga los 8 scopes requeridos (contacts, opportunities, pipelines, locations)</li>
-                <li>Reconfigura tus credenciales en el Wizard CRM (botón "Guía CRM" arriba)</li>
+                <li>Reconfigura tus credenciales en el Wizard CRM (botón &ldquo;Guía CRM&rdquo; arriba)</li>
                 <li>Si el error persiste, contacta a soporte VIP por WhatsApp</li>
               </ul>
             </div>
@@ -539,7 +553,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
           <AlertCircle size={36} className="mx-auto text-gray-600 mb-3" />
           <h3 className="text-base font-bold text-gray-300">No se encontraron clientes</h3>
           <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-            Prueba ajustando el filtro de búsqueda o agrega tu primer prospecto haciendo clic en "Referir Cliente".
+            Prueba ajustando el filtro de búsqueda o agrega tu primer prospecto haciendo clic en &ldquo;Referir Cliente&rdquo;.
           </p>
         </div>
       ) : (
@@ -844,7 +858,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                       <option value="commercial-auto-insurance">Seguro Comercial & Trucking</option>
                       <option value="home-insurance">Seguro de Casa (Homeowners)</option>
                       <option value="business-insurance">Seguro de Negocio (General Liability)</option>
-                      <option value="workers-comp">Seguro de Workers' Compensation</option>
+                      <option value="workers-comp">Seguro de Workers&apos; Compensation</option>
                       <option value="pos-services">Terminales de POS Merchant</option>
                     </select>
                   </div>

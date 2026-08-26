@@ -2,25 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  User, 
-  ShieldCheck, 
-  ExternalLink, 
-  Copy, 
-  Check, 
-  CreditCard, 
-  Building, 
-  Award, 
-  FileCheck, 
-  QrCode, 
-  Save, 
-  CheckCircle2, 
-  RefreshCw, 
-  Lock, 
-  Mail, 
-  Phone, 
+import {
+  ExternalLink,
+  CreditCard,
+  Award,
+  FileCheck,
+  QrCode,
+  Save,
+  CheckCircle2,
+  RefreshCw,
+  Lock,
+  Mail,
+  Phone,
   Globe,
-  Download,
   Construction
 } from "lucide-react";
 import { BrokerProfileData } from "../types";
@@ -60,74 +54,28 @@ const createCleanProfile = (name: string): BrokerProfileData => ({
 });
 
 import { useAuth } from "@/components/AuthProvider";
-import { getBrokerProfile, updateBrokerProfile } from "@/lib/services/broker-service";
+import { getBrokerProfile } from "@/lib/services/broker-service";
 
 export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<BrokerProfileData>(createCleanProfile(brokerName));
-  const [copiedLink, setCopiedLink] = useState(false);
   const [isSavedToast, setIsSavedToast] = useState(false);
   const [isSyncingGHL, setIsSyncingGHL] = useState(false);
-
-  // Form states
-  const [payoutMethod, setPayoutMethod] = useState<"ach" | "zelle" | "wire">("zelle");
-  const [zelleValue, setZelleValue] = useState("");
-  const [bankName, setBankName] = useState("");
-  const [accountNum, setAccountNum] = useState("");
-  const [routingNum, setRoutingNum] = useState("");
 
   useEffect(() => {
     if (!user) return;
 
-    getBrokerProfile(user.uid, brokerName, user.email || "").then((data: any) => {
-      setProfile((prev) => ({ 
-        ...prev, 
+    getBrokerProfile(user.uid, brokerName, user.email || "").then((data) => {
+      setProfile((prev) => ({
+        ...prev,
         ...data,
         name: data.displayName || data.name || prev.name,
         brokerId: `BRK-${data.uid ? data.uid.substring(0, 6).toUpperCase() : "360"}`
       }));
-      setPayoutMethod(data.payoutMethod || "zelle");
-      setZelleValue(data.payoutDetails?.zellePhoneOrEmail || "");
-      setBankName(data.payoutDetails?.bankName || "");
-      setAccountNum(data.payoutDetails?.accountNumber || "");
-      setRoutingNum(data.payoutDetails?.routingNumber || "");
     }).catch(err => {
       console.error("Error cargando perfil desde Firestore:", err);
     });
   }, [user, brokerName]);
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    const updated: BrokerProfileData = {
-      ...profile,
-      payoutMethod,
-      payoutDetails: {
-        bankName,
-        accountNumber: accountNum,
-        routingNumber: routingNum,
-        zellePhoneOrEmail: zelleValue
-      }
-    };
-    setProfile(updated);
-
-    try {
-      await updateBrokerProfile(user.uid, {
-        payoutMethod,
-        payoutDetails: {
-          bankName,
-          accountNumber: accountNum,
-          routingNumber: routingNum,
-          zellePhoneOrEmail: zelleValue
-        }
-      });
-      setIsSavedToast(true);
-      setTimeout(() => setIsSavedToast(false), 2500);
-    } catch (err) {
-      console.error("Error guardando perfil en Firestore:", err);
-    }
-  };
 
   const handleSyncGHL = () => {
     setIsSyncingGHL(true);
@@ -164,14 +112,6 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
     } catch (err) {
       console.error("Error al guardar credenciales CRM en el perfil:", err);
     }
-  };
-
-  const referralUrl = `https://emprende360.com/ref/${profile.referralSlug}`;
-
-  const copyReferralLink = () => {
-    navigator.clipboard.writeText(referralUrl);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   const displayName = profile.displayName || profile.name || brokerName || "Broker E360";

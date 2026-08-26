@@ -13,37 +13,29 @@ export default function VideoCard({ src, index }: VideoCardProps) {
   const containerRef = useRef(null);
   // Detectamos si el video está en el viewport (especialmente para móvil)
   const isInView = useInView(containerRef, { amount: 0.6 });
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+  // Reproduce por visibilidad (Móvil/Scroll) o por hover (Desktop); el efecto solo
+  // sincroniza el elemento <video> con este valor derivado, sin tocar estado de React.
+  const isPlaying = isInView || isHovering;
 
-  // Manejo de reproducción/pausa basado en visibilidad (Móvil/Scroll) y Hover (Desktop)
   useEffect(() => {
     if (!videoRef.current) return;
 
-    if (isInView) {
+    if (isPlaying) {
       videoRef.current.play().catch(() => {
         // Manejar bloqueo de auto-play por el navegador si fuera necesario
       });
-      setIsPlaying(true);
     } else {
       videoRef.current.pause();
-      setIsPlaying(false);
     }
-  }, [isInView]);
+  }, [isPlaying]);
 
   const handleMouseEnter = () => {
-    if (videoRef.current) {
-      videoRef.current.play();
-      setIsPlaying(true);
-    }
+    setIsHovering(true);
   };
 
   const handleMouseLeave = () => {
-    // Solo pausamos en desktop si no está "en vista" de forma forzada o si preferimos que solo sea por hover
-    // Pero para una mejor UX, si el mouse sale, pausamos a menos que queramos que siga por scroll
-    if (videoRef.current && !isInView) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
+    setIsHovering(false);
   };
 
   return (

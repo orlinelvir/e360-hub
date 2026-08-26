@@ -2,23 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Headphones, 
-  Calendar, 
-  MessageSquare, 
-  Phone, 
-  Send, 
-  HelpCircle, 
-  ChevronDown, 
-  Search, 
-  CheckCircle2, 
-  Clock, 
-  Briefcase, 
-  ShieldCheck, 
-  Calculator, 
-  Laptop, 
+import {
+  Headphones,
+  Calendar,
+  MessageSquare,
+  Phone,
+  Send,
+  ChevronDown,
+  Search,
+  CheckCircle2,
+  Briefcase,
+  ShieldCheck,
+  Calculator,
   X,
-  AlertCircle,
   Construction
 } from "lucide-react";
 import { SupportTicket } from "../types";
@@ -52,7 +48,7 @@ const faqsData = [
   }
 ];
 
-export default function SoporteSection({ brokerName }: SoporteSectionProps) {
+export default function SoporteSection({}: SoporteSectionProps) {
   const { user } = useAuth();
   const [searchFaq, setSearchFaq] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -73,7 +69,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
 
   useEffect(() => {
     if (!user) return;
-    getBrokerTickets(user.uid).then((storedTickets: any[]) => {
+    getBrokerTickets(user.uid).then((storedTickets) => {
       setTickets(storedTickets as SupportTicket[]);
     }).catch(err => {
       console.error("Error cargando tickets de Firestore:", err);
@@ -524,7 +520,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
                     <label className="block font-semibold text-gray-300 uppercase mb-1">Categoría</label>
                     <select
                       value={ticketCategory}
-                      onChange={(e) => setTicketCategory(e.target.value as any)}
+                      onChange={(e) => setTicketCategory(e.target.value as SupportTicket["category"])}
                       className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500"
                     >
                       <option value="commission">Comisiones</option>
@@ -537,7 +533,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
                     <label className="block font-semibold text-gray-300 uppercase mb-1">Prioridad</label>
                     <select
                       value={ticketPriority}
-                      onChange={(e) => setTicketPriority(e.target.value as any)}
+                      onChange={(e) => setTicketPriority(e.target.value as SupportTicket["priority"])}
                       className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500"
                     >
                       <option value="low">Baja</option>

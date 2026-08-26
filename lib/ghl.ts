@@ -16,7 +16,7 @@ export interface GHLContactPayload {
   lastName?: string;
   email: string;
   phone?: string;
-  customFields?: { id: string; key: string; value: any }[];
+  customFields?: { id: string; key: string; value: string | number | boolean }[];
   tags?: string[];
   source?: string;
 }
@@ -182,6 +182,50 @@ export async function updateGHLOpportunity(oppId: string, updateData: Partial<GH
   return response.json();
 }
 
+/**
+ * Crea una oportunidad en el primer pipeline/etapa disponible de la subcuenta.
+ * TODO: una vez existan pipelines dedicados por línea de negocio (ver ESTRATEGIA_GHL),
+ * elegir el pipeline por nombre/clave estable en vez de "el primero que aparezca".
+ */
+export async function createOpportunityInPipeline(opts: {
+  locationId: string;
+  apiKey: string;
+  contactId: string;
+  name: string;
+  monetaryValue: number;
+}): Promise<string | null> {
+  const { locationId, apiKey, contactId, name, monetaryValue } = opts;
+
+  const pipelines = await getGHLPipelines(locationId, apiKey);
+  const pipeline = pipelines.pipelines?.[0] || pipelines.data?.[0] || (Array.isArray(pipelines) ? pipelines[0] : undefined);
+
+  if (!pipeline?.id) {
+    console.warn("No pipeline found:", { pipelines: JSON.stringify(pipelines).substring(0, 300) });
+    return null;
+  }
+
+  const stagesRes = await getGHLPipelineStages(locationId, pipeline.id, apiKey);
+  const stage = stagesRes.pipelineStages?.[0] || stagesRes.stages?.[0] || (Array.isArray(stagesRes) ? stagesRes[0] : undefined);
+
+  if (!stage?.id) {
+    console.warn("No pipeline stage found:", { stages: JSON.stringify(stagesRes).substring(0, 300) });
+    return null;
+  }
+
+  const oppData: GHLOpportunityPayload = {
+    pipelineId: pipeline.id,
+    pipelineStageId: stage.id,
+    locationId,
+    name,
+    contactId,
+    monetaryValue,
+    status: "open"
+  };
+
+  const opp = await createGHLOpportunity(oppData, apiKey);
+  return opp.opportunity?.id || null;
+}
+
 export async function getGHLPipelines(locationId: string, customApiKey?: string) {
   const locId = locationId.trim();
   if (!locId) {
@@ -242,7 +286,46 @@ export interface AgencyLocation {
   phone?: string;
 }
 
-export async function getAgencyLocations(companyId: string, agencyApiKey: string): Promise<{ locations: AgencyLocation[]; total: number }> {
+export interface CreateLocationFromSnapshotPayload {
+  name: string;
+  companyId: string;
+  snapshotId: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  website?: string;
+  timezone?: string;
+  prospectInfo?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
+}
+
+/**
+ * Crea una subcuenta (location) nueva clonando la configuración de un Snapshot.
+ * Requiere un token de AGENCIA (Company-level PIT) con el scope locations.write —
+ * verifica que la Private Integration de agencia lo tenga habilitado en GHL.
+ */
+export async function createGHLLocationFromSnapshot(payload: CreateLocationFromSnapshotPayload, agencyApiKey: string) {
+  const response = await fetch(`${GHL_API_BASE}/locations/`, {
+    method: "POST",
+    headers: getHeaders(agencyApiKey),
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+  }
+
+  return response.json();
+}
+
+export async function getAgencyLocations(companyId: string, agencyApiKey: string, opts?: { max?: number }): Promise<{ locations: AgencyLocation[]; total: number }> {
   const cid = companyId.trim();
   const key = agencyApiKey.trim();
 
@@ -253,21 +336,35 @@ export async function getAgencyLocations(companyId: string, agencyApiKey: string
     throw new CRMError("Agency API Key no configurada.", 400);
   }
 
-  const url = new URL(`${GHL_API_BASE}/locations/search`);
-  url.searchParams.append("companyId", cid);
+  const limit = 100;
+  const max = opts?.max ?? 5000;
+  const locations: AgencyLocation[] = [];
+  let skip = 0;
 
-  const response = await fetch(url.toString(), {
-    method: "GET",
-    headers: getHeaders(key)
-  });
+  while (locations.length < max) {
+    const url = new URL(`${GHL_API_BASE}/locations/search`);
+    url.searchParams.append("companyId", cid);
+    url.searchParams.append("limit", String(limit));
+    url.searchParams.append("skip", String(skip));
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: getHeaders(key)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+    }
+
+    const data = await response.json();
+    const batch: AgencyLocation[] = data.locations || [];
+    locations.push(...batch);
+
+    if (batch.length < limit) break;
+    skip += limit;
   }
 
-  const data = await response.json();
-  const locations: AgencyLocation[] = data.locations || [];
   return { locations, total: locations.length };
 }
 
@@ -303,10 +400,11 @@ export async function validateGHLCredentials(locationId: string, apiKey: string)
       valid: false, 
       error: parseErrorMessage(response.status, errorText) 
     };
-  } catch (err: any) {
-    return { 
-      valid: false, 
-      error: `Error de conexión: ${err.message || "No se pudo conectar con GHL"}` 
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "No se pudo conectar con GHL";
+    return {
+      valid: false,
+      error: `Error de conexión: ${message}`
     };
   }
 }

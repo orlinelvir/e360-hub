@@ -1,45 +1,28 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
-import { createGHLContact, createGHLOpportunity, getGHLPipelines, getGHLPipelineStages } from "@/lib/ghl";
+import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
+import { servicesData } from "@/app/hub/broker-onboarding/data/services";
 
-async function createOpportunityInPipeline(opts: {
-  locationId: string;
-  apiKey: string;
-  contactId: string;
-  name: string;
-  monetaryValue: number;
-}): Promise<string | null> {
-  const { locationId, apiKey, contactId, name, monetaryValue } = opts;
+/**
+ * Resuelve el departamento GHL central (financial/insurance/corporate) para un servicio.
+ * Prioriza el catálogo oficial por serviceId; si no llega un serviceId reconocido
+ * (llamadas antiguas o el genérico "hub-admision"), cae a un heurístico por palabras
+ * clave sobre el nombre del servicio como último recurso.
+ */
+function resolveCentralDepartment(serviceId: string | undefined, serviceName: string | undefined): "financial" | "insurance" | "corporate" {
+  const catalogService = serviceId ? servicesData.find((s) => s.id === serviceId) : undefined;
+  if (catalogService) return catalogService.centralDepartment;
 
-  const pipelines = await getGHLPipelines(locationId, apiKey);
-  const pipeline = pipelines.pipelines?.[0] || pipelines.data?.[0] || (Array.isArray(pipelines) ? pipelines[0] : undefined);
-
-  if (!pipeline?.id) {
-    console.warn("No pipeline found:", { pipelines: JSON.stringify(pipelines).substring(0, 300) });
-    return null;
+  const name = (serviceName || "").toLowerCase();
+  if (name.includes("loan") || name.includes("credit") || name.includes("funding") || name.includes("financial") ||
+      name.includes("préstamo") || name.includes("crédito") || name.includes("fondeo")) {
+    return "financial";
   }
-
-  const stagesRes = await getGHLPipelineStages(locationId, pipeline.id, apiKey);
-  const stage = stagesRes.pipelineStages?.[0] || stagesRes.stages?.[0] || (Array.isArray(stagesRes) ? stagesRes[0] : undefined);
-
-  if (!stage?.id) {
-    console.warn("No pipeline stage found:", { stages: JSON.stringify(stagesRes).substring(0, 300) });
-    return null;
+  if (name.includes("insurance") || name.includes("seguro")) {
+    return "insurance";
   }
-
-  const oppData = {
-    pipelineId: pipeline.id,
-    pipelineStageId: stage.id,
-    locationId,
-    name,
-    contactId,
-    monetaryValue,
-    status: "open"
-  };
-
-  const opp = await createGHLOpportunity(oppData, apiKey);
-  return opp.opportunity?.id || null;
+  return "corporate";
 }
 
 export async function POST(request: Request) {
@@ -60,6 +43,7 @@ export async function POST(request: Request) {
       email,
       phone,
       service,
+      serviceId,
       amount,
       notes
     } = body;
@@ -89,7 +73,7 @@ export async function POST(request: Request) {
       lastName: lastName || "",
       email,
       phone: phone || "",
-      serviceId: "hub-admision",
+      serviceId: serviceId || "hub-admision",
       serviceName: service || "General",
       service: service || "General",
       amount: amountNum,
@@ -141,21 +125,18 @@ export async function POST(request: Request) {
       }
     }
 
-    const isFinancial = service?.toLowerCase().includes("loan") ||
-                       service?.toLowerCase().includes("credit") ||
-                       service?.toLowerCase().includes("funding") ||
-                       service?.toLowerCase().includes("financial") ||
-                       service?.toLowerCase().includes("préstamo") ||
-                       service?.toLowerCase().includes("crédito") ||
-                       service?.toLowerCase().includes("fondeo");
+    const centralDepartment = resolveCentralDepartment(serviceId, service);
 
-    const centralLocationId = isFinancial
-      ? process.env.GHL_E360_FINANCIAL_LOCATION_ID
-      : process.env.GHL_E360_INSURANCE_LOCATION_ID;
+    const CENTRAL_CREDENTIALS: Record<typeof centralDepartment, { locationId?: string; apiKey?: string }> = {
+      financial: { locationId: process.env.GHL_E360_FINANCIAL_LOCATION_ID, apiKey: process.env.GHL_E360_FINANCIAL_API_KEY },
+      insurance: { locationId: process.env.GHL_E360_INSURANCE_LOCATION_ID, apiKey: process.env.GHL_E360_INSURANCE_API_KEY },
+      corporate: { locationId: process.env.GHL_E360_CORPORATE_LOCATION_ID, apiKey: process.env.GHL_E360_CORPORATE_API_KEY }
+    };
 
-    const centralApiKey = isFinancial
-      ? process.env.GHL_E360_FINANCIAL_API_KEY
-      : process.env.GHL_E360_INSURANCE_API_KEY;
+    const centralLocationId = CENTRAL_CREDENTIALS[centralDepartment].locationId;
+    const centralApiKey = CENTRAL_CREDENTIALS[centralDepartment].apiKey;
+
+    console.log("Central department resolved:", { serviceId: serviceId || null, service, centralDepartment, hasCredentials: Boolean(centralLocationId && centralApiKey) });
 
     let centralContactId: string | null = null;
     let centralOpportunityId: string | null = null;

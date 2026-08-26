@@ -6,7 +6,17 @@ const IV_LENGTH = 16;
 const TAG_LENGTH = 16;
 
 function getEncryptionKey(): Buffer {
-  const secret = process.env.ENCRYPTION_SECRET || process.env.FIREBASE_PROJECT_ID || "e360-hub-default-dev-key-change-me";
+  const secret = process.env.ENCRYPTION_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "development") {
+      return scryptSync("e360-hub-default-dev-key-change-me", "e360-salt-v1", KEY_LENGTH);
+    }
+    // Nunca degradar en producción: un fallback público derivaría en tokens PIT de GHL
+    // cifrados con una clave adivinable. Falla fuerte para forzar la configuración correcta.
+    throw new Error(
+      "ENCRYPTION_SECRET no está configurada. Es requerida para cifrar/descifrar las credenciales GHL de los brokers."
+    );
+  }
   return scryptSync(secret, "e360-salt-v1", KEY_LENGTH);
 }
 

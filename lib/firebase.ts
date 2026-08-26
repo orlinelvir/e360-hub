@@ -24,14 +24,14 @@ try {
   auth = getAuth(app);
 } catch (e) {
   console.warn("⚠️ Fallback en inicialización de Firebase Auth para prerenderizado:", e);
-  auth = null as any;
+  auth = null as unknown as Auth;
 }
 
 try {
   db = getFirestore(app);
 } catch (e) {
   console.warn("⚠️ Fallback en inicialización de Firestore para prerenderizado:", e);
-  db = null as any;
+  db = null as unknown as Firestore;
 }
 
 const googleProvider = new GoogleAuthProvider();
