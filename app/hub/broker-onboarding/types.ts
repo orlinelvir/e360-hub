@@ -23,6 +23,10 @@ export interface ClientLead {
   ghlContactId: string;
   ghlOpportunityId?: string;
   notes: string;
+  // Denormalizado desde la subcolección feeRounds (solo aplica a Reparación de Crédito)
+  // para poder mostrar el estado del fee sin una lectura extra por cliente.
+  feeRoundStatus?: "pending_review" | "paid";
+  feeRoundNumber?: number;
 }
 
 export interface SupportTicket {

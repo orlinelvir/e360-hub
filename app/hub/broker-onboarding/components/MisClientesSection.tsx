@@ -47,6 +47,8 @@ interface GHLRawContact {
   source?: string;
 }
 
+const CREDIT_REPAIR_FEE_AMOUNT = 10;
+
 const stageLabels: Record<PipelineStage, { label: string; color: string; bg: string }> = {
   lead: { label: "Nuevo Lead", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30" },
   qualification: { label: "En Calificación", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/30" },
@@ -600,6 +602,18 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                       </div>
                     </div>
                   </div>
+
+                  {/* Fee de seguimiento mensual (solo Reparación de Crédito) */}
+                  {client.serviceId === "credit-repair" && client.feeRoundStatus && (
+                    <div className={`flex items-center justify-between text-[10px] font-bold px-3 py-2 rounded-xl border ${
+                      client.feeRoundStatus === "paid"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                        : "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                    }`}>
+                      <span>Fee Ronda {client.feeRoundNumber || 1} (${CREDIT_REPAIR_FEE_AMOUNT})</span>
+                      <span>{client.feeRoundStatus === "paid" ? "Pagado a E360" : "Pendiente de pago"}</span>
+                    </div>
+                  )}
 
                   {/* Info de contacto rápido */}
                   <div className="space-y-1 text-xs text-gray-400">

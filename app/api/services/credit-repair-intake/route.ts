@@ -204,7 +204,10 @@ export async function POST(request: Request) {
     await leadRef.update({
       status: synced ? "synced" : "failed_sync",
       ghlContactId: brokerContactId || "",
-      syncedAt: new Date().toISOString()
+      syncedAt: new Date().toISOString(),
+      // Visible directamente en la tarjeta del cliente en "Mis Clientes" sin lecturas extra.
+      feeRoundStatus: "pending_review",
+      feeRoundNumber: 1
     });
 
     return NextResponse.json({

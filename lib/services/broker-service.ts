@@ -28,6 +28,8 @@ export interface ClientLeadData {
   ghlContactId?: string;
   ghlOpportunityId?: string;
   notes?: string;
+  feeRoundStatus?: "pending_review" | "paid";
+  feeRoundNumber?: number;
 }
 
 export interface SupportTicketData {

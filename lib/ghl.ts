@@ -408,3 +408,117 @@ export async function validateGHLCredentials(locationId: string, apiKey: string)
     };
   }
 }
+
+// --- Calendarios (agendamiento real, reemplaza el mock de SoporteSection.tsx) ---
+// NOTA: aún no probado contra un Calendar ID real — la forma exacta de la respuesta
+// de GHL puede requerir ajuste una vez tengamos un calendario real para probar.
+
+export interface GHLCalendar {
+  id: string;
+  name: string;
+  calendarType?: string;
+  eventType?: string;
+}
+
+/**
+ * Lista los calendarios configurados en una subcuenta (para elegir a cuál agendar).
+ */
+export async function getGHLCalendars(locationId: string, apiKey: string): Promise<GHLCalendar[]> {
+  const locId = locationId.trim();
+  if (!locId) {
+    throw new CRMError("Location ID del CRM no configurado.", 400);
+  }
+
+  const url = new URL(`${GHL_API_BASE}/calendars/`);
+  url.searchParams.append("locationId", locId);
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: getHeaders(apiKey)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+  }
+
+  const data = await response.json();
+  return data.calendars || [];
+}
+
+export interface GHLFreeSlot {
+  startTime: string;
+  endTime: string;
+}
+
+/**
+ * Obtiene los horarios libres de un calendario en un rango de fechas.
+ * startMs/endMs en epoch milliseconds (requerido por la API de GHL).
+ */
+export async function getGHLCalendarFreeSlots(
+  calendarId: string,
+  startMs: number,
+  endMs: number,
+  apiKey: string,
+  timezone?: string
+): Promise<GHLFreeSlot[]> {
+  const id = calendarId.trim();
+  if (!id) {
+    throw new CRMError("Calendar ID no configurado.", 400);
+  }
+
+  const url = new URL(`${GHL_API_BASE}/calendars/${id}/free-slots`);
+  url.searchParams.append("startDate", String(startMs));
+  url.searchParams.append("endDate", String(endMs));
+  if (timezone) url.searchParams.append("timezone", timezone);
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: getHeaders(apiKey)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+  }
+
+  const data = await response.json();
+  // GHL agrupa los slots libres por fecha (ej. {"2026-09-01": {"slots": [...]}})
+  const slots: GHLFreeSlot[] = [];
+  for (const key of Object.keys(data)) {
+    const day = data[key];
+    if (day && Array.isArray(day.slots)) {
+      for (const slot of day.slots) {
+        slots.push({ startTime: slot, endTime: slot });
+      }
+    }
+  }
+  return slots;
+}
+
+export interface CreateGHLAppointmentPayload {
+  calendarId: string;
+  locationId: string;
+  contactId: string;
+  startTime: string;
+  endTime: string;
+  title?: string;
+}
+
+/**
+ * Crea una cita real en un calendario de GHL.
+ */
+export async function createGHLAppointment(payload: CreateGHLAppointmentPayload, apiKey: string) {
+  const response = await fetch(`${GHL_API_BASE}/calendars/events/appointments`, {
+    method: "POST",
+    headers: getHeaders(apiKey),
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new CRMError(parseErrorMessage(response.status, errorText), response.status);
+  }
+
+  return response.json();
+}

@@ -26,10 +26,14 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const eventType = String(body.eventType || "");
+    // La acción "Webhook" de los Workflows de GHL anida todo lo que se define en
+    // "Custom Data" dentro de un objeto `customData`, no en la raíz del JSON —
+    // confirmado inspeccionando un payload real con webhook.site.
+    const data = body.customData && typeof body.customData === "object" ? body.customData : body;
+    const eventType = String(data.eventType || "");
 
     if (eventType === "payment_received") {
-      const email = String(body.contactEmail || "").trim().toLowerCase();
+      const email = String(data.contactEmail || "").trim().toLowerCase();
       if (!email) {
         return NextResponse.json({ error: "contactEmail requerido" }, { status: 400 });
       }
@@ -52,8 +56,19 @@ export async function POST(request: Request) {
       await roundDoc.ref.update({
         status: "paid",
         paidAt: new Date().toISOString(),
-        paymentReference: body.reference || null
+        paymentReference: data.reference || null
       });
+
+      // El cliente (brokers/{uid}/clients/{clientId}) es el doc padre de feeRounds —
+      // se refleja ahí también para que la tarjeta en "Mis Clientes" lo muestre sin
+      // una lectura extra.
+      const clientRef = roundDoc.ref.parent.parent;
+      if (clientRef) {
+        await clientRef.update({
+          feeRoundStatus: "paid",
+          feeRoundNumber: roundDoc.data().roundNumber || null
+        });
+      }
 
       return NextResponse.json({ received: true, matched: true, roundId: roundDoc.id });
     }
@@ -62,17 +77,17 @@ export async function POST(request: Request) {
       // Campos tal como los captura el formulario real "Schedule your onboarding"
       // (https://api.leadconnectorhq.com/widget/form/sacDExsiSmi2biBxC5Cu):
       // Nombre Completo (un solo campo), Business Phone/Email/Name/Address/Hours/Website, Logo Colors.
-      const fullName = String(body.fullName || "").trim();
+      const fullName = String(data.fullName || "").trim();
       const [firstName, ...restName] = fullName.split(/\s+/).filter(Boolean);
       const lastName = restName.join(" ");
 
-      const email = String(body.businessEmail || "").trim().toLowerCase();
-      const phone = String(body.businessPhone || "").trim();
-      const businessName = String(body.businessName || "").trim();
-      const businessAddress = String(body.businessAddress || "").trim();
-      const businessHours = String(body.businessHours || "").trim();
-      const businessWebsite = String(body.businessWebsite || "").trim();
-      const logoColors = String(body.logoColors || "").trim();
+      const email = String(data.businessEmail || "").trim().toLowerCase();
+      const phone = String(data.businessPhone || "").trim();
+      const businessName = String(data.businessName || "").trim();
+      const businessAddress = String(data.businessAddress || "").trim();
+      const businessHours = String(data.businessHours || "").trim();
+      const businessWebsite = String(data.businessWebsite || "").trim();
+      const logoColors = String(data.logoColors || "").trim();
 
       if (!email || (!fullName && !businessName)) {
         return NextResponse.json({ error: "Faltan datos mínimos (correo y nombre o negocio)" }, { status: 400 });
