@@ -129,7 +129,12 @@ export async function POST(request: Request) {
 
     const CENTRAL_CREDENTIALS: Record<typeof centralDepartment, { locationId?: string; apiKey?: string }> = {
       financial: { locationId: process.env.GHL_E360_FINANCIAL_LOCATION_ID, apiKey: process.env.GHL_E360_FINANCIAL_API_KEY },
-      insurance: { locationId: process.env.GHL_E360_INSURANCE_LOCATION_ID, apiKey: process.env.GHL_E360_INSURANCE_API_KEY },
+      // Seguros y financiamiento comparten la misma subcuenta central "E360 Broker (Funding Form Submissions)".
+      // Si no hay credenciales específicas de seguros, cae al financiero.
+      insurance: {
+        locationId: process.env.GHL_E360_INSURANCE_LOCATION_ID || process.env.GHL_E360_FINANCIAL_LOCATION_ID,
+        apiKey: process.env.GHL_E360_INSURANCE_API_KEY || process.env.GHL_E360_FINANCIAL_API_KEY
+      },
       corporate: { locationId: process.env.GHL_E360_CORPORATE_LOCATION_ID, apiKey: process.env.GHL_E360_CORPORATE_API_KEY }
     };
 
