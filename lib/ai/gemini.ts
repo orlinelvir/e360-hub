@@ -8,10 +8,11 @@ export interface GeminiResponse {
   suggestEscalation: boolean;
 }
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+const PRIMARY_MODEL = "gemini-2.0-flash";
+const FALLBACK_MODEL = "gemini-1.5-flash";
 
 /**
- * Llama a la API REST de Gemini.
+ * Llama a la API REST de Gemini con soporte para múltiples modelos y fallback automático.
  * @param systemInstruction Prompt del sistema y contexto.
  * @param history Historial de la conversación.
  * @param message Mensaje actual del usuario.
@@ -53,51 +54,59 @@ IMPORTANTE: DEBES RESPONDER ÚNICAMENTE EN FORMATO JSON VÁLIDO CON LA SIGUIENTE
 
   payload.system_instruction.parts[0].text = promptForJson;
 
-  try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
+  const models = [PRIMARY_MODEL, FALLBACK_MODEL];
+  let lastError: Error | null = null;
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        console.warn("Rate limit de Gemini alcanzado.");
-        throw new Error("rate_limit");
-      }
-      const errorText = await response.text();
-      console.error("Error en la API de Gemini:", response.status, errorText);
-      throw new Error("Error comunicando con Gemini");
-    }
-
-    const data = await response.json();
-    const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!responseText) {
-      throw new Error("Respuesta vacía de Gemini");
-    }
-
+  for (const model of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     try {
-      // Limpiamos la respuesta en caso de que incluya marcas de bloque de código como ```json
-      const cleanJsonStr = responseText.replace(/^\\s*```json/i, "").replace(/```\\s*$/i, "").trim();
-      const parsed = JSON.parse(cleanJsonStr);
-      
-      return {
-        answer: parsed.answer || "No pude procesar tu solicitud adecuadamente.",
-        suggestEscalation: !!parsed.suggestEscalation
-      };
-    } catch (parseError) {
-      console.error("Error parseando respuesta JSON de Gemini:", parseError, responseText);
-      return {
-        answer: responseText, // Fallback a texto crudo si falla
-        suggestEscalation: false
-      };
-    }
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
 
-  } catch (error) {
-    console.error("Error en generateGeminiResponse:", error);
-    throw error;
+      if (!response.ok) {
+        if (response.status === 429) {
+          console.warn(`Rate limit alcanzado con modelo ${model}.`);
+          throw new Error("rate_limit");
+        }
+        const errorText = await response.text();
+        console.warn(`Aviso: Error con modelo ${model} (${response.status}):`, errorText);
+        lastError = new Error(`Error en API Gemini (${response.status})`);
+        continue;
+      }
+
+      const data = await response.json();
+      const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!responseText) {
+        lastError = new Error("Respuesta vacía de Gemini");
+        continue;
+      }
+
+      try {
+        const cleanJsonStr = responseText.replace(/^\s*```json/i, "").replace(/```\s*$/i, "").trim();
+        const parsed = JSON.parse(cleanJsonStr);
+        return {
+          answer: parsed.answer || responseText,
+          suggestEscalation: !!parsed.suggestEscalation
+        };
+      } catch {
+        return {
+          answer: responseText,
+          suggestEscalation: false
+        };
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message === "rate_limit") {
+        throw err;
+      }
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
   }
+
+  throw lastError || new Error("No se pudo conectar con el Asistente IA");
 }

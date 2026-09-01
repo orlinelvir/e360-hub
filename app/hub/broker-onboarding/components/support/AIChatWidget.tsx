@@ -61,11 +61,19 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
         }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.error || "Error en la respuesta del asistente");
+        const errorText = await res.text();
+        let parsedError = "Error en la respuesta del asistente";
+        try {
+          const errObj = JSON.parse(errorText);
+          parsedError = errObj.error || parsedError;
+        } catch {
+          // Si no era JSON, usar texto por defecto
+        }
+        throw new Error(parsedError);
       }
+
+      const data = await res.json();
 
       if (data.conversationId) {
         setConversationId(data.conversationId);

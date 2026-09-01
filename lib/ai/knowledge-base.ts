@@ -28,6 +28,18 @@ const FALLBACK_FAQS: FaqEntry[] = [
     answer: "Si el cliente tiene más de 3-4 marcajes de NSF en un mismo mes, sugerimos esperar a cerrar el ciclo bancario actual manteniendo saldo positivo antes de someter la aplicación a los bancos."
   },
   {
+    question: "¿Cuáles son los horarios de clases en vivo por Zoom?",
+    answer: "Las clases y entrenamientos en vivo de E360 se imparten por Zoom en los siguientes horarios: Lunes 7:00 PM EST, Martes 7:00 PM EST, Miércoles 12:00 PM EST y Domingos 10:00 AM EST."
+  },
+  {
+    question: "¿Cómo accedo a los cursos y academia de E360?",
+    answer: "Puedes acceder a todos los módulos y entrenamientos en la Biblioteca E360 en https://E360library.com usando tu correo electrónico registrado como broker."
+  },
+  {
+    question: "¿Puedo tener formularios con mi propia marca (White-Label)?",
+    answer: "Cada subcuenta de broker incluye formularios de Creación de LLC y Reparación de Crédito personalizados con su logo. Para servicios de financiamiento comercial y préstamos, se pueden conectar formularios de fondeo marca blanca. Sin embargo, los formularios de Seguros NO se comparten (los casos de seguros se someten y procesan centralmente con el departamento de suscripción de E360)."
+  },
+  {
     question: "¿Cómo contacto a Soporte VIP General o Reparación de Crédito?",
     answer: "El Soporte General y seguimiento de Reparación de Crédito es atendido directamente por Fernando (Gerente General) exclusivamente por SMS al +1 (681) 236-1239 en dos horarios: Canal 1 de 2:00 PM a 10:00 PM EST y Canal 2 de 9:00 AM a 3:00 PM EST."
   },
