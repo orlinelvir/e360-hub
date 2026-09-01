@@ -3,17 +3,17 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, Search, Filter, MessageSquare, AlertCircle } from "lucide-react";
-import { SupportTicket } from "../../types";
+import { SupportTicketV2 } from "../../types";
 import { useAuth } from "@/components/AuthProvider";
 
 interface TicketListProps {
-  onSelectTicket: (ticket: SupportTicket) => void;
+  onSelectTicket: (ticket: SupportTicketV2) => void;
   onNewTicket: () => void;
 }
 
 export default function TicketList({ onSelectTicket, onNewTicket }: TicketListProps) {
   const { user } = useAuth();
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [tickets, setTickets] = useState<SupportTicketV2[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");

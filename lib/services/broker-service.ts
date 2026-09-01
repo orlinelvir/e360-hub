@@ -30,16 +30,8 @@ export interface ClientLeadData {
   notes?: string;
   feeRoundStatus?: "pending_review" | "paid";
   feeRoundNumber?: number;
-}
-
-export interface SupportTicketData {
-  id?: string;
-  subject: string;
-  category: "ghl_crm" | "commission" | "underwriting" | "general";
-  priority: "low" | "medium" | "high";
-  status: "open" | "in_progress" | "resolved";
-  description: string;
-  createdAt: string;
+  status?: string;
+  adminNotes?: string;
 }
 
 /**
@@ -140,47 +132,6 @@ export async function saveBrokerClient(uid: string, client: ClientLeadData): Pro
       console.error("Error al guardar cliente en Firestore:", err);
     }
     return client.id || "temp-id";
-  }
-}
-
-/**
- * Obtiene los tickets de soporte del broker desde Firestore
- */
-export async function getBrokerTickets(uid: string): Promise<SupportTicketData[]> {
-  try {
-    const ref = collection(db, "brokers", uid, "tickets");
-    const q = query(ref, orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-
-    return snap.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    } as SupportTicketData));
-  } catch (err) {
-    if (err instanceof FirestoreError && err.code === "permission-denied") {
-      console.warn("⚠️ Permiso denegado en Firestore al leer tickets de soporte.");
-    } else {
-      console.warn("Aviso al leer tickets de soporte:", err);
-    }
-    return [];
-  }
-}
-
-/**
- * Crea un ticket de soporte en subcolección Firestore del broker
- */
-export async function createBrokerTicket(uid: string, ticket: SupportTicketData): Promise<string> {
-  try {
-    const ref = collection(db, "brokers", uid, "tickets");
-    const docRef = await addDoc(ref, ticket);
-    return docRef.id;
-  } catch (err) {
-    if (err instanceof FirestoreError && err.code === "permission-denied") {
-      console.warn("⚠️ Permiso denegado en Firestore al crear ticket de soporte.");
-    } else {
-      console.error("Error al crear ticket en Firestore:", err);
-    }
-    return "temp-ticket-id";
   }
 }
 

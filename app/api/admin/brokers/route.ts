@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { resolveUserRole } from "@/lib/roles";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -12,8 +13,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const adminSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const role = adminSnap.exists ? adminSnap.data()?.role : undefined;
+    const role = await resolveUserRole(adminDb, user.uid, user.email);
 
     if (role !== "admin") {
       return NextResponse.json(

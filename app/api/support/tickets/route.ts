@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken } from "@/lib/firebase-admin";
-import { 
-  getEnhancedTickets, 
-  createEnhancedTicket, 
-  updateTicketStatus 
+import {
+  getEnhancedTickets,
+  createEnhancedTicket,
+  updateTicketStatus,
+  updateConversationStatus
 } from "@/lib/services/support-service";
 import { SupportTicketV2 } from "@/app/hub/broker-onboarding/types";
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { subject, category, priority, description } = body;
+    const { subject, category, priority, description, conversationId } = body;
 
     if (!subject || !category || !priority || !description) {
       return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 });
@@ -43,15 +44,20 @@ export async function POST(request: Request) {
       status: "open",
       description,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      ...(conversationId ? { conversationId } : {})
     };
 
     const ticketId = await createEnhancedTicket(user.uid, newTicket);
 
-    return NextResponse.json({ 
-      success: true, 
-      ticketId, 
-      ticket: { id: ticketId, ...newTicket } 
+    if (conversationId) {
+      await updateConversationStatus(user.uid, conversationId, { status: "escalated" });
+    }
+
+    return NextResponse.json({
+      success: true,
+      ticketId,
+      ticket: { id: ticketId, ...newTicket }
     });
   } catch (error) {
     console.error("Error creando ticket:", error);

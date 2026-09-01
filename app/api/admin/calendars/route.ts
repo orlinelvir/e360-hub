@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { getGHLCalendars, CRMError } from "@/lib/ghl";
+import { resolveUserRole, hasPermission } from "@/lib/roles";
 
 /**
  * Lista los calendarios de una subcuenta GHL, para no tener que buscar el Calendar ID
@@ -18,10 +19,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const brokerSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const role = brokerSnap.exists ? brokerSnap.data()?.role : undefined;
+    const role = await resolveUserRole(adminDb, user.uid, user.email);
 
-    if (role !== "admin") {
+    if (!hasPermission(role, "view_subaccounts")) {
       return NextResponse.json(
         { error: "Acceso restringido. Se requiere rol de administrador." },
         { status: 403 }

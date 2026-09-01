@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { resolveUserRole } from "@/lib/roles";
+import { resolvePipelineCluster } from "@/lib/service-routing";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -12,8 +14,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const adminSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const role = adminSnap.exists ? adminSnap.data()?.role : undefined;
+    const role = await resolveUserRole(adminDb, user.uid, user.email);
 
     if (role !== "admin") {
       return NextResponse.json(
@@ -59,14 +60,7 @@ export async function GET(request: Request) {
           if (c.status === "synced") syncedCount++;
           else if (c.status === "failed_sync" || c.status === "pending_sync") failedSyncCount++;
 
-          const sId = (c.serviceId || "").toLowerCase();
-          const sName = (c.serviceName || "").toLowerCase();
-
-          let cluster = "fondeo_rapido";
-          if (sId.includes("mortgage") || sName.includes("real estate") || sName.includes("hipotec")) cluster = "real_estate";
-          else if (sId.includes("credit-repair") || sName.includes("reparaci")) cluster = "credit_repair";
-          else if (sId.includes("insurance") || sName.includes("seguro")) cluster = "seguros";
-          else if (sId.includes("incorporation") || sId.includes("tax") || sId.includes("immigration") || sId.includes("payroll") || sId.includes("pos")) cluster = "corporativo";
+          const cluster = resolvePipelineCluster(c.serviceId, c.serviceName);
 
           if (clusterStats[cluster]) {
             clusterStats[cluster].count++;

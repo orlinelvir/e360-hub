@@ -27,6 +27,7 @@ import { ClientLead, PipelineStage } from "../types";
 import { useAuth } from "@/components/AuthProvider";
 import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
 import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
+import { resolvePipelineCluster } from "@/lib/service-routing";
 
 interface MisClientesSectionProps {
   brokerName: string;
@@ -56,6 +57,19 @@ const stageLabels: Record<PipelineStage, { label: string; color: string; bg: str
   submitted: { label: "Sometido a Banco", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/30" },
   approved: { label: "Aprobado", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
   paid: { label: "Comisión Pagada", color: "text-green-400", bg: "bg-green-500/10 border-green-500/30" }
+};
+
+// Clusters donde E360 (underwriting/aseguradora) da seguimiento manual del status real
+// de la solicitud, distinto del `stage` que el broker gestiona por su cuenta.
+const APPLICATION_STATUS_CLUSTERS = ["fondeo_rapido", "real_estate", "seguros"];
+
+const applicationStatusLabels: Record<string, { label: string; color: string; bg: string }> = {
+  synced: { label: "Ingresado en GHL", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30" },
+  in_progress: { label: "En Underwriting", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/30" },
+  approved: { label: "Aprobado", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/30" },
+  funded: { label: "Fondeado / Pagado", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
+  failed_sync: { label: "Fallo de Sincronización", color: "text-red-400", bg: "bg-red-500/10 border-red-500/30" },
+  rejected: { label: "Declinado", color: "text-gray-400", bg: "bg-gray-500/10 border-gray-500/30" },
 };
 
 export default function MisClientesSection({ brokerName, crmLocationId, crmApiKey }: MisClientesSectionProps) {
@@ -564,6 +578,9 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
             const stageInfo = stageLabels[client.stage] || stageLabels.lead;
             const safeAmount = Number(client.amount) || 0;
             const safeCommission = Number(client.estimatedCommission) || 0;
+            const cluster = resolvePipelineCluster(client.serviceId, client.serviceName);
+            const applicationStatusInfo = client.status ? applicationStatusLabels[client.status] : undefined;
+            const showApplicationStatus = APPLICATION_STATUS_CLUSTERS.includes(cluster) && applicationStatusInfo;
             return (
               <motion.div
                 key={client.id}
@@ -602,6 +619,14 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                       </div>
                     </div>
                   </div>
+
+                  {/* Estado real de la solicitud, actualizado manualmente por E360 (Financiamiento/Seguros) */}
+                  {showApplicationStatus && applicationStatusInfo && (
+                    <div className={`flex items-center justify-between text-[10px] font-bold px-3 py-2 rounded-xl border ${applicationStatusInfo.bg} ${applicationStatusInfo.color}`}>
+                      <span>Estado de tu Solicitud (E360)</span>
+                      <span>{applicationStatusInfo.label}</span>
+                    </div>
+                  )}
 
                   {/* Fee de seguimiento mensual (solo Reparación de Crédito) */}
                   {client.serviceId === "credit-repair" && client.feeRoundStatus && (
@@ -721,6 +746,28 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     {copiedId === selectedClient.id ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                   </button>
                 </div>
+
+                {/* Estado real de la solicitud (Financiamiento/Seguros), solo lectura */}
+                {(() => {
+                  const cluster = resolvePipelineCluster(selectedClient.serviceId, selectedClient.serviceName);
+                  const info = selectedClient.status ? applicationStatusLabels[selectedClient.status] : undefined;
+                  if (!APPLICATION_STATUS_CLUSTERS.includes(cluster) || !info) return null;
+                  return (
+                    <div className="mb-6 bg-[#05101F] border border-gray-800 rounded-2xl p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">Estado de tu Solicitud (E360)</span>
+                        <span className={`px-2.5 py-1 rounded-full border text-[10px] font-extrabold uppercase tracking-wider ${info.bg} ${info.color}`}>
+                          {info.label}
+                        </span>
+                      </div>
+                      {selectedClient.adminNotes && (
+                        <p className="text-xs text-gray-300 leading-relaxed pt-2 border-t border-gray-800">
+                          {selectedClient.adminNotes}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Cambio de Etapa */}
                 <div className="mb-6 space-y-2">

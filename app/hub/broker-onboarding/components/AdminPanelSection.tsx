@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck } from "lucide-react";
+import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import AdminCasesTab, { CaseItem } from "./admin/AdminCasesTab";
 import AdminMetricsTab, { MetricsData } from "./admin/AdminMetricsTab";
@@ -9,8 +9,9 @@ import AdminBrokersTab, { BrokerItem } from "./admin/AdminBrokersTab";
 import AdminRolesTab, { TeamMember, RoleDefinition } from "./admin/AdminRolesTab";
 import AdminFailedSyncTab, { FailedLeadItem } from "./admin/AdminFailedSyncTab";
 import AdminLocationsTab, { AdminLocation } from "./admin/AdminLocationsTab";
+import AdminTicketsTab, { AdminTicketItem } from "./admin/AdminTicketsTab";
 
-type AdminTab = "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations";
+type AdminTab = "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets";
 
 export default function AdminPanelSection() {
   const { user } = useAuth();
@@ -34,6 +35,9 @@ export default function AdminPanelSection() {
   const [loadingFailedLeads, setLoadingFailedLeads] = useState<boolean>(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [syncSuccessMsg, setSyncSuccessMsg] = useState<string>("");
+
+  const [tickets, setTickets] = useState<AdminTicketItem[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState<boolean>(false);
 
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState<boolean>(false);
@@ -142,6 +146,26 @@ export default function AdminPanelSection() {
     }
   };
 
+  const fetchTickets = async () => {
+    if (!user) return;
+    setLoadingTickets(true);
+    setError("");
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/admin/tickets", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al cargar tickets.");
+      setTickets(data.tickets || []);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error desconocido";
+      setError(msg);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
   const fetchLocations = async () => {
     if (!user) return;
     setLoadingLocations(true);
@@ -218,11 +242,13 @@ export default function AdminPanelSection() {
     else if (tab === "roles") fetchRoles();
     else if (tab === "failed_sync") fetchFailedLeads();
     else if (tab === "locations") fetchLocations();
+    else if (tab === "tickets") fetchTickets();
   };
 
-  const isRefreshing = loadingCases || loadingMetrics || loadingBrokers || loadingRoles || loadingFailedLeads || loadingLocations;
+  const isRefreshing = loadingCases || loadingMetrics || loadingBrokers || loadingRoles || loadingFailedLeads || loadingLocations || loadingTickets;
   const isFullAdmin = currentUserRole === "admin";
   const isSupport = currentUserRole === "support_agent";
+  const isOnboardingMember = currentUserRole === "onboarding_member";
 
   const visibleTabs = [
     { id: "cases", label: isFullAdmin ? "Master Feed de Casos" : "Gestión de Solicitudes", icon: FileSpreadsheet, count: cases.length || undefined, badgeColor: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" },
@@ -233,8 +259,9 @@ export default function AdminPanelSection() {
     ] : []),
     ...(isFullAdmin || isSupport ? [
       { id: "failed_sync", label: "Cola de Sincronización", icon: AlertTriangle, count: failedLeads.length || undefined, badgeColor: "bg-red-500/20 text-red-400 border-red-500/30" },
+      { id: "tickets", label: "Tickets de Brokers", icon: Ticket, count: tickets.filter((t) => t.status !== "resolved").length || undefined, badgeColor: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
     ] : []),
-    ...(isFullAdmin ? [
+    ...(isFullAdmin || isOnboardingMember ? [
       { id: "locations", label: "Subcuentas GHL", icon: Building2, count: locations.length || undefined },
     ] : []),
   ];
@@ -340,6 +367,9 @@ export default function AdminPanelSection() {
         />
       )}
       {activeTab === "locations" && <AdminLocationsTab locations={locations} loading={loadingLocations} />}
+      {activeTab === "tickets" && (
+        <AdminTicketsTab tickets={tickets} loading={loadingTickets} onRefresh={fetchTickets} />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { resolveUserRole, hasPermission } from "@/lib/roles";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -12,12 +13,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const adminSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const role = adminSnap.exists ? adminSnap.data()?.role : undefined;
+    const role = await resolveUserRole(adminDb, user.uid, user.email);
 
-    if (role !== "admin") {
+    // Ver la cola de sync: admin ("all") o cualquier rol con permiso "retry_sync"
+    // (support_agent) — antes exigía admin estricto aunque la UI ya le mostraba
+    // esta pestaña a support_agent, causando 403 reales.
+    if (!hasPermission(role, "retry_sync")) {
       return NextResponse.json(
-        { error: "Acceso restringido. Se requiere rol de administrador." },
+        { error: "Acceso restringido. Se requiere rol de administrador o soporte." },
         { status: 403 }
       );
     }

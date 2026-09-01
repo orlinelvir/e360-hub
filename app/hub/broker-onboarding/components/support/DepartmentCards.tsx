@@ -10,9 +10,9 @@ export default function DepartmentCards({ onOpenTicket }: DepartmentCardsProps) 
   const departments = [
     {
       id: "general",
-      name: "Fernando (Gerente General)",
+      name: "Soporte General (Primer Filtro)",
       title: "Soporte General & Reparación de Crédito",
-      desc: "Atención directa con Gerencia para plataforma, dudas técnicas y Reparación de Crédito.",
+      desc: "Primer filtro de soporte para dudas de plataforma, técnicas y Reparación de Crédito.",
       schedule1: "Canal 1: 2:00 PM – 10:00 PM EST (Solo SMS)",
       schedule2: "Canal 2: 9:00 AM – 3:00 PM EST (Solo SMS)",
       phone: "+1 (681) 236-1239",

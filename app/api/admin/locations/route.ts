@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { getAgencyLocations, CRMError } from "@/lib/ghl";
+import { resolveUserRole, hasPermission } from "@/lib/roles";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -13,10 +14,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const brokerSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const role = brokerSnap.exists ? brokerSnap.data()?.role : undefined;
+    const role = await resolveUserRole(adminDb, user.uid, user.email);
 
-    if (role !== "admin") {
+    // Admin ("all") o cualquier rol con permiso "view_subaccounts" (onboarding_member).
+    if (!hasPermission(role, "view_subaccounts")) {
       return NextResponse.json(
         { error: "Acceso restringido. Se requiere rol de administrador." },
         { status: 403 }

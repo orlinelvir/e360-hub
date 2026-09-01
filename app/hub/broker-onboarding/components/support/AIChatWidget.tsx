@@ -20,7 +20,7 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 interface AIChatWidgetProps {
-  onEscalate: (context: string) => void;
+  onEscalate: (context: string, conversationId: string | null) => void;
 }
 
 export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
@@ -189,7 +189,7 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
                   {msg.suggestEscalation && (
                     <div className="mt-3">
                       <button
-                        onClick={() => onEscalate(messages.map(m => `${m.role}: ${m.content}`).join('\\n'))}
+                        onClick={() => onEscalate(messages.map(m => `${m.role}: ${m.content}`).join('\n'), conversationId)}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-[11px] font-bold transition-colors"
                       >
                         <AlertCircle size={14} />

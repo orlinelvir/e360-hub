@@ -9,7 +9,7 @@ import TicketDetail from "./support/TicketDetail";
 import FAQSection from "./support/FAQSection";
 import DepartmentCards from "./support/DepartmentCards";
 import EscalationModal from "./support/EscalationModal";
-import { SupportTicket } from "../types";
+import { SupportTicketV2 } from "../types";
 
 type SupportTab = "ai" | "tickets" | "faq" | "contact";
 
@@ -20,18 +20,20 @@ interface SoporteSectionProps {
 export default function SoporteSection({ brokerName }: SoporteSectionProps) {
   const [activeTab, setActiveTab] = useState<SupportTab>("ai");
   
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicketV2 | null>(null);
+
   // Escalation Modal State
   const [isEscalationOpen, setIsEscalationOpen] = useState(false);
   const [escalationContext, setEscalationContext] = useState("");
+  const [escalationConversationId, setEscalationConversationId] = useState<string | null>(null);
 
-  const handleEscalate = (context: string) => {
+  const handleEscalate = (context: string, conversationId: string | null) => {
     setEscalationContext(context);
+    setEscalationConversationId(conversationId);
     setIsEscalationOpen(true);
   };
 
-  const handleEscalationSuccess = (ticket: SupportTicket) => {
+  const handleEscalationSuccess = (ticket: SupportTicketV2) => {
     setIsEscalationOpen(false);
     setSelectedTicket(ticket);
     setActiveTab("tickets");
@@ -131,6 +133,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
                 onSelectTicket={setSelectedTicket}
                 onNewTicket={() => {
                   setEscalationContext("Creación manual de ticket desde listado");
+                  setEscalationConversationId(null);
                   setIsEscalationOpen(true);
                 }}
               />
@@ -151,9 +154,10 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
         )}
       </div>
 
-      <EscalationModal 
+      <EscalationModal
         isOpen={isEscalationOpen}
         contextData={escalationContext}
+        conversationId={escalationConversationId}
         onClose={() => setIsEscalationOpen(false)}
         onSuccess={handleEscalationSuccess}
       />

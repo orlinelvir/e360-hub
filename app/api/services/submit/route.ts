@@ -2,51 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
-import { servicesData, PipelineCluster } from "@/app/hub/broker-onboarding/data/services";
-
-/**
- * Resuelve el cluster de pipeline GHL para un servicio (fondeo_rapido, real_estate, credit_repair, seguros, corporativo).
- */
-function resolvePipelineCluster(serviceId: string | undefined, serviceName: string | undefined): PipelineCluster {
-  const catalogService = serviceId ? servicesData.find((s) => s.id === serviceId) : undefined;
-  if (catalogService) return catalogService.pipelineCluster;
-
-  const name = (serviceName || "").toLowerCase();
-  if (name.includes("real estate") || name.includes("hipotec") || name.includes("mortgage") || name.includes("dscr")) {
-    return "real_estate";
-  }
-  if (name.includes("reparaci") || name.includes("repair")) {
-    return "credit_repair";
-  }
-  if (name.includes("seguro") || name.includes("insurance")) {
-    return "seguros";
-  }
-  if (name.includes("incorporat") || name.includes("llc") || name.includes("tax") || name.includes("impuesto") || name.includes("inmigra") || name.includes("payroll") || name.includes("pos")) {
-    return "corporativo";
-  }
-  return "fondeo_rapido";
-}
-
-/**
- * Resuelve el departamento GHL central (financial/insurance/corporate) para un servicio.
- * Prioriza el catálogo oficial por serviceId; si no llega un serviceId reconocido
- * (llamadas antiguas o el genérico "hub-admision"), cae a un heurístico por palabras
- * clave sobre el nombre del servicio como último recurso.
- */
-function resolveCentralDepartment(serviceId: string | undefined, serviceName: string | undefined): "financial" | "insurance" | "corporate" {
-  const catalogService = serviceId ? servicesData.find((s) => s.id === serviceId) : undefined;
-  if (catalogService) return catalogService.centralDepartment;
-
-  const name = (serviceName || "").toLowerCase();
-  if (name.includes("loan") || name.includes("credit") || name.includes("funding") || name.includes("financial") ||
-      name.includes("préstamo") || name.includes("crédito") || name.includes("fondeo")) {
-    return "financial";
-  }
-  if (name.includes("insurance") || name.includes("seguro")) {
-    return "insurance";
-  }
-  return "corporate";
-}
+import { resolvePipelineCluster, resolveCentralDepartment } from "@/lib/service-routing";
 
 export async function POST(request: Request) {
   const user = await verifyAuthToken(request);

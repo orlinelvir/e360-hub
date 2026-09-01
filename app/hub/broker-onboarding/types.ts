@@ -27,16 +27,10 @@ export interface ClientLead {
   // para poder mostrar el estado del fee sin una lectura extra por cliente.
   feeRoundStatus?: "pending_review" | "paid";
   feeRoundNumber?: number;
-}
-
-export interface SupportTicket {
-  id: string;
-  subject: string;
-  category: "ghl_crm" | "commission" | "underwriting" | "general";
-  priority: "low" | "medium" | "high";
-  status: "open" | "in_progress" | "resolved";
-  createdAt: string;
-  description: string;
+  // Estado real de la solicitud, actualizado manualmente por Admin/Underwriting
+  // (distinto de `stage`, que es el seguimiento propio del broker). Solo lectura para el broker.
+  status?: string;
+  adminNotes?: string;
 }
 
 export interface BrokerProfileData {
@@ -78,14 +72,12 @@ export interface BrokerProfileData {
 }
 
 // Nuevos tipos para soporte
-export type EscalationDepartment = "Soporte VIP General" | "Comisiones & Casos" | "Taxes & Legal" | "MCA James";
-
 export interface SupportConversation {
   id: string;
   createdAt: string;
   updatedAt: string;
   status: "active" | "escalated" | "closed";
-  escalatedTo?: EscalationDepartment;
+  escalatedTo?: string;
 }
 
 export interface ChatMessage {

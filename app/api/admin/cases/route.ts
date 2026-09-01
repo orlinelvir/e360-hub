@@ -1,18 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
-import { servicesData, PipelineCluster } from "@/app/hub/broker-onboarding/data/services";
-
-function resolvePipelineCluster(serviceId: string | undefined, serviceName: string | undefined): PipelineCluster {
-  const catalogService = serviceId ? servicesData.find((s) => s.id === serviceId) : undefined;
-  if (catalogService) return catalogService.pipelineCluster;
-
-  const name = (serviceName || "").toLowerCase();
-  if (name.includes("real estate") || name.includes("hipotec") || name.includes("mortgage") || name.includes("dscr")) return "real_estate";
-  if (name.includes("reparaci") || name.includes("repair")) return "credit_repair";
-  if (name.includes("seguro") || name.includes("insurance")) return "seguros";
-  if (name.includes("incorporat") || name.includes("llc") || name.includes("tax") || name.includes("impuesto") || name.includes("inmigra") || name.includes("payroll") || name.includes("pos")) return "corporativo";
-  return "fondeo_rapido";
-}
+import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
+import { resolvePipelineCluster } from "@/lib/service-routing";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -25,23 +14,20 @@ export async function GET(request: Request) {
   }
 
   try {
-    const adminSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const userRole = adminSnap.exists ? (adminSnap.data()?.role || "broker") : "broker";
+    const userRole = await resolveUserRole(adminDb, user.uid, user.email);
 
-    const allowedRoles = ["admin", "underwriter_mca", "specialist_real_estate", "specialist_insurance", "specialist_corporate", "support_agent"];
-    if (!allowedRoles.includes(userRole)) {
+    // Ver casos: cualquier rol con el permiso "view_cases" (o "all", que solo admin tiene) —
+    // antes esto era una lista de role-IDs a mano que se desalineaba de ROLE_DEFINITIONS
+    // (ej. sales_agent tiene view_cases pero no estaba en la lista).
+    if (!hasPermission(userRole, "view_cases")) {
       return NextResponse.json(
         { error: "Acceso restringido. Se requiere rol de empleado o administrador." },
         { status: 403 }
       );
     }
 
-    // Determinar qué clusters puede ver el usuario
-    let allowedClusters: string[] | null = null; // null significa todos
-    if (userRole === "underwriter_mca") allowedClusters = ["fondeo_rapido"];
-    else if (userRole === "specialist_real_estate") allowedClusters = ["real_estate"];
-    else if (userRole === "specialist_insurance") allowedClusters = ["seguros"];
-    else if (userRole === "specialist_corporate") allowedClusters = ["corporativo"];
+    // Determinar qué clusters puede ver el usuario según su rol (admin ve todos, sin filtrar).
+    const allowedClusters: string[] | null = userRole === "admin" ? null : (getRoleDefinition(userRole)?.allowedClusters ?? []);
 
     const brokersSnap = await adminDb.collection("brokers").get();
     const allCases: Array<{
@@ -135,12 +121,14 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const adminSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const role = adminSnap.exists ? adminSnap.data()?.role : undefined;
+    const role = await resolveUserRole(adminDb, user.uid, user.email);
 
-    if (role !== "admin") {
+    // Editar casos: cualquier rol con permiso "edit_cases" (o "all") — antes exigía
+    // admin estricto aunque los especialistas (underwriter_mca, specialist_*) tienen
+    // este permiso definido en su rol y no podían usarlo.
+    if (!hasPermission(role, "edit_cases")) {
       return NextResponse.json(
-        { error: "Acceso restringido. Se requiere rol de administrador." },
+        { error: "Acceso restringido. Se requiere permiso para editar casos." },
         { status: 403 }
       );
     }
@@ -157,6 +145,19 @@ export async function PATCH(request: Request) {
 
     if (!clientSnap.exists) {
       return NextResponse.json({ error: "Caso no encontrado" }, { status: 404 });
+    }
+
+    // Un especialista solo puede editar casos de su propio cluster (admin no tiene restricción).
+    if (role !== "admin") {
+      const client = clientSnap.data()!;
+      const cluster = resolvePipelineCluster(client.serviceId, client.serviceName);
+      const allowedClusters = getRoleDefinition(role)?.allowedClusters ?? [];
+      if (!allowedClusters.includes(cluster)) {
+        return NextResponse.json(
+          { error: "Acceso restringido. Este caso no pertenece a tu vertical asignada." },
+          { status: 403 }
+        );
+      }
     }
 
     const updatePayload: Record<string, unknown> = {

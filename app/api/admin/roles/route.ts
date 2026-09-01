@@ -1,96 +1,9 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { ROLE_DEFINITIONS, resolveUserRole, type RoleDefinition } from "@/lib/roles";
 
-export interface RoleDefinition {
-  id: string;
-  name: string;
-  description: string;
-  allowedClusters: string[];
-  permissions: string[];
-  color: string;
-}
-
-export const ROLE_DEFINITIONS: RoleDefinition[] = [
-  {
-    id: "admin",
-    name: "SuperAdmin / Director",
-    description: "Acceso total: todas las verticales, comisiones, métricas, finanzas y asignación de roles.",
-    allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo"],
-    permissions: ["all"],
-    color: "purple"
-  },
-  {
-    id: "underwriter_mca",
-    name: "Underwriter / Fondeo MCA",
-    description: "Gestión exclusiva de solicitudes de Préstamos de Negocio (MCA), Préstamos Convencionales y Tarjetas.",
-    allowedClusters: ["fondeo_rapido"],
-    permissions: ["view_cases", "edit_cases", "add_notes"],
-    color: "blue"
-  },
-  {
-    id: "specialist_real_estate",
-    name: "Especialista Real Estate & Hipotecas",
-    description: "Gestión exclusiva de préstamos hipotecarios, FHA, DSCR e inversión inmobiliaria.",
-    allowedClusters: ["real_estate"],
-    permissions: ["view_cases", "edit_cases", "add_notes"],
-    color: "emerald"
-  },
-  {
-    id: "specialist_insurance",
-    name: "Especialista de Seguros",
-    description: "Gestión exclusiva de pólizas de auto personal, commercial trucking, casa, GL y workers comp.",
-    allowedClusters: ["seguros"],
-    permissions: ["view_cases", "edit_cases", "add_notes"],
-    color: "cyan"
-  },
-  {
-    id: "specialist_corporate",
-    name: "Especialista Corporativo & Taxes",
-    description: "Gestión de registros de LLC, preparación de taxes, inmigración (USCIS), nómina y POS.",
-    allowedClusters: ["corporativo"],
-    permissions: ["view_cases", "edit_cases", "add_notes"],
-    color: "amber"
-  },
-  {
-    id: "support_agent",
-    name: "Agente de Soporte & Operaciones",
-    description: "Atención a tickets de brokers, reintento de sincronizaciones GHL y asistencia general.",
-    allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo"],
-    permissions: ["view_tickets", "reply_tickets", "retry_sync"],
-    color: "indigo"
-  },
-  {
-    id: "onboarding_member",
-    name: "Representante de Onboarding",
-    description: "Revisión de nuevos brokers, aprovisionamiento de subcuentas GHL y entrega de accesos.",
-    allowedClusters: ["corporativo"],
-    permissions: ["view_subaccounts", "manage_brokers", "onboarding_setup"],
-    color: "emerald"
-  },
-  {
-    id: "sales_agent",
-    name: "Representante de Ventas / Closer",
-    description: "Gestión de prospectos comerciales, intake de clientes y seguimiento de conversiones.",
-    allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo"],
-    permissions: ["view_cases", "create_leads", "view_commissions"],
-    color: "amber"
-  },
-  {
-    id: "broker",
-    name: "Broker Estándar",
-    description: "Acceso estándar de afiliado: solo ve sus propios clientes, comisiones y herramientas.",
-    allowedClusters: [],
-    permissions: ["view_own_clients"],
-    color: "gray"
-  }
-];
-
-const MASTER_ADMIN_EMAILS = [
-  "fernando.elvire360@gmail.com",
-  "admin@emprende360.biz",
-  "soporte@emprende360.info",
-  "jp@startpoint.biz"
-];
+export type { RoleDefinition };
+export { ROLE_DEFINITIONS };
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -103,9 +16,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const isMaster = MASTER_ADMIN_EMAILS.includes((user.email || "").toLowerCase().trim());
-    const adminSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const currentRole = isMaster ? "admin" : (adminSnap.exists ? adminSnap.data()?.role : undefined);
+    const currentRole = await resolveUserRole(adminDb, user.uid, user.email);
 
     if (currentRole !== "admin") {
       return NextResponse.json(
@@ -174,9 +85,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const isMaster = MASTER_ADMIN_EMAILS.includes((user.email || "").toLowerCase().trim());
-    const adminSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const currentRole = isMaster ? "admin" : (adminSnap.exists ? adminSnap.data()?.role : undefined);
+    const currentRole = await resolveUserRole(adminDb, user.uid, user.email);
 
     if (currentRole !== "admin") {
       return NextResponse.json(

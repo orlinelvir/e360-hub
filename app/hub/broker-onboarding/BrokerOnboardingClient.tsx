@@ -31,6 +31,7 @@ import AdmisionFormModal from "./components/AdmisionFormModal";
 import CreditRepairIntakeModal from "./components/CreditRepairIntakeModal";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
+import { isMasterAdminEmail } from "@/lib/roles";
 
 export default function BrokerOnboardingClient() {
   const mounted = useSyncExternalStore(
@@ -65,13 +66,7 @@ export default function BrokerOnboardingClient() {
 
   const isAuthenticated = Boolean(user);
   const userEmail = (user?.email || "").toLowerCase().trim();
-  const MASTER_ADMIN_EMAILS = [
-    "fernando.elvire360@gmail.com",
-    "admin@emprende360.biz",
-    "soporte@emprende360.info",
-    "jp@startpoint.biz"
-  ];
-  const isMasterAdmin = MASTER_ADMIN_EMAILS.includes(userEmail);
+  const isMasterAdmin = isMasterAdminEmail(userEmail);
   const brokerName = profile?.displayName || user?.displayName || user?.email?.split("@")[0] || "Broker E360";
   const userRole = isMasterAdmin ? "admin" : (profile?.role || "broker");
   const isAdmin = userRole === "admin";

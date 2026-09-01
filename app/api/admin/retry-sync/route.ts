@@ -2,29 +2,8 @@ import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
-import { servicesData, PipelineCluster } from "@/app/hub/broker-onboarding/data/services";
-
-function resolvePipelineCluster(serviceId: string | undefined, serviceName: string | undefined): PipelineCluster {
-  const catalogService = serviceId ? servicesData.find((s) => s.id === serviceId) : undefined;
-  if (catalogService) return catalogService.pipelineCluster;
-
-  const name = (serviceName || "").toLowerCase();
-  if (name.includes("real estate") || name.includes("hipotec") || name.includes("mortgage") || name.includes("dscr")) return "real_estate";
-  if (name.includes("reparaci") || name.includes("repair")) return "credit_repair";
-  if (name.includes("seguro") || name.includes("insurance")) return "seguros";
-  if (name.includes("incorporat") || name.includes("llc") || name.includes("tax") || name.includes("impuesto") || name.includes("inmigra") || name.includes("payroll") || name.includes("pos")) return "corporativo";
-  return "fondeo_rapido";
-}
-
-function resolveCentralDepartment(serviceId: string | undefined, serviceName: string | undefined): "financial" | "insurance" | "corporate" {
-  const catalogService = serviceId ? servicesData.find((s) => s.id === serviceId) : undefined;
-  if (catalogService) return catalogService.centralDepartment;
-
-  const name = (serviceName || "").toLowerCase();
-  if (name.includes("loan") || name.includes("credit") || name.includes("funding") || name.includes("financial") || name.includes("préstamo") || name.includes("crédito") || name.includes("fondeo")) return "financial";
-  if (name.includes("insurance") || name.includes("seguro")) return "insurance";
-  return "corporate";
-}
+import { resolveUserRole, hasPermission } from "@/lib/roles";
+import { resolvePipelineCluster, resolveCentralDepartment } from "@/lib/service-routing";
 
 export async function POST(request: Request) {
   const user = await verifyAuthToken(request);
@@ -37,12 +16,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const adminSnap = await adminDb.collection("brokers").doc(user.uid).get();
-    const role = adminSnap.exists ? adminSnap.data()?.role : undefined;
+    const role = await resolveUserRole(adminDb, user.uid, user.email);
 
-    if (role !== "admin") {
+    if (!hasPermission(role, "retry_sync")) {
       return NextResponse.json(
-        { error: "Acceso restringido. Se requiere rol de administrador." },
+        { error: "Acceso restringido. Se requiere rol de administrador o soporte." },
         { status: 403 }
       );
     }

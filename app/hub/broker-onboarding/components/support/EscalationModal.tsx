@@ -4,22 +4,23 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
-import { createBrokerTicket } from "@/lib/services/broker-service";
-import { SupportTicket } from "../../types";
+import { SupportTicketV2 } from "../../types";
 
 interface EscalationModalProps {
   isOpen: boolean;
   contextData: string;
+  conversationId?: string | null;
   onClose: () => void;
-  onSuccess: (ticket: SupportTicket) => void;
+  onSuccess: (ticket: SupportTicketV2) => void;
 }
 
-export default function EscalationModal({ isOpen, contextData, onClose, onSuccess }: EscalationModalProps) {
+export default function EscalationModal({ isOpen, contextData, conversationId, onClose, onSuccess }: EscalationModalProps) {
   const { user } = useAuth();
   const [department, setDepartment] = useState<"general" | "commission" | "underwriting" | "ghl_crm">("general");
   const [priority, setPriority] = useState<"medium" | "high">("medium");
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   if (!isOpen) return null;
 
@@ -27,28 +28,31 @@ export default function EscalationModal({ isOpen, contextData, onClose, onSucces
     e.preventDefault();
     if (!user) return;
     setIsSubmitting(true);
+    setError("");
 
-    const description = `-- Contexto de la IA --\\n${contextData}\\n\\n-- Notas adicionales --\\n${additionalNotes || 'Sin notas adicionales'}`;
-    
+    const description = `-- Contexto de la IA --\n${contextData}\n\n-- Notas adicionales --\n${additionalNotes || 'Sin notas adicionales'}`;
+
     try {
-      const payload = {
-        subject: `Escalación IA: ${department.toUpperCase()}`,
-        category: department,
-        priority: priority,
-        status: "open" as const,
-        createdAt: new Date().toISOString().split("T")[0],
-        description: description
-      };
-      
-      const docId = await createBrokerTicket(user.uid, payload);
-      
-      onSuccess({
-        id: docId,
-        ...payload
+      const token = await user.getIdToken();
+      const res = await fetch("/api/support/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          subject: `Escalación IA: ${department.toUpperCase()}`,
+          category: department,
+          priority,
+          description,
+          ...(conversationId ? { conversationId } : {})
+        })
       });
-      
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al crear el ticket");
+
+      onSuccess(data.ticket as SupportTicketV2);
     } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : "Error al crear el ticket");
     } finally {
       setIsSubmitting(false);
     }
@@ -86,6 +90,11 @@ export default function EscalationModal({ isOpen, contextData, onClose, onSucces
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-300">
+                {error}
+              </div>
+            )}
             <div>
               <label className="block text-xs font-semibold text-gray-400 uppercase mb-2">Departamento *</label>
               <select

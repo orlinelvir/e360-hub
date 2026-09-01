@@ -229,6 +229,34 @@ export async function createEnhancedTicket(uid: string, ticket: Omit<SupportTick
   }
 }
 
+/**
+ * Lista los tickets de TODOS los brokers (vista de Admin/Soporte) usando una
+ * collectionGroup query sobre "enhancedTickets". El brokerId se recupera del
+ * path del documento padre (brokers/{brokerId}/enhancedTickets/{ticketId}).
+ */
+export async function getAllEnhancedTicketsAdmin(): Promise<(SupportTicketV2 & { brokerId: string })[]> {
+  if (!adminDb) {
+    return Array.from(memoryTickets.entries()).flatMap(([brokerId, tickets]) =>
+      tickets.map((t) => ({ ...t, brokerId }))
+    );
+  }
+
+  try {
+    const snap = await adminDb.collectionGroup("enhancedTickets").get();
+    const tickets = snap.docs.map((d) => ({
+      id: d.id,
+      brokerId: d.ref.parent.parent?.id || "",
+      ...d.data()
+    } as SupportTicketV2 & { brokerId: string }));
+
+    tickets.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return tickets;
+  } catch (err) {
+    console.warn("Aviso al obtener todos los tickets (admin) en Firestore:", err);
+    return [];
+  }
+}
+
 export async function updateTicketStatus(uid: string, ticketId: string, status: SupportTicketV2["status"]): Promise<void> {
   if (!adminDb) {
     const userTickets = memoryTickets.get(uid) || [];
