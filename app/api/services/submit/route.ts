@@ -2,7 +2,30 @@ import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
-import { servicesData } from "@/app/hub/broker-onboarding/data/services";
+import { servicesData, PipelineCluster } from "@/app/hub/broker-onboarding/data/services";
+
+/**
+ * Resuelve el cluster de pipeline GHL para un servicio (fondeo_rapido, real_estate, credit_repair, seguros, corporativo).
+ */
+function resolvePipelineCluster(serviceId: string | undefined, serviceName: string | undefined): PipelineCluster {
+  const catalogService = serviceId ? servicesData.find((s) => s.id === serviceId) : undefined;
+  if (catalogService) return catalogService.pipelineCluster;
+
+  const name = (serviceName || "").toLowerCase();
+  if (name.includes("real estate") || name.includes("hipotec") || name.includes("mortgage") || name.includes("dscr")) {
+    return "real_estate";
+  }
+  if (name.includes("reparaci") || name.includes("repair")) {
+    return "credit_repair";
+  }
+  if (name.includes("seguro") || name.includes("insurance")) {
+    return "seguros";
+  }
+  if (name.includes("incorporat") || name.includes("llc") || name.includes("tax") || name.includes("impuesto") || name.includes("inmigra") || name.includes("payroll") || name.includes("pos")) {
+    return "corporativo";
+  }
+  return "fondeo_rapido";
+}
 
 /**
  * Resuelve el departamento GHL central (financial/insurance/corporate) para un servicio.
@@ -90,6 +113,9 @@ export async function POST(request: Request) {
       brokerEmail
     });
 
+    const pipelineCluster = resolvePipelineCluster(serviceId, service);
+    const centralDepartment = resolveCentralDepartment(serviceId, service);
+
     const { locationId: brokerLocationId, apiKey: brokerApiKey } = await resolveBrokerCredentials(user.uid, request);
 
     let brokerContactId: string | null = null;
@@ -116,16 +142,15 @@ export async function POST(request: Request) {
             apiKey: brokerApiKey,
             contactId: brokerContactId,
             name: fullName,
-            monetaryValue: amountNum
+            monetaryValue: amountNum,
+            cluster: pipelineCluster
           });
-          console.log("Broker Opportunity Created:", { opportunityId: brokerOpportunityId });
+          console.log("Broker Opportunity Created:", { opportunityId: brokerOpportunityId, cluster: pipelineCluster });
         }
       } catch (error) {
         console.error("Error syncing to broker CRM:", error);
       }
     }
-
-    const centralDepartment = resolveCentralDepartment(serviceId, service);
 
     const CENTRAL_CREDENTIALS: Record<typeof centralDepartment, { locationId?: string; apiKey?: string }> = {
       financial: { locationId: process.env.GHL_E360_FINANCIAL_LOCATION_ID, apiKey: process.env.GHL_E360_FINANCIAL_API_KEY },
@@ -141,7 +166,7 @@ export async function POST(request: Request) {
     const centralLocationId = CENTRAL_CREDENTIALS[centralDepartment].locationId;
     const centralApiKey = CENTRAL_CREDENTIALS[centralDepartment].apiKey;
 
-    console.log("Central department resolved:", { serviceId: serviceId || null, service, centralDepartment, hasCredentials: Boolean(centralLocationId && centralApiKey) });
+    console.log("Central department resolved:", { serviceId: serviceId || null, service, centralDepartment, pipelineCluster, hasCredentials: Boolean(centralLocationId && centralApiKey) });
 
     let centralContactId: string | null = null;
     let centralOpportunityId: string | null = null;
@@ -172,9 +197,10 @@ export async function POST(request: Request) {
             apiKey: centralApiKey,
             contactId: centralContactId,
             name: fullName,
-            monetaryValue: amountNum
+            monetaryValue: amountNum,
+            cluster: pipelineCluster
           });
-          console.log("Central Opportunity Created:", { opportunityId: centralOpportunityId });
+          console.log("Central Opportunity Created:", { opportunityId: centralOpportunityId, cluster: pipelineCluster });
         }
       } catch (error) {
         console.error("Error syncing to central CRM:", error);

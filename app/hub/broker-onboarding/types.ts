@@ -53,6 +53,12 @@ export interface BrokerProfileData {
   ghlConnected?: boolean;
   nmlsId?: string;
   licenseNumber?: string;
+  businessName?: string;
+  whatsapp?: string;
+  city?: string;
+  state?: string;
+  bio?: string;
+  role?: string;
   payoutMethod?: "ach" | "zelle" | "wire";
   payoutDetails?: {
     bankName?: string;
@@ -70,3 +76,42 @@ export interface BrokerProfileData {
   };
   createdAt?: string;
 }
+
+// Nuevos tipos para soporte
+export type EscalationDepartment = "Soporte VIP General" | "Comisiones & Casos" | "Taxes & Legal" | "MCA James";
+
+export interface SupportConversation {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  status: "active" | "escalated" | "closed";
+  escalatedTo?: EscalationDepartment;
+}
+
+export interface ChatMessage {
+  id?: string;
+  role: "user" | "model";
+  content: string;
+  createdAt: string;
+}
+
+export interface SupportTicketV2 {
+  id: string;
+  subject: string;
+  category: "ghl_crm" | "commission" | "underwriting" | "general";
+  priority: "low" | "medium" | "high";
+  status: "open" | "in_progress" | "resolved";
+  createdAt: string;
+  updatedAt: string;
+  description: string;
+  conversationId?: string;
+}
+
+export interface TicketMessage {
+  id?: string;
+  sender: "broker" | "agent";
+  senderName: string;
+  content: string;
+  createdAt: string;
+}
+

@@ -65,7 +65,10 @@ export default function BrokerOnboardingClient() {
 
   const isAuthenticated = Boolean(user);
   const brokerName = profile?.displayName || user?.displayName || user?.email?.split("@")[0] || "Broker E360";
-  const isAdmin = profile?.role === "admin";
+  const userRole = profile?.role || "broker";
+  const isAdmin = userRole === "admin";
+  const isStaff = userRole !== "broker" && Boolean(userRole);
+  const canAccessAdmin = isAdmin || isStaff;
 
   const [prevProfile, setPrevProfile] = useState(profile);
   if (profile !== prevProfile) {
@@ -476,7 +479,7 @@ export default function BrokerOnboardingClient() {
                     { id: "clientes", label: "Mis Clientes (CRM)" },
                     { id: "soporte", label: "Soporte VIP" },
                     { id: "perfil", label: "Mi Perfil" },
-                    ...(isAdmin ? [{ id: "admin", label: "Panel Admin" }] : [])
+                    ...(isAdmin ? [{ id: "admin", label: "Torre de Control" }] : isStaff ? [{ id: "admin", label: "Gestión de Casos" }] : [])
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -541,7 +544,7 @@ export default function BrokerOnboardingClient() {
                   { id: "clientes", label: "Clientes" },
                   { id: "soporte", label: "Soporte" },
                   { id: "perfil", label: "Perfil" },
-                  ...(isAdmin ? [{ id: "admin", label: "Admin" }] : [])
+                  ...(isAdmin ? [{ id: "admin", label: "Torre Control" }] : isStaff ? [{ id: "admin", label: "Casos" }] : [])
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -733,7 +736,7 @@ export default function BrokerOnboardingClient() {
               </main>
             )}
 
-            {activeTab === "admin" && isAdmin && (
+            {activeTab === "admin" && canAccessAdmin && (
               <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
                 <AdminPanelSection />
               </main>

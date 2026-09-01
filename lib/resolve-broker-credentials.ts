@@ -3,7 +3,7 @@ import { decrypt, isEncrypted } from "@/lib/crypto";
 
 export async function resolveBrokerCredentials(
   uid: string,
-  request: Request
+  request?: Request
 ): Promise<{ locationId: string | undefined; apiKey: string | undefined }> {
   let locationId: string | undefined = undefined;
   let apiKey: string | undefined = undefined;
@@ -24,7 +24,7 @@ export async function resolveBrokerCredentials(
     console.warn("No se pudo consultar Firestore Admin para credenciales del broker:", e);
   }
 
-  if (!locationId) {
+  if (!locationId && request) {
     const headerLocationId = request.headers.get("x-crm-location-id");
     if (headerLocationId) locationId = headerLocationId.trim();
   }

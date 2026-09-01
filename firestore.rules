@@ -38,10 +38,25 @@ service cloud.firestore {
         }
       }
 
-      // Tickets de soporte scoped por Broker
+      // Tickets de soporte scoped por Broker (Legacy & Enhanced V2)
       match /tickets/{ticketId} {
         allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
       }
+
+      match /enhancedTickets/{ticketId}/{allPaths=**} {
+        allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+      }
+
+      // Conversaciones y mensajes con el Asistente IA
+      match /supportConversations/{convId}/{allPaths=**} {
+        allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+      }
+    }
+
+    // Base de conocimiento pública para brokers autenticados
+    match /supportKnowledge/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && getRole() == 'admin';
     }
 
     // 1. Reglas para la colección de USUARIOS

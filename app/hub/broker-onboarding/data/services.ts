@@ -14,6 +14,8 @@ import {
   type LucideIcon
 } from "lucide-react";
 
+export type PipelineCluster = "fondeo_rapido" | "real_estate" | "credit_repair" | "seguros" | "corporativo";
+
 export interface ServiceDetail {
   id: string;
   title: string;
@@ -22,6 +24,8 @@ export interface ServiceDetail {
   // Departamento GHL central al que se duplica el lead (dual-sync Hub-First Intake).
   // Independiente de "category" (que solo controla la columna donde se muestra en el catálogo).
   centralDepartment: "financial" | "insurance" | "corporate";
+  // Cluster de pipeline en GHL para enrutamiento inteligente por vertical
+  pipelineCluster: PipelineCluster;
   status: "active" | "delay" | "paused" | "upcoming";
   statusLabel: string;
   description: string;
@@ -41,6 +45,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Briefcase,
     category: "financial",
     centralDepartment: "financial",
+    pipelineCluster: "fondeo_rapido",
     status: "active",
     statusLabel: "Activo",
     description: "Merchant Cash Advance (MCA) y préstamos empresariales rápidos basados en flujo de caja para clientes con puntaje de crédito inferior a 680. Underwriter asignado: James (Cliq Capital).",
@@ -72,6 +77,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Briefcase,
     category: "financial",
     centralDepartment: "financial",
+    pipelineCluster: "fondeo_rapido",
     status: "active",
     statusLabel: "Activo",
     description: "Financiamiento empresarial de categoría A-Paper con las mejores tasas bancarias y plazos extendidos para dueños de negocio con excelente puntaje de crédito (700+ FICO).",
@@ -100,6 +106,7 @@ export const servicesData: ServiceDetail[] = [
     icon: User,
     category: "financial",
     centralDepartment: "financial",
+    pipelineCluster: "fondeo_rapido",
     status: "active",
     statusLabel: "Activo",
     description: "Financiamiento personal sin garantías para perfiles sólidos (A-Paper) que buscan liquidez inmediata con tasas competitivas y plazos cómodos.",
@@ -127,6 +134,7 @@ export const servicesData: ServiceDetail[] = [
     icon: CreditCard,
     category: "financial",
     centralDepartment: "financial",
+    pipelineCluster: "fondeo_rapido",
     status: "active",
     statusLabel: "Activo",
     description: "Líneas de crédito rotativas empresariales al 0% de interés introductorio por 12 a 24 meses para capital de trabajo y expansión del negocio sin afectar el crédito personal.",
@@ -154,6 +162,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Home,
     category: "financial",
     centralDepartment: "financial",
+    pipelineCluster: "real_estate",
     status: "active",
     statusLabel: "Activo",
     description: "Financiamiento integral para bienes raíces (residenciales y comerciales) adaptado a cada perfil: FHA, Convencionales, VA, DSCR (inversionistas sin verificar ingresos) y Dinero Duro.",
@@ -182,6 +191,7 @@ export const servicesData: ServiceDetail[] = [
     icon: CreditCard,
     category: "financial",
     centralDepartment: "financial",
+    pipelineCluster: "credit_repair",
     status: "active",
     statusLabel: "Activo",
     description: "Programa integral de disputa y remoción de cuentas derogatorias del reporte de crédito utilizando la Ley de Crédito Justo (FCRA) para elevar el score de crédito del cliente.",
@@ -209,6 +219,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Building,
     category: "financial",
     centralDepartment: "corporate",
+    pipelineCluster: "corporativo",
     status: "active",
     statusLabel: "Activo",
     description: "Servicio de constitución y registro oficial de LLCs, Corporaciones (Corp) o Nonprofits en cualquiera de los 50 estados de USA. Incluye EIN y Acuerdo Operativo.",
@@ -227,7 +238,7 @@ export const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Entrega de documentos completos en 24 a 72 horas hábiles tras la radicación.",
     comission: "Comisión fija de $150 sobre los honorarios base del servicio de registro.",
-    formLink: "Formulario en desarrollo",
+    formLink: "https://api.leadconnectorhq.com/widget/form/blLUIvstRr21a2qsPZy7",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636"
   },
@@ -237,6 +248,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Calculator,
     category: "financial",
     centralDepartment: "corporate",
+    pipelineCluster: "corporativo",
     status: "upcoming",
     statusLabel: "Próximamente",
     description: "Configuración, manejo de payroll y automatización para el pago de empleados y contratistas, asegurando el cumplimiento tributario laboral local y federal. Disponible muy pronto.",
@@ -262,6 +274,7 @@ export const servicesData: ServiceDetail[] = [
     icon: CreditCard,
     category: "financial",
     centralDepartment: "corporate",
+    pipelineCluster: "corporativo",
     status: "upcoming",
     statusLabel: "Próximamente",
     description: "Instalación de terminales de pago con tarjeta e integración de procesamiento de merchant account con tarifas garantizadas y soporte técnico local. Disponible muy pronto.",
@@ -287,6 +300,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Car,
     category: "professional",
     centralDepartment: "insurance",
+    pipelineCluster: "seguros",
     status: "active",
     statusLabel: "Activo",
     description: "Pólizas de seguro automotriz personal, cotizando y comparando precios con las aseguradoras más importantes de USA.",
@@ -312,6 +326,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Car,
     category: "professional",
     centralDepartment: "insurance",
+    pipelineCluster: "seguros",
     status: "active",
     statusLabel: "Activo",
     description: "Pólizas de seguro comercial automotriz y de transporte pesado (Trucking / Flotillas) para camiones de carga, semi-remolques y vehículos corporativos.",
@@ -338,6 +353,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Home,
     category: "professional",
     centralDepartment: "insurance",
+    pipelineCluster: "seguros",
     status: "active",
     statusLabel: "Activo",
     description: "Seguros residenciales (homeowners) para proteger la estructura física de la vivienda, propiedad personal y responsabilidad civil del asegurado.",
@@ -363,6 +379,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Laptop,
     category: "professional",
     centralDepartment: "insurance",
+    pipelineCluster: "seguros",
     status: "active",
     statusLabel: "Activo",
     description: "Cobertura de Responsabilidad Civil General (Commercial General Liability - CGL), BOP y propiedad comercial para blindar la operación del negocio ante reclamos y demandas.",
@@ -389,6 +406,7 @@ export const servicesData: ServiceDetail[] = [
     icon: ShieldCheck,
     category: "professional",
     centralDepartment: "insurance",
+    pipelineCluster: "seguros",
     status: "active",
     statusLabel: "Activo",
     description: "Seguro obligatorio de Workers' Compensation para proteger la salud de los empleados y blindar al empleador ante lesiones o accidentes dentro del área de trabajo.",
@@ -415,6 +433,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Users,
     category: "professional",
     centralDepartment: "corporate",
+    pipelineCluster: "corporativo",
     status: "active",
     statusLabel: "Activo",
     description: "Asistencia no legal en la preparación y envío de documentación oficial para trámites ante el USCIS (DACA, renovación de permisos de trabajo, cartas de patrocinio). NO incluye representación jurídica.",
@@ -431,9 +450,9 @@ export const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Preparación de expedientes en 3 a 7 días hábiles tras recopilación completa.",
     comission: "Comisión fija de referido del 30% sobre el valor del servicio preparado.",
-    formLink: "Formulario en desarrollo",
+    formLink: "https://calendly.com/servicios-rlhispanoservices/45min",
     supportPhone: "tel:+19087332891",
-    supportPhoneFormatted: "+1 (908) 733-2891 (Llamadas / WhatsApp)"
+    supportPhoneFormatted: "RL MultiServices: +1 (908) 733-2891 (Llamadas / WhatsApp)"
   },
   {
     id: "tax-preparation",
@@ -441,24 +460,26 @@ export const servicesData: ServiceDetail[] = [
     icon: Calculator,
     category: "professional",
     centralDepartment: "corporate",
+    pipelineCluster: "corporativo",
     status: "active",
     statusLabel: "Activo",
-    description: "Declaración anual y trimestral de taxes personales y corporativos. Trámite de nuevo número ITIN, enmiendas y corrección de impuestos de años anteriores.",
+    description: "Declaración anual y trimestral de taxes personales y corporativos. Trámite de nuevo número ITIN, enmiendas y corrección de impuestos de años anteriores con RL MultiServices.",
     requirements: [
       "W-2, 1099 y registros detallados de ingresos y egresos del negocio",
       "Identificación oficial, número SSN o tarjeta/carta de número ITIN",
       "Copia de la declaración de impuestos del año fiscal anterior"
     ],
     process: [
-      "Recoger toda la documentación y subirla a través del portal de impuestos de E360.",
-      "El especialista fiscal de E360 realiza los cálculos y el borrador de declaración.",
+      "Agendar cita de asesoría fiscal mediante el enlace de Calendly con RL MultiServices.",
+      "Recoger toda la documentación y presentarla durante la sesión de evaluación.",
+      "El especialista fiscal realiza los cálculos y el borrador de declaración.",
       "Reunión de revisión de reembolsos/pagos con el cliente, firma y transmisión electrónica al IRS."
     ],
     timeframe: "En temporada (Ene-Abr): 24 a 72 horas. Fuera de temporada: 3 a 5 días hábiles.",
     comission: "Porcentaje sobre el costo base de preparación cobrado por E360.",
-    formLink: "Formulario en desarrollo",
+    formLink: "https://calendly.com/servicios-rlhispanoservices/45min",
     supportPhone: "tel:+19087332891",
-    supportPhoneFormatted: "+1 (908) 733-2891 (Llamadas / WhatsApp)"
+    supportPhoneFormatted: "RL MultiServices: +1 (908) 733-2891 (Llamadas / WhatsApp)"
   },
   {
     id: "life-insurance",
@@ -466,6 +487,7 @@ export const servicesData: ServiceDetail[] = [
     icon: Heart,
     category: "professional",
     centralDepartment: "insurance",
+    pipelineCluster: "seguros",
     status: "active",
     statusLabel: "Activo",
     description: "Pólizas de seguro de vida individuales a término o permanente para la protección patrimonial y financiera de la familia del tomador.",
@@ -492,6 +514,7 @@ export const servicesData: ServiceDetail[] = [
     icon: HeartPulse,
     category: "professional",
     centralDepartment: "insurance",
+    pipelineCluster: "seguros",
     status: "active",
     statusLabel: "Activo",
     description: "Planes de seguro médico individuales, familiares y comerciales (Planes bajo el Obamacare - Mercado de Seguros de Salud, y seguros privados).",

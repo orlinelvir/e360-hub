@@ -154,7 +154,8 @@ export async function POST(request: Request) {
             apiKey: brokerApiKey,
             contactId: brokerContactId,
             name: fullName,
-            monetaryValue: 0
+            monetaryValue: 0,
+            cluster: "credit_repair"
           });
         }
       } catch (error) {
@@ -191,7 +192,8 @@ export async function POST(request: Request) {
             apiKey: centralApiKey,
             contactId: centralContactId,
             name: fullName,
-            monetaryValue: 0
+            monetaryValue: 0,
+            cluster: "credit_repair"
           });
         }
       } catch (error) {

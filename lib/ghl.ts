@@ -182,10 +182,20 @@ export async function updateGHLOpportunity(oppId: string, updateData: Partial<GH
   return response.json();
 }
 
+const CLUSTER_KEYWORDS: Record<string, string[]> = {
+  fondeo_rapido: ["fondeo", "funding", "mca", "préstamo", "prestamo", "business loan", "personal loan", "tarjeta", "credit card", "capital"],
+  real_estate: ["real estate", "bienes raíces", "bienes raices", "hipotec", "mortgage", "dscr", "inmobiliari"],
+  credit_repair: ["credit repair", "reparación", "reparacion", "crédito", "credito", "disputa"],
+  seguros: ["seguro", "insurance", "póliza", "poliza", "trucking", "workers comp", "auto insurance"],
+  corporativo: ["corporat", "legal", "incorporat", "llc", "empresa", "tax", "impuesto", "inmigra", "immigration", "payroll", "nómina", "nomina", "pos"]
+};
+
+const INITIAL_STAGE_KEYWORDS = ["lead", "nuevo", "new", "onboarding", "ingresado", "contacto", "inbox", "docs", "solicitud", "inicio"];
+
 /**
- * Crea una oportunidad en el primer pipeline/etapa disponible de la subcuenta.
- * TODO: una vez existan pipelines dedicados por línea de negocio (ver ESTRATEGIA_GHL),
- * elegir el pipeline por nombre/clave estable en vez de "el primero que aparezca".
+ * Crea una oportunidad en el pipeline correspondiente al cluster del servicio.
+ * Si la subcuenta tiene un pipeline que coincide con el cluster, lo selecciona automáticamente;
+ * de lo contrario, utiliza el pipeline principal disponible con fallback seguro.
  */
 export async function createOpportunityInPipeline(opts: {
   locationId: string;
@@ -193,28 +203,54 @@ export async function createOpportunityInPipeline(opts: {
   contactId: string;
   name: string;
   monetaryValue: number;
+  cluster?: string;
 }): Promise<string | null> {
-  const { locationId, apiKey, contactId, name, monetaryValue } = opts;
+  const { locationId, apiKey, contactId, name, monetaryValue, cluster } = opts;
 
   const pipelines = await getGHLPipelines(locationId, apiKey);
-  const pipeline = pipelines.pipelines?.[0] || pipelines.data?.[0] || (Array.isArray(pipelines) ? pipelines[0] : undefined);
+  const pipelineList: Array<{ id: string; name?: string }> = 
+    pipelines.pipelines || pipelines.data || (Array.isArray(pipelines) ? pipelines : []);
 
-  if (!pipeline?.id) {
-    console.warn("No pipeline found:", { pipelines: JSON.stringify(pipelines).substring(0, 300) });
+  if (!pipelineList.length || !pipelineList[0]?.id) {
+    console.warn("No pipelines found in location:", { locationId, pipelines: JSON.stringify(pipelines).substring(0, 300) });
     return null;
   }
 
-  const stagesRes = await getGHLPipelineStages(locationId, pipeline.id, apiKey);
-  const stage = stagesRes.pipelineStages?.[0] || stagesRes.stages?.[0] || (Array.isArray(stagesRes) ? stagesRes[0] : undefined);
+  // Búsqueda inteligente de pipeline por cluster
+  let targetPipeline = pipelineList[0];
+  if (cluster && CLUSTER_KEYWORDS[cluster]) {
+    const keywords = CLUSTER_KEYWORDS[cluster];
+    const matchedPipeline = pipelineList.find(p => {
+      const pName = (p.name || "").toLowerCase();
+      return keywords.some(kw => pName.includes(kw));
+    });
+    if (matchedPipeline?.id) {
+      targetPipeline = matchedPipeline;
+    }
+  }
 
-  if (!stage?.id) {
-    console.warn("No pipeline stage found:", { stages: JSON.stringify(stagesRes).substring(0, 300) });
+  const stagesRes = await getGHLPipelineStages(locationId, targetPipeline.id, apiKey);
+  const stageList: Array<{ id: string; name?: string }> = 
+    stagesRes.pipelineStages || stagesRes.stages || (Array.isArray(stagesRes) ? stagesRes : []);
+
+  if (!stageList.length || !stageList[0]?.id) {
+    console.warn("No pipeline stages found for pipeline:", { pipelineId: targetPipeline.id, stages: JSON.stringify(stagesRes).substring(0, 300) });
     return null;
+  }
+
+  // Selección inteligente de la etapa inicial de entrada
+  let targetStage = stageList[0];
+  const matchedStage = stageList.find(s => {
+    const sName = (s.name || "").toLowerCase();
+    return INITIAL_STAGE_KEYWORDS.some(kw => sName.includes(kw));
+  });
+  if (matchedStage?.id) {
+    targetStage = matchedStage;
   }
 
   const oppData: GHLOpportunityPayload = {
-    pipelineId: pipeline.id,
-    pipelineStageId: stage.id,
+    pipelineId: targetPipeline.id,
+    pipelineStageId: targetStage.id,
     locationId,
     name,
     contactId,
