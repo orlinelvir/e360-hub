@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { BrokerProfileData } from "../types";
 import { useAuth } from "@/components/AuthProvider";
-import { getBrokerProfile } from "@/lib/services/broker-service";
+import { getBrokerProfile, updateBrokerProfile } from "@/lib/services/broker-service";
 
 interface MiPerfilSectionProps {
   brokerName: string;
@@ -35,8 +35,8 @@ const createCleanProfile = (name: string): BrokerProfileData => ({
   uid: "usr-default",
   displayName: name || "Broker E360",
   name: name || "Broker E360",
-  email: "broker@emprende360.com",
-  phone: "+1 (800) 360-5626",
+  email: "",
+  phone: "",
   brokerId: "BRK-360-001",
   ghlLocationId: "",
   ghlSubaccountEmail: "",
@@ -83,9 +83,19 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
     if (!user) return;
 
     getBrokerProfile(user.uid, brokerName, user.email || "").then((data) => {
+      // El correo de acceso siempre viene de la sesión real de Firebase Auth, nunca
+      // de la copia guardada en Firestore (que puede haber quedado desactualizada por
+      // la vieja migración de localStorage). Si difiere, se autocorrige en Firestore
+      // también, para que el roster de Admin quede consistente.
+      const correctedEmail = user.email || data.email || "";
+      if (correctedEmail && correctedEmail !== data.email) {
+        updateBrokerProfile(user.uid, { email: correctedEmail });
+      }
+
       setProfile((prev) => ({
         ...prev,
         ...data,
+        email: correctedEmail,
         name: data.displayName || data.name || prev.name,
         brokerId: `BRK-${data.uid ? data.uid.substring(0, 6).toUpperCase() : "360"}`
       }));

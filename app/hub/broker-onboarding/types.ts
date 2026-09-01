@@ -107,3 +107,28 @@ export interface TicketMessage {
   createdAt: string;
 }
 
+// Expediente de Caso (Financiamiento/Seguros): notas segmentadas por audiencia.
+// "observation" y "case" son internas (admin/especialista de la vertical, nunca el
+// broker); "broker" es la única categoría visible para el broker dueño del cliente.
+export type CaseNoteCategory = "observation" | "case" | "broker";
+
+export interface CaseNote {
+  id: string;
+  category: CaseNoteCategory;
+  content: string;
+  authorName: string;
+  authorId: string;
+  createdAt: string;
+}
+
+export interface CaseDocument {
+  id: string;
+  fileName: string;
+  storagePath: string;
+  contentType: string;
+  size: number;
+  uploadedByName: string;
+  uploadedById: string;
+  createdAt: string;
+}
+

@@ -21,9 +21,10 @@ import {
   Building,
   Copy,
   Check,
-  Construction
+  Construction,
+  User
 } from "lucide-react";
-import { ClientLead, PipelineStage } from "../types";
+import { ClientLead, PipelineStage, CaseNote } from "../types";
 import { useAuth } from "@/components/AuthProvider";
 import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
 import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
@@ -81,6 +82,8 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStage, setSelectedStage] = useState<string>("all");
   const [selectedClient, setSelectedClient] = useState<ClientLead | null>(null);
+  const [brokerNotes, setBrokerNotes] = useState<CaseNote[]>([]);
+  const [loadingBrokerNotes, setLoadingBrokerNotes] = useState<boolean>(false);
   const [isSyncingGHL, setIsSyncingGHL] = useState<boolean>(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -180,6 +183,25 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
       return () => clearTimeout(timer);
     }
   }, [user, crmLocationId, crmApiKey, handleSyncGHLWithCredentials]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!user || !selectedClient) {
+        setBrokerNotes([]);
+        return;
+      }
+      setLoadingBrokerNotes(true);
+      user.getIdToken().then((token) =>
+        fetch(`/api/broker/clients/notes?clientId=${selectedClient.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      ).then((res) => res.json())
+        .then((data) => setBrokerNotes(data.notes || []))
+        .catch((err) => console.error("Error cargando notas del broker:", err))
+        .finally(() => setLoadingBrokerNotes(false));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [user, selectedClient]);
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -768,6 +790,33 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     </div>
                   );
                 })()}
+
+                {/* Notas de E360 para el broker (solo lectura) */}
+                {(loadingBrokerNotes || brokerNotes.length > 0) && (
+                  <div className="mb-6 bg-[#05101F] border border-gray-800 rounded-2xl p-4 space-y-3">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">Notas de E360 sobre tu Caso</span>
+                    {loadingBrokerNotes ? (
+                      <p className="text-xs text-gray-500">Cargando notas...</p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {brokerNotes.map((note) => (
+                          <div key={note.id} className="flex gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
+                              <User size={13} />
+                            </div>
+                            <div className="flex-1 bg-[#0A182D] border border-gray-800 rounded-xl p-2.5">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-bold text-cyan-400">{note.authorName}</span>
+                                <span className="text-[9px] text-gray-500">{new Date(note.createdAt).toLocaleString()}</span>
+                              </div>
+                              <p className="text-xs text-gray-300 whitespace-pre-wrap">{note.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Cambio de Etapa */}
                 <div className="mb-6 space-y-2">

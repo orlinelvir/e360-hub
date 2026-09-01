@@ -12,7 +12,6 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
-import { migrateLocalStorageToFirestore } from "@/lib/services/broker-service";
 
 interface BrokerUserProfile {
   uid: string;
@@ -67,9 +66,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             body: JSON.stringify({ token }),
           });
           
-          // Ejecutar migración de datos heredados en localStorage a Firestore
-          await migrateLocalStorageToFirestore(currentUser.uid);
-
           const userDocRef = doc(db, "brokers", currentUser.uid);
           const snap = await getDoc(userDocRef);
           if (snap.exists()) {

@@ -36,6 +36,19 @@ service cloud.firestore {
           allow read: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
           allow write: if false;
         }
+
+        // Expediente de caso (Financiamiento/Seguros): notas segmentadas por audiencia
+        // (observación y caso son internas para admin/especialista; broker son visibles
+        // al broker) y documentos adjuntos. La visibilidad por categoría/rol de vertical
+        // no se puede expresar de forma segura en reglas de Firestore, así que todo el
+        // acceso (lectura incluida) pasa exclusivamente por rutas API con Admin SDK.
+        match /caseNotes/{noteId} {
+          allow read, write: if false;
+        }
+
+        match /caseDocuments/{docId} {
+          allow read, write: if false;
+        }
       }
 
       // Tickets de soporte scoped por Broker (Legacy & Enhanced V2)
