@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
     // Turbopack infiera mal la raíz del workspace. Se fija explícitamente aquí.
     root: import.meta.dirname,
   },
+  // firebase-admin/auth carga jwks-rsa, que a su vez hace require() del build ESM-only
+  // de jose (dist/webapi/index.js). El bundler de Turbopack para Vercel intenta cargar
+  // ese árbol como "external module" y falla con ERR_REQUIRE_ESM en producción (no se
+  // reproduce en local). Forzar estos paquetes como externos hace que Node los resuelva
+  // nativamente en runtime, respetando el "exports" map real de cada uno.
+  serverExternalPackages: ["firebase-admin", "jose", "jwks-rsa"],
   images: {
     remotePatterns: [
       {
