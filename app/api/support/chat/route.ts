@@ -10,6 +10,10 @@ import { getKnowledgeBaseContext } from "@/lib/ai/knowledge-base";
 import { generateGeminiResponse, GeminiMessage } from "@/lib/ai/gemini";
 import { ChatMessage } from "@/app/hub/broker-onboarding/types";
 
+// Default de Vercel (10s) no alcanza para intentar 3 modelos de Gemini en cadena
+// (hasta 12s de timeout cada uno) cuando el primero está saturado. Ver lib/ai/gemini.ts.
+export const maxDuration = 45;
+
 export async function POST(request: Request) {
   const user = await verifyAuthToken(request);
   if (!user) {

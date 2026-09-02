@@ -47,6 +47,11 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
     setInput("");
     setIsLoading(true);
 
+    // Corta la espera del lado del cliente si el servidor tarda demasiado (ej. los 3
+    // modelos de Gemini en cadena saturados), en vez de dejar el "..." girando para siempre.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 50_000);
+
     try {
       const token = await user.getIdToken();
       const res = await fetch("/api/support/chat", {
@@ -59,6 +64,7 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
           message: text,
           conversationId,
         }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -90,7 +96,12 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
       ]);
     } catch (err: unknown) {
       console.error(err);
-      const errMsg = err instanceof Error ? err.message : "Hubo un error de conexión con el asistente. Por favor, intenta de nuevo.";
+      const errMsg =
+        err instanceof Error && err.name === "AbortError"
+          ? "El asistente está tardando más de lo normal. Por favor, intenta de nuevo en unos momentos."
+          : err instanceof Error
+            ? err.message
+            : "Hubo un error de conexión con el asistente. Por favor, intenta de nuevo.";
       setMessages((prev) => [
         ...prev,
         {
@@ -99,6 +110,7 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
         },
       ]);
     } finally {
+      clearTimeout(timeout);
       setIsLoading(false);
     }
   };

@@ -10,11 +10,13 @@ export interface GeminiResponse {
 
 // gemini-2.0-flash y gemini-1.5-flash fueron descontinuados por Google (404 en producción,
 // confirmado en logs de Vercel el 2026-09-02). gemini-3.6-flash es el reemplazo directo que
-// la propia API de Google indicó en el error; gemini-3.7-flash como respaldo por tener más
-// margen antes de deprecarse (GA reciente, agosto 2026) que gemini-2.5-flash (se apaga en
-// octubre 2026).
-const PRIMARY_MODEL = "gemini-3.6-flash";
-const FALLBACK_MODEL = "gemini-3.7-flash";
+// la propia API de Google indicó en el error, pero devolvió 503 "alta demanda" en la primera
+// prueba — modelo recién lanzado, capacidad inestable. Se agregan dos respaldos en cadena
+// (3.7-flash y 3.5-flash-lite, este último con pool de capacidad separado por ser "lite")
+// en vez de solo uno, y un timeout por intento para no agotar el tiempo de la función
+// serverless esperando a un solo modelo saturado.
+const MODELS = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
+const PER_MODEL_TIMEOUT_MS = 12_000;
 
 /**
  * Llama a la API REST de Gemini con soporte para múltiples modelos y fallback automático.
@@ -59,18 +61,20 @@ IMPORTANTE: DEBES RESPONDER ÚNICAMENTE EN FORMATO JSON VÁLIDO CON LA SIGUIENTE
 
   payload.system_instruction.parts[0].text = promptForJson;
 
-  const models = [PRIMARY_MODEL, FALLBACK_MODEL];
   let lastError: Error | null = null;
 
-  for (const model of models) {
+  for (const model of MODELS) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PER_MODEL_TIMEOUT_MS);
     try {
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       });
 
       if (!response.ok) {
@@ -109,7 +113,14 @@ IMPORTANTE: DEBES RESPONDER ÚNICAMENTE EN FORMATO JSON VÁLIDO CON LA SIGUIENTE
       if (err instanceof Error && err.message === "rate_limit") {
         throw err;
       }
-      lastError = err instanceof Error ? err : new Error(String(err));
+      if (err instanceof Error && err.name === "AbortError") {
+        console.warn(`Timeout (${PER_MODEL_TIMEOUT_MS}ms) esperando al modelo ${model}.`);
+        lastError = new Error(`Timeout esperando modelo ${model}`);
+      } else {
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
