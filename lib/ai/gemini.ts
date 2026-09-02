@@ -6,6 +6,7 @@ export interface GeminiMessage {
 export interface GeminiResponse {
   answer: string;
   suggestEscalation: boolean;
+  relevantGuideSlugs: string[];
 }
 
 // gemini-2.0-flash y gemini-1.5-flash fueron descontinuados por Google (404 en producción,
@@ -55,7 +56,10 @@ ${systemInstruction}
 IMPORTANTE: DEBES RESPONDER ÚNICAMENTE EN FORMATO JSON VÁLIDO CON LA SIGUIENTE ESTRUCTURA:
 {
   "answer": "tu respuesta detallada aquí en formato markdown",
-  "suggestEscalation": true/false (true si el usuario necesita hablar con un humano o pide contactar soporte, false en caso contrario)
+  "suggestEscalation": true/false (true si el usuario necesita hablar con un humano o pide contactar soporte, false en caso contrario),
+  "relevantGuideSlugs": ["slug1"] (opcional, arreglo vacío si ninguno aplica; incluye 1-2 slugs SOLO si el
+    documento está en la lista de "DOCUMENTOS/GUÍAS PDF DISPONIBLES" y responde directamente lo que pregunta
+    el broker — nunca inventes un slug que no esté en esa lista)
 }
 `;
 
@@ -101,12 +105,14 @@ IMPORTANTE: DEBES RESPONDER ÚNICAMENTE EN FORMATO JSON VÁLIDO CON LA SIGUIENTE
         const parsed = JSON.parse(cleanJsonStr);
         return {
           answer: parsed.answer || responseText,
-          suggestEscalation: !!parsed.suggestEscalation
+          suggestEscalation: !!parsed.suggestEscalation,
+          relevantGuideSlugs: Array.isArray(parsed.relevantGuideSlugs) ? parsed.relevantGuideSlugs : []
         };
       } catch {
         return {
           answer: responseText,
-          suggestEscalation: false
+          suggestEscalation: false,
+          relevantGuideSlugs: []
         };
       }
     } catch (err) {

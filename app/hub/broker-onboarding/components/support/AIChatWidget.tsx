@@ -2,14 +2,20 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, User, Send, Sparkles, ArrowUpRight, Loader2, AlertCircle } from "lucide-react";
+import { Bot, User, Send, Sparkles, ArrowUpRight, Loader2, AlertCircle, FileText, Download } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+
+interface ChatDocument {
+  title: string;
+  url: string;
+}
 
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
   sources?: string[];
   suggestEscalation?: boolean;
+  documents?: ChatDocument[];
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -92,6 +98,7 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
           content: data.answer,
           sources: data.sources,
           suggestEscalation: data.suggestEscalation,
+          documents: data.documents,
         },
       ]);
     } catch (err: unknown) {
@@ -193,6 +200,25 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
                         <span key={idx} className="px-2 py-0.5 bg-gray-800/60 border border-gray-700 rounded-md text-[9px] font-mono text-gray-400">
                           {src}
                         </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Documentos/guías relevantes */}
+                  {msg.documents && msg.documents.length > 0 && (
+                    <div className="flex flex-col gap-1.5 mt-3">
+                      {msg.documents.map((doc, idx) => (
+                        <a
+                          key={idx}
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-semibold transition-colors"
+                        >
+                          <FileText size={14} className="shrink-0" />
+                          <span className="flex-1 truncate">{doc.title}</span>
+                          <Download size={14} className="shrink-0" />
+                        </a>
                       ))}
                     </div>
                   )}

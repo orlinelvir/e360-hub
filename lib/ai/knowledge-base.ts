@@ -1,5 +1,6 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { servicesData } from "@/app/hub/broker-onboarding/data/services";
+import { GUIDES } from "./guides";
 
 export interface FaqEntry {
   question: string;
@@ -78,21 +79,9 @@ const FALLBACK_FAQS: FaqEntry[] = [
 ];
 
 const GUIDES_REFERENCE = `
-REFERENCIAS DE GUÍAS Y PDF DISPONIBLES EN EL HUB:
-- Guia MCA: Detalles y requisitos para préstamos basados en ingresos (Merchant Cash Advance).
-- Guia SBA: Proceso y requisitos para préstamos respaldados por la Small Business Administration.
-- Guia Fondeo: Información general sobre opciones de fondeo empresarial.
-- Guia Bienes Raices: Requisitos para préstamos hipotecarios y de inversión inmobiliaria.
-- Guia Registro de Empresas: Paso a paso para la incorporación de LLCs y corporaciones.
-- Cheatsheet Credito Empresarial: Resumen rápido para construir y obtener crédito para negocios.
-- Guia Done For You: Servicios gestionados directamente por el equipo interno.
-- Proceso Broker Credito: Flujo de trabajo para brokers de crédito empresarial.
-- Reparacion Credito Clientes: Detalles del servicio de reparación de crédito para clientes.
-- Guia Precios Broker Reparacion: Tabla de precios y comisiones para reparación de crédito.
-- Guia Configuracion GHL Pipelines: Instrucciones para configurar los embudos en StartPoint CRM (GoHighLevel).
-- Guia Primeros Compradores 50 Estados: Programas de asistencia para primeros compradores de vivienda a nivel nacional.
-- Cheatsheet Lead Flow: Diagrama de flujo de cómo manejar y procesar leads entrantes.
-- Cheatsheet Consolidacion Synchrony: Detalles sobre opciones de consolidación de deudas con Synchrony.
+DOCUMENTOS/GUÍAS PDF DISPONIBLES (usa el SLUG exacto entre corchetes en "relevantGuideSlugs" cuando
+uno de estos documentos responda directamente la pregunta del broker; no lo inventes ni lo modifiques):
+${GUIDES.map((g) => `- [${g.slug}] ${g.title}: ${g.description}`).join("\n")}
 `;
 
 /**
