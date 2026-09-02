@@ -1,6 +1,7 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { servicesData } from "@/app/hub/broker-onboarding/data/services";
 import { GUIDES } from "./guides";
+import { VIDEOS } from "./videos";
 
 export interface FaqEntry {
   question: string;
@@ -84,6 +85,20 @@ uno de estos documentos responda directamente la pregunta del broker; no lo inve
 ${GUIDES.map((g) => `- [${g.slug}] ${g.title}: ${g.description}`).join("\n")}
 `;
 
+const VIDEOS_REFERENCE = `
+VIDEOS DE CLASES/CAPACITACIONES DISPONIBLES (usa el SLUG exacto entre corchetes en "relevantVideoSlugs"
+SOLO cuando uno de estos videos responda directamente lo que pregunta el broker; no lo inventes ni lo
+modifiques). Estos son grabaciones puntuales de clases de la Biblioteca E360 (e360library.com), agrupadas
+por tema porque hay muchas clases repetidas semanalmente sobre el mismo tema — este es el video más
+representativo de cada tema:
+${VIDEOS.map((v) => `- [${v.slug}] (${v.category}) ${v.title}: ${v.description}`).join("\n")}
+
+Para preguntas sobre temas de la Biblioteca E360 que NO estén en esta lista (ej. lecciones fijas de
+inmigración/impuestos como Asilo, Ciudadanía, Permiso de Trabajo, o cursos base de "Curso Express"),
+NO inventes un slug: simplemente indica al broker que puede encontrar esa lección accediendo a
+https://e360library.com con su correo registrado.
+`;
+
 /**
  * Obtiene el conocimiento completo para inyectar en el prompt del IA.
  */
@@ -132,5 +147,8 @@ ${servicesText}
 
 --- GUÍAS Y RECURSOS ---
 ${GUIDES_REFERENCE}
+
+--- VIDEOS DE CAPACITACIÓN ---
+${VIDEOS_REFERENCE}
 `;
 }

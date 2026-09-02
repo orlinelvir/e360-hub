@@ -2,10 +2,15 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, User, Send, Sparkles, ArrowUpRight, Loader2, AlertCircle, FileText, Download } from "lucide-react";
+import { Bot, User, Send, Sparkles, ArrowUpRight, Loader2, AlertCircle, FileText, Download, PlayCircle } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
 interface ChatDocument {
+  title: string;
+  url: string;
+}
+
+interface ChatVideo {
   title: string;
   url: string;
 }
@@ -16,6 +21,7 @@ interface Message {
   sources?: string[];
   suggestEscalation?: boolean;
   documents?: ChatDocument[];
+  videos?: ChatVideo[];
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -99,6 +105,7 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
           sources: data.sources,
           suggestEscalation: data.suggestEscalation,
           documents: data.documents,
+          videos: data.videos,
         },
       ]);
     } catch (err: unknown) {
@@ -218,6 +225,25 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
                           <FileText size={14} className="shrink-0" />
                           <span className="flex-1 truncate">{doc.title}</span>
                           <Download size={14} className="shrink-0" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Videos de clases relevantes */}
+                  {msg.videos && msg.videos.length > 0 && (
+                    <div className="flex flex-col gap-1.5 mt-3">
+                      {msg.videos.map((video, idx) => (
+                        <a
+                          key={idx}
+                          href={video.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-lg text-xs font-semibold transition-colors"
+                        >
+                          <PlayCircle size={14} className="shrink-0" />
+                          <span className="flex-1 truncate">{video.title}</span>
+                          <ArrowUpRight size={14} className="shrink-0" />
                         </a>
                       ))}
                     </div>

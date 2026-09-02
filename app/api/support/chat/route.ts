@@ -9,6 +9,7 @@ import { SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { getKnowledgeBaseContext } from "@/lib/ai/knowledge-base";
 import { generateGeminiResponse, GeminiMessage } from "@/lib/ai/gemini";
 import { getGuideBySlug } from "@/lib/ai/guides";
+import { getVideoBySlug } from "@/lib/ai/videos";
 import { ChatMessage } from "@/app/hub/broker-onboarding/types";
 
 const GUIDE_SIGNED_URL_EXPIRY_MS = 24 * 60 * 60 * 1000;
@@ -35,6 +36,16 @@ async function resolveGuideDocuments(slugs: string[]) {
   );
 
   return results.filter((r): r is { title: string; url: string } => r !== null);
+}
+
+function resolveVideos(slugs: string[]) {
+  return slugs
+    .map((slug) => {
+      const video = getVideoBySlug(slug);
+      if (!video || !video.url) return null;
+      return { title: video.title, url: video.url };
+    })
+    .filter((v): v is { title: string; url: string } => v !== null);
 }
 
 // Default de Vercel (10s) no alcanza para intentar 3 modelos de Gemini en cadena
@@ -99,13 +110,15 @@ export async function POST(request: Request) {
     await addMessageToConversation(user.uid, conversationId, modelChatMessage);
 
     const documents = await resolveGuideDocuments(aiResponse.relevantGuideSlugs);
+    const videos = resolveVideos(aiResponse.relevantVideoSlugs);
 
     return NextResponse.json({
       answer: aiResponse.answer,
       conversationId,
       sources: ["E360 Hub Knowledge Base", "Guías de Broker"],
       suggestEscalation: aiResponse.suggestEscalation,
-      documents
+      documents,
+      videos
     });
 
   } catch (error: unknown) {
