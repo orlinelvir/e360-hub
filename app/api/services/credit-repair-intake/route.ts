@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { verifyAuthToken, adminDb, adminStorage } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
 import { encrypt } from "@/lib/crypto";
+import { sendWelcomeApplicationEmail } from "@/lib/email/send";
 
 // Vercel limita el tamaño del body de las funciones serverless (4.5MB en la mayoría
 // de los planes) — nos quedamos debajo de eso para no depender de configuración extra.
@@ -211,6 +212,14 @@ export async function POST(request: Request) {
       feeRoundStatus: "pending_review",
       feeRoundNumber: 1
     });
+
+    after(() =>
+      sendWelcomeApplicationEmail({
+        clientEmail: email,
+        clientName: fullName,
+        serviceName: "Reparación de Crédito",
+      })
+    );
 
     return NextResponse.json({
       success: true,

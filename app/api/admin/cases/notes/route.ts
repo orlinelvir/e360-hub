@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
 import { getCaseNotes, addCaseNote } from "@/lib/services/case-service";
 import { CaseNoteCategory } from "@/app/hub/broker-onboarding/types";
+import { sendBrokerNoteEmail } from "@/lib/email/send";
 
 const VALID_CATEGORIES: CaseNoteCategory[] = ["observation", "case", "broker"];
 
@@ -12,15 +13,15 @@ async function checkCaseAccess(role: string, brokerId: string, clientId: string)
   const clientSnap = await adminDb.collection("brokers").doc(brokerId).collection("clients").doc(clientId).get();
   if (!clientSnap.exists) return { ok: false as const, status: 404, error: "Caso no encontrado" };
 
+  const client = clientSnap.data()!;
   if (role !== "admin") {
-    const client = clientSnap.data()!;
     const cluster = resolvePipelineCluster(client.serviceId, client.serviceName);
     const allowedClusters = getRoleDefinition(role)?.allowedClusters ?? [];
     if (!allowedClusters.includes(cluster)) {
       return { ok: false as const, status: 403, error: "Acceso restringido. Este caso no pertenece a tu vertical asignada." };
     }
   }
-  return { ok: true as const };
+  return { ok: true as const, client };
 }
 
 export async function GET(request: Request) {
@@ -92,12 +93,31 @@ export async function POST(request: Request) {
     const authorSnap = await adminDb.collection("brokers").doc(user.uid).get();
     const authorName = authorSnap.data()?.displayName || authorSnap.data()?.name || user.email || "Equipo E360";
 
+    const trimmedContent = String(content).trim();
     const noteId = await addCaseNote(brokerId, clientId, {
       category,
-      content: String(content).trim(),
+      content: trimmedContent,
       authorName,
       authorId: user.uid
     });
+
+    if (category === "broker") {
+      const brokerSnap = await adminDb.collection("brokers").doc(brokerId).get();
+      const brokerData = brokerSnap.data();
+      const brokerEmail = brokerData?.email || "";
+      const brokerName = brokerData?.displayName || brokerData?.name || "Broker";
+
+      after(() =>
+        sendBrokerNoteEmail({
+          brokerEmail,
+          brokerName,
+          clientName: access.client.name || "Cliente",
+          serviceName: access.client.serviceName || access.client.serviceId || "Servicio",
+          authorName,
+          noteContent: trimmedContent,
+        })
+      );
+    }
 
     return NextResponse.json({ success: true, noteId });
   } catch (error) {

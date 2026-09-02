@@ -1,7 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
+import { sendCaseStatusEmail } from "@/lib/email/send";
+import { CaseEmailStatus } from "@/lib/email/templates/CaseStatusEmail";
+
+const NOTIFIABLE_STATUSES: CaseEmailStatus[] = ["approved", "rejected", "funded"];
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -147,9 +151,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Caso no encontrado" }, { status: 404 });
     }
 
+    const client = clientSnap.data()!;
+
     // Un especialista solo puede editar casos de su propio cluster (admin no tiene restricción).
     if (role !== "admin") {
-      const client = clientSnap.data()!;
       const cluster = resolvePipelineCluster(client.serviceId, client.serviceName);
       const allowedClusters = getRoleDefinition(role)?.allowedClusters ?? [];
       if (!allowedClusters.includes(cluster)) {
@@ -160,6 +165,8 @@ export async function PATCH(request: Request) {
       }
     }
 
+    const previousStatus = client.status;
+
     const updatePayload: Record<string, unknown> = {
       lastActivity: `Actualizado por Admin: ${new Date().toLocaleDateString()}`
     };
@@ -169,6 +176,26 @@ export async function PATCH(request: Request) {
     if (estimatedCommission !== undefined) updatePayload.estimatedCommission = Number(estimatedCommission);
 
     await clientRef.update(updatePayload);
+
+    // Notificar al broker por correo solo si el status realmente cambió a uno de
+    // los 3 estados relevantes (evita reenviar en cada guardado de comisión/notas).
+    if (status !== undefined && status !== previousStatus && NOTIFIABLE_STATUSES.includes(status)) {
+      const brokerSnap = await adminDb.collection("brokers").doc(brokerId).get();
+      const brokerData = brokerSnap.data();
+      const brokerEmail = brokerData?.email || "";
+      const brokerName = brokerData?.displayName || brokerData?.name || "Broker";
+
+      after(() =>
+        sendCaseStatusEmail({
+          brokerEmail,
+          brokerName,
+          clientName: client.name || "Cliente",
+          serviceName: client.serviceName || client.serviceId || "Servicio",
+          status,
+          amount: Number(client.amount) || undefined,
+        })
+      );
+    }
 
     return NextResponse.json({ success: true, updated: updatePayload });
   } catch (error) {

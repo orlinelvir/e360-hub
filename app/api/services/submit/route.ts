@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
 import { resolvePipelineCluster, resolveCentralDepartment } from "@/lib/service-routing";
+import { sendWelcomeApplicationEmail } from "@/lib/email/send";
 
 export async function POST(request: Request) {
   const user = await verifyAuthToken(request);
@@ -177,6 +178,14 @@ export async function POST(request: Request) {
       centralOpportunityId,
       syncedAt: new Date().toISOString()
     });
+
+    after(() =>
+      sendWelcomeApplicationEmail({
+        clientEmail: email,
+        clientName: fullName,
+        serviceName: service || "tu solicitud",
+      })
+    );
 
     return NextResponse.json({
       success: true,
