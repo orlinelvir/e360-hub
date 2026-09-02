@@ -8,8 +8,13 @@ export interface GeminiResponse {
   suggestEscalation: boolean;
 }
 
-const PRIMARY_MODEL = "gemini-2.0-flash";
-const FALLBACK_MODEL = "gemini-1.5-flash";
+// gemini-2.0-flash y gemini-1.5-flash fueron descontinuados por Google (404 en producción,
+// confirmado en logs de Vercel el 2026-09-02). gemini-3.6-flash es el reemplazo directo que
+// la propia API de Google indicó en el error; gemini-3.7-flash como respaldo por tener más
+// margen antes de deprecarse (GA reciente, agosto 2026) que gemini-2.5-flash (se apaga en
+// octubre 2026).
+const PRIMARY_MODEL = "gemini-3.6-flash";
+const FALLBACK_MODEL = "gemini-3.7-flash";
 
 /**
  * Llama a la API REST de Gemini con soporte para múltiples modelos y fallback automático.
