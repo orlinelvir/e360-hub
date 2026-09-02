@@ -40,20 +40,40 @@ const FALLBACK_FAQS: FaqEntry[] = [
     answer: "Cada subcuenta de broker incluye formularios de Creación de LLC y Reparación de Crédito personalizados con su logo. Para servicios de financiamiento comercial y préstamos, se pueden conectar formularios de fondeo marca blanca. Sin embargo, los formularios de Seguros NO se comparten (los casos de seguros se someten y procesan centralmente con el departamento de suscripción de E360)."
   },
   {
-    question: "¿Cómo contacto a Soporte VIP General o Reparación de Crédito?",
-    answer: "El Soporte General y seguimiento de Reparación de Crédito es atendido directamente por Fernando (Gerente General) exclusivamente por SMS al +1 (681) 236-1239 en dos horarios: Canal 1 de 2:00 PM a 10:00 PM EST y Canal 2 de 9:00 AM a 3:00 PM EST."
+    question: "¿Cómo contacto a Soporte General (dudas de plataforma o técnicas)?",
+    answer: "El Soporte General de primer filtro lo atiende Mario por SMS o llamada al +1 (681) 236-1239. Horario: Lunes 9am–6pm, Martes a Viernes 9am–10pm, Sábado 10am–4pm."
+  },
+  {
+    question: "¿Con quién consulto dudas del CRM o del proceso de Reparación de Crédito?",
+    answer: "El CRM (StartPoint) y el seguimiento de Reparación de Crédito los atiende Fernando por SMS o llamada al +1 (201) 365-2055."
   },
   {
     question: "¿Con quién consulto el estatus de aplicaciones financieras o financiamientos?",
-    answer: "El estatus de aplicaciones financieras generales, underwriting y comisiones se consulta directamente con Anthony Elvir al teléfono/WhatsApp: +1 (747) 966-4788."
+    answer: "El estatus de aplicaciones financieras generales, underwriting y comisiones se consulta directamente con Anthony (Departamento de Aplicaciones) por SMS o llamada al +1 (747) 966-4788."
   },
   {
     question: "¿Cómo se gestionan los servicios de Taxes e Inmigración?",
-    answer: "Los servicios de Taxes (declaración personal/corporativa, ITIN) e Inmigración (USCIS, permisos de trabajo) se atienden mediante cita personalizada con nuestro aliado especializado RL MultiServices (teléfono/WhatsApp: +1 (908) 733-2891 o agendando en https://calendly.com/servicios-rlhispanoservices/45min)."
+    answer: "Los servicios de Taxes (declaración personal/corporativa, ITIN) e Inmigración (USCIS, permisos de trabajo) se atienden con Valentina (llamadas, textos o WhatsApp al +1 (908) 733-2891), o por Zoom abierto Lunes a Viernes de 10am a 6pm: https://meet.google.com/gbk-bzki-kcd?pli=1"
+  },
+  {
+    question: "¿Con quién hablo sobre el proceso de inducción/onboarding de un nuevo broker?",
+    answer: "El Departamento de Inducción lo atiende Laura por SMS o llamada al +1 (775) 369-4853."
+  },
+  {
+    question: "¿Con quién hablo sobre material de mercadeo o campañas?",
+    answer: "El Departamento de Mercadeo lo atiende Samantha por SMS o llamada al +1 (786) 481-0166."
+  },
+  {
+    question: "¿Con quién consulto información general sobre productos de préstamos?",
+    answer: "JP atiende consultas generales de préstamos, exclusivamente por WhatsApp al +1 (862) 424-4738."
+  },
+  {
+    question: "¿Con quién hablo sobre préstamos hipotecarios o bienes raíces?",
+    answer: "Pete atiende préstamos hipotecarios. Envía un texto antes de llamar al +1 (732) 362-1347, o agenda una llamada directamente: https://api.leadconnectorhq.com/widget/booking/DbvDERXMrAKQIURAyumH"
   },
   {
     question: "¿Cómo registro una LLC o Corporación para un cliente?",
-    answer: "Puedes someter el registro de compañía directamente desde el Hub utilizando el formulario oficial de Registro de LLC (https://api.leadconnectorhq.com/widget/form/blLUIvstRr21a2qsPZy7). Los documentos y EIN se entregan en 24 a 72 horas hábiles."
+    answer: "Puedes someter el registro de compañía directamente desde el Hub, en la sección 'Inicio / Servicios' → Registro de Compañía. Los documentos y EIN se entregan en 24 a 72 horas hábiles."
   }
 ];
 
