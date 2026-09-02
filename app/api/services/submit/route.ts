@@ -1,9 +1,12 @@
 import { NextResponse, after } from "next/server";
-import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { verifyAuthToken, adminDb, adminStorage } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
 import { resolvePipelineCluster, resolveCentralDepartment } from "@/lib/service-routing";
 import { sendWelcomeApplicationEmail } from "@/lib/email/send";
+import { addCaseDocument } from "@/lib/services/case-service";
+
+const MAX_APPLICATION_FILE_SIZE = 8 * 1024 * 1024;
 
 export async function POST(request: Request) {
   const user = await verifyAuthToken(request);
@@ -16,23 +19,33 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      service,
-      serviceId,
-      amount,
-      notes
-    } = body;
+    const formData = await request.formData();
+    const firstName = (formData.get("firstName") as string) || "";
+    const lastName = (formData.get("lastName") as string) || "";
+    const email = (formData.get("email") as string) || "";
+    const phone = (formData.get("phone") as string) || "";
+    const service = (formData.get("service") as string) || "";
+    const serviceId = (formData.get("serviceId") as string) || "";
+    const amount = (formData.get("amount") as string) || "";
+    const notes = (formData.get("notes") as string) || "";
+
+    const applicationFileEntry = formData.get("applicationFile");
+    const applicationFile = applicationFileEntry instanceof File && applicationFileEntry.size > 0 ? applicationFileEntry : null;
 
     if (!firstName || !email) {
       return NextResponse.json(
         { error: "Nombre y email son requeridos" },
         { status: 400 }
       );
+    }
+
+    if (applicationFile) {
+      if (applicationFile.type !== "application/pdf") {
+        return NextResponse.json({ error: "El PDF de la solicitud debe ser un archivo PDF" }, { status: 400 });
+      }
+      if (applicationFile.size > MAX_APPLICATION_FILE_SIZE) {
+        return NextResponse.json({ error: "El PDF de la solicitud no debe superar 8MB" }, { status: 400 });
+      }
     }
 
     const brokerSnap = await adminDb.collection("brokers").doc(user.uid).get();
@@ -69,6 +82,24 @@ export async function POST(request: Request) {
       brokerName,
       brokerEmail
     });
+
+    if (applicationFile && adminStorage) {
+      try {
+        const buffer = Buffer.from(await applicationFile.arrayBuffer());
+        const storagePath = `case-documents/${user.uid}/${leadRef.id}/${Date.now()}-${applicationFile.name}`;
+        await adminStorage.bucket().file(storagePath).save(buffer, { contentType: applicationFile.type });
+        await addCaseDocument(user.uid, leadRef.id, {
+          fileName: applicationFile.name,
+          storagePath,
+          contentType: applicationFile.type,
+          size: applicationFile.size,
+          uploadedByName: brokerName,
+          uploadedById: user.uid
+        });
+      } catch (error) {
+        console.error("Error subiendo el PDF de la solicitud del broker:", error);
+      }
+    }
 
     const pipelineCluster = resolvePipelineCluster(serviceId, service);
     const centralDepartment = resolveCentralDepartment(serviceId, service);

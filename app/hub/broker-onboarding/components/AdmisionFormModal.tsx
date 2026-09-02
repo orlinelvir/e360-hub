@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X, UserPlus, Loader2 } from "lucide-react";
+import { X, UserPlus, Loader2, Upload } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { resolvePipelineCluster } from "@/lib/service-routing";
 
 interface AdmisionFormModalProps {
   isOpen: boolean;
@@ -29,12 +30,19 @@ export default function AdmisionFormModal({
     amount: "",
     notes: ""
   });
+  const [applicationFile, setApplicationFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [success, setSuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  // El PDF de la solicitud (con el logo de la subcuenta del broker) solo aplica a
+  // los servicios de Financiamiento — es el "form submission PDF" que GHL genera
+  // en la subcuenta propia del broker, no en la de E360.
+  const cluster = resolvePipelineCluster(serviceId, serviceTitle);
+  const isFinancingService = cluster === "fondeo_rapido" || cluster === "real_estate";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,18 +57,25 @@ export default function AdmisionFormModal({
 
       const token = await user.getIdToken();
 
+      const body = new FormData();
+      body.append("firstName", formData.firstName);
+      body.append("lastName", formData.lastName);
+      body.append("email", formData.email);
+      body.append("phone", formData.phone);
+      body.append("notes", formData.notes);
+      body.append("amount", String(formData.amount ? parseFloat(formData.amount) : 0));
+      body.append("serviceId", serviceId);
+      body.append("service", serviceTitle);
+      if (applicationFile) {
+        body.append("applicationFile", applicationFile);
+      }
+
       const response = await fetch("/api/services/submit", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
+        headers: {
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...formData,
-          serviceId,
-          service: serviceTitle,
-          amount: formData.amount ? parseFloat(formData.amount) : 0
-        })
+        body
       });
 
       if (!response.ok) {
@@ -84,6 +99,7 @@ export default function AdmisionFormModal({
           amount: "",
           notes: ""
         });
+        setApplicationFile(null);
         setSuccess(false);
         setWarning("");
       }, data.warning ? 5000 : 2000);
@@ -203,6 +219,29 @@ export default function AdmisionFormModal({
               placeholder="Información adicional sobre el cliente o caso..."
             />
           </div>
+
+          {isFinancingService && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                PDF de la Solicitud (Opcional)
+              </label>
+              <label className="flex items-center gap-3 px-4 py-3 bg-[#05101F] border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500 transition-colors">
+                <Upload size={18} className="text-gray-500 shrink-0" />
+                <span className="text-xs text-gray-400 truncate">
+                  {applicationFile ? applicationFile.name : "Sube el PDF de la solicitud enviada desde tu subcuenta (máx. 8MB)"}
+                </span>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(e) => setApplicationFile(e.target.files?.[0] || null)}
+                />
+              </label>
+              <p className="text-[11px] text-gray-500 mt-1.5">
+                Adjunta el PDF del formulario que el cliente llenó en tu propia subcuenta (con tu logo). Esto nos permite verificar y darle seguimiento al estatus de la aplicación.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
