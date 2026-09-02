@@ -729,7 +729,7 @@ export default function BrokerOnboardingClient() {
 
             {activeTab === "soporte" && (
               <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
-                <SoporteSection brokerName={brokerName} />
+                <SoporteSection brokerName={brokerName} onNavigateToServices={() => setActiveTab("inicio")} />
               </main>
             )}
 

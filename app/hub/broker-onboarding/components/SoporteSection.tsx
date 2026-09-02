@@ -15,9 +15,10 @@ type SupportTab = "ai" | "tickets" | "faq" | "contact";
 
 interface SoporteSectionProps {
   brokerName: string;
+  onNavigateToServices: () => void;
 }
 
-export default function SoporteSection({ brokerName }: SoporteSectionProps) {
+export default function SoporteSection({ brokerName, onNavigateToServices }: SoporteSectionProps) {
   const [activeTab, setActiveTab] = useState<SupportTab>("ai");
   
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketV2 | null>(null);
@@ -149,7 +150,7 @@ export default function SoporteSection({ brokerName }: SoporteSectionProps) {
 
         {activeTab === "contact" && (
           <div className="max-w-5xl mx-auto">
-            <DepartmentCards onOpenTicket={handleOpenTicket} />
+            <DepartmentCards onOpenTicket={handleOpenTicket} onNavigateToServices={onNavigateToServices} />
           </div>
         )}
       </div>
