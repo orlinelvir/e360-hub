@@ -5,6 +5,7 @@ import { resolvePipelineCluster } from "@/lib/service-routing";
 import { getCaseNotes, addCaseNote } from "@/lib/services/case-service";
 import { CaseNoteCategory } from "@/app/hub/broker-onboarding/types";
 import { sendBrokerNoteEmail } from "@/lib/email/send";
+import { createNotification } from "@/lib/services/notification-service";
 
 const VALID_CATEGORIES: CaseNoteCategory[] = ["observation", "case", "broker"];
 
@@ -115,6 +116,14 @@ export async function POST(request: Request) {
           serviceName: access.client.serviceName || access.client.serviceId || "Servicio",
           authorName,
           noteContent: trimmedContent,
+        })
+      );
+
+      after(() =>
+        createNotification(brokerId, {
+          title: "Nueva nota sobre tu solicitud",
+          message: `${access.client.name || "Cliente"}: ${trimmedContent}`,
+          link: "clientes"
         })
       );
     }

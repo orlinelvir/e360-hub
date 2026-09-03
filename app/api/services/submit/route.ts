@@ -5,6 +5,7 @@ import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
 import { resolvePipelineCluster, resolveCentralDepartment } from "@/lib/service-routing";
 import { sendWelcomeApplicationEmail } from "@/lib/email/send";
 import { addCaseDocument } from "@/lib/services/case-service";
+import { notifyMany, findStaffUidsForCluster } from "@/lib/services/notification-service";
 
 const MAX_APPLICATION_FILE_SIZE = 8 * 1024 * 1024;
 
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
 
     const applicationFileEntry = formData.get("applicationFile");
     const applicationFile = applicationFileEntry instanceof File && applicationFileEntry.size > 0 ? applicationFileEntry : null;
+    const officialFormConfirmed = formData.get("officialFormConfirmed") === "true";
 
     if (!firstName || !email) {
       return NextResponse.json(
@@ -46,6 +48,20 @@ export async function POST(request: Request) {
       if (applicationFile.size > MAX_APPLICATION_FILE_SIZE) {
         return NextResponse.json({ error: "El PDF de la solicitud no debe superar 8MB" }, { status: 400 });
       }
+    }
+
+    const pipelineCluster = resolvePipelineCluster(serviceId, service);
+    const centralDepartment = resolveCentralDepartment(serviceId, service);
+
+    // Requisito de verificación: para servicios de Financiamiento, sin la confirmación
+    // del formulario oficial de E360 o el PDF de la subcuenta propia del broker, no hay
+    // ninguna prueba de que el cliente realmente presentó la solicitud.
+    const isFinancingService = pipelineCluster === "fondeo_rapido" || pipelineCluster === "real_estate";
+    if (isFinancingService && !officialFormConfirmed && !applicationFile) {
+      return NextResponse.json(
+        { error: "Para completar la solicitud de financiamiento, confirma que el cliente llenó el formulario oficial de E360 o adjunta el PDF de la solicitud de tu subcuenta." },
+        { status: 400 }
+      );
     }
 
     const brokerSnap = await adminDb.collection("brokers").doc(user.uid).get();
@@ -100,9 +116,6 @@ export async function POST(request: Request) {
         console.error("Error subiendo el PDF de la solicitud del broker:", error);
       }
     }
-
-    const pipelineCluster = resolvePipelineCluster(serviceId, service);
-    const centralDepartment = resolveCentralDepartment(serviceId, service);
 
     const { locationId: brokerLocationId, apiKey: brokerApiKey } = await resolveBrokerCredentials(user.uid, request);
 
@@ -217,6 +230,15 @@ export async function POST(request: Request) {
         serviceName: service || "tu solicitud",
       })
     );
+
+    after(async () => {
+      const staffUids = await findStaffUidsForCluster(pipelineCluster);
+      await notifyMany(staffUids, {
+        title: "Nueva solicitud recibida",
+        message: `${fullName} — ${service || "Servicio"} (${brokerName})`,
+        link: "admin"
+      });
+    });
 
     return NextResponse.json({
       success: true,

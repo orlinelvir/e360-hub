@@ -131,3 +131,13 @@ export async function resolveUserRole(
   const snap = await adminDb.collection("brokers").doc(uid).get();
   return snap.exists ? (snap.data()?.role || "broker") : "broker";
 }
+
+/**
+ * IDs de rol de staff (excluye "broker") con acceso al cluster dado — usado para
+ * saber a quién notificar cuando entra una solicitud nueva de esa vertical.
+ */
+export function getRoleIdsForCluster(cluster: string): string[] {
+  return ROLE_DEFINITIONS
+    .filter((r) => r.id !== "broker" && r.allowedClusters.includes(cluster))
+    .map((r) => r.id);
+}

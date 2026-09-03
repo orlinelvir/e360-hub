@@ -19,6 +19,13 @@ service cloud.firestore {
     match /brokers/{userId} {
       allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
 
+      // Notificaciones in-app (broker y staff) — se crean vía Admin SDK desde
+      // los mismos disparadores que ya mandan correo (status de caso, nota de
+      // broker, solicitud nueva), así que todo el acceso pasa por rutas API.
+      match /notifications/{notificationId} {
+        allow read, write: if false;
+      }
+
       // Clientes y Leads scoped por Broker
       match /clients/{clientId} {
         allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');

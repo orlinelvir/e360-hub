@@ -29,6 +29,7 @@ import AdminPanelSection from "./components/AdminPanelSection";
 import GHLOnboardingWizardModal from "./components/GHLOnboardingWizardModal";
 import AdmisionFormModal from "./components/AdmisionFormModal";
 import CreditRepairIntakeModal from "./components/CreditRepairIntakeModal";
+import NotificationBell from "./components/NotificationBell";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 import { isMasterAdminEmail } from "@/lib/roles";
@@ -500,6 +501,8 @@ export default function BrokerOnboardingClient() {
 
                 {/* Info Broker / Salida */}
                 <div className="flex items-center gap-4">
+                  <NotificationBell onNavigate={setActiveTab} />
+
                   <button
                     onClick={() => setIsWizardOpen(true)}
                     className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${

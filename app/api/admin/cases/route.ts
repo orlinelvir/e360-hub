@@ -4,6 +4,13 @@ import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
 import { sendCaseStatusEmail } from "@/lib/email/send";
 import { CaseEmailStatus } from "@/lib/email/templates/CaseStatusEmail";
+import { createNotification } from "@/lib/services/notification-service";
+
+const STATUS_LABELS: Record<CaseEmailStatus, string> = {
+  approved: "aprobada",
+  rejected: "declinada",
+  funded: "fondeada"
+};
 
 const NOTIFIABLE_STATUSES: CaseEmailStatus[] = ["approved", "rejected", "funded"];
 
@@ -193,6 +200,14 @@ export async function PATCH(request: Request) {
           serviceName: client.serviceName || client.serviceId || "Servicio",
           status,
           amount: Number(client.amount) || undefined,
+        })
+      );
+
+      after(() =>
+        createNotification(brokerId, {
+          title: `Solicitud ${STATUS_LABELS[status as CaseEmailStatus]}`,
+          message: `${client.name || "Cliente"} — ${client.serviceName || client.serviceId || "Servicio"}`,
+          link: "clientes"
         })
       );
     }

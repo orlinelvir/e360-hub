@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { X, UserPlus, Loader2, Upload } from "lucide-react";
+import { X, UserPlus, Loader2, Upload, ExternalLink, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { resolvePipelineCluster } from "@/lib/service-routing";
+import { servicesData } from "@/app/hub/broker-onboarding/data/services";
 
 interface AdmisionFormModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export default function AdmisionFormModal({
     notes: ""
   });
   const [applicationFile, setApplicationFile] = useState<File | null>(null);
+  const [officialFormConfirmed, setOfficialFormConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
@@ -38,16 +40,25 @@ export default function AdmisionFormModal({
 
   if (!isOpen) return null;
 
-  // El PDF de la solicitud (con el logo de la subcuenta del broker) solo aplica a
-  // los servicios de Financiamiento — es el "form submission PDF" que GHL genera
-  // en la subcuenta propia del broker, no en la de E360.
+  // Requisito de verificación de aplicaciones de Financiamiento: sin uno de estos
+  // 2 pasos (formulario oficial de E360 confirmado, o PDF de la subcuenta propia del
+  // broker adjunto) no hay ninguna prueba de que el cliente realmente llenó una
+  // solicitud, así que se bloquea el envío hasta que se cumpla al menos uno.
   const cluster = resolvePipelineCluster(serviceId, serviceTitle);
   const isFinancingService = cluster === "fondeo_rapido" || cluster === "real_estate";
+  const officialFormLink = servicesData.find((s) => s.id === serviceId)?.formLink;
+  const financingGateSatisfied = !isFinancingService || officialFormConfirmed || Boolean(applicationFile);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setWarning("");
+
+    if (!financingGateSatisfied) {
+      setError("Confirma que el cliente llenó el formulario oficial de E360, o adjunta el PDF de la solicitud de tu subcuenta. Sin uno de los dos, la aplicación no puede completarse.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -66,6 +77,7 @@ export default function AdmisionFormModal({
       body.append("amount", String(formData.amount ? parseFloat(formData.amount) : 0));
       body.append("serviceId", serviceId);
       body.append("service", serviceTitle);
+      body.append("officialFormConfirmed", String(officialFormConfirmed));
       if (applicationFile) {
         body.append("applicationFile", applicationFile);
       }
@@ -100,6 +112,7 @@ export default function AdmisionFormModal({
           notes: ""
         });
         setApplicationFile(null);
+        setOfficialFormConfirmed(false);
         setSuccess(false);
         setWarning("");
       }, data.warning ? 5000 : 2000);
@@ -221,25 +234,71 @@ export default function AdmisionFormModal({
           </div>
 
           {isFinancingService && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                PDF de la Solicitud (Opcional)
-              </label>
-              <label className="flex items-center gap-3 px-4 py-3 bg-[#05101F] border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500 transition-colors">
-                <Upload size={18} className="text-gray-500 shrink-0" />
-                <span className="text-xs text-gray-400 truncate">
-                  {applicationFile ? applicationFile.name : "Sube el PDF de la solicitud enviada desde tu subcuenta (máx. 8MB)"}
-                </span>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  onChange={(e) => setApplicationFile(e.target.files?.[0] || null)}
-                />
-              </label>
-              <p className="text-[11px] text-gray-500 mt-1.5">
-                Adjunta el PDF del formulario que el cliente llenó en tu propia subcuenta (con tu logo). Esto nos permite verificar y darle seguimiento al estatus de la aplicación.
+            <div className="p-4 bg-[#05101F] border border-amber-500/20 rounded-lg space-y-4">
+              <p className="text-sm font-medium text-gray-200">
+                Verificación de la solicitud <span className="text-amber-400">*</span>
               </p>
+              <p className="text-[11px] text-gray-500 -mt-2">
+                Es obligatorio completar una de las 2 opciones. Sin esto, la aplicación no puede completarse.
+              </p>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-300">Opción 1: Formulario oficial de E360</p>
+                {officialFormLink && (
+                  <a
+                    href={officialFormLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between px-4 py-2.5 bg-[#0A182D] border border-gray-800 rounded-lg text-xs text-cyan-400 hover:border-cyan-500/50 transition-colors"
+                  >
+                    <span>Abrir Formulario Oficial de E360</span>
+                    <ExternalLink size={14} className="shrink-0" />
+                  </a>
+                )}
+                <label className="flex items-start gap-3 p-3 bg-[#0A182D] border border-gray-800 rounded-lg cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={officialFormConfirmed}
+                    onChange={(e) => setOfficialFormConfirmed(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-xs text-gray-300">El cliente ya llenó el formulario oficial de E360 (enlace de arriba).</span>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                <div className="h-px flex-1 bg-gray-800" />
+                <span>O</span>
+                <div className="h-px flex-1 bg-gray-800" />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-300">Opción 2: PDF de tu propia subcuenta</p>
+                <label className="flex items-center gap-3 px-4 py-3 bg-[#0A182D] border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500 transition-colors">
+                  <Upload size={18} className="text-gray-500 shrink-0" />
+                  <span className="text-xs text-gray-400 truncate">
+                    {applicationFile ? applicationFile.name : "Sube el PDF de la solicitud enviada desde tu subcuenta (máx. 8MB)"}
+                  </span>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={(e) => setApplicationFile(e.target.files?.[0] || null)}
+                  />
+                </label>
+                <p className="text-[11px] text-gray-500">
+                  El PDF del formulario que el cliente llenó en tu propia subcuenta (con tu logo).
+                </p>
+              </div>
+
+              {!financingGateSatisfied && (
+                <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-amber-300">
+                    Selecciona la opción 1 o la opción 2 para poder admitir a este cliente.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -274,8 +333,8 @@ export default function AdmisionFormModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              disabled={isSubmitting || !financingGateSatisfied}
+              className="flex-1 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
