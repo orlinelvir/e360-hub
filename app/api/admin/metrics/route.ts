@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     }
 
     const brokersSnap = await adminDb.collection("brokers").get();
-    let totalBrokers = brokersSnap.size;
+    const totalBrokers = brokersSnap.size;
     let connectedBrokers = 0;
     let totalLeads = 0;
     let totalVolume = 0;

@@ -216,20 +216,22 @@ export default function AdminPanelSection() {
   };
 
   useEffect(() => {
-    if (!user) return;
-    fetchCases();
-    user.getIdToken().then((token) => {
-      fetch("/api/broker/profile", { headers: { Authorization: `Bearer ${token}` } })
-        .then((res) => res.json())
-        .then((data) => {
-          const role = data.profile?.role || "broker";
-          setCurrentUserRole(role);
-          if (role === "admin") {
-            fetchBrokers();
-          }
-        })
-        .catch(() => {});
-    });
+    setTimeout(() => {
+      if (!user) return;
+      fetchCases();
+      user.getIdToken().then((token) => {
+        fetch("/api/broker/profile", { headers: { Authorization: `Bearer ${token}` } })
+          .then((res) => res.json())
+          .then((data) => {
+            const role = data.profile?.role || "broker";
+            setCurrentUserRole(role);
+            if (role === "admin") {
+              fetchBrokers();
+            }
+          })
+          .catch(() => {});
+      });
+    }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
