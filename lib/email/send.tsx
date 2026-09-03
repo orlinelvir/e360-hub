@@ -2,6 +2,7 @@ import { getResendClient, EMAIL_FROM, EMAIL_FROM_CLIENT } from "./client";
 import CaseStatusEmail, { CaseEmailStatus } from "./templates/CaseStatusEmail";
 import BrokerNoteEmail from "./templates/BrokerNoteEmail";
 import WelcomeApplicationEmail from "./templates/WelcomeApplicationEmail";
+import BrokerOnboardingEmail from "./templates/BrokerOnboardingEmail";
 
 /**
  * Envío de notificaciones al broker. Nunca debe tumbar la acción principal
@@ -78,6 +79,35 @@ export async function sendBrokerNoteEmail(params: BrokerNoteEmailParams): Promis
     });
   } catch (err) {
     console.error("Error enviando email de nota para el broker:", err);
+  }
+}
+
+interface BrokerOnboardingEmailParams {
+  brokerEmail: string;
+  brokerName: string;
+  authorName: string;
+  message: string;
+}
+
+export async function sendBrokerOnboardingEmail(params: BrokerOnboardingEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend || !params.brokerEmail) return;
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: params.brokerEmail,
+      subject: `📋 Actualización de tu onboarding en E360`,
+      react: (
+        <BrokerOnboardingEmail
+          brokerName={params.brokerName}
+          authorName={params.authorName}
+          message={params.message}
+        />
+      ),
+    });
+  } catch (err) {
+    console.error("Error enviando email de onboarding al broker:", err);
   }
 }
 

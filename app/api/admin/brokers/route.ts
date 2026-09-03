@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
-import { resolveUserRole } from "@/lib/roles";
+import { resolveUserRole, hasPermission } from "@/lib/roles";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -15,9 +15,9 @@ export async function GET(request: Request) {
   try {
     const role = await resolveUserRole(adminDb, user.uid, user.email);
 
-    if (role !== "admin") {
+    if (!hasPermission(role, "manage_brokers")) {
       return NextResponse.json(
-        { error: "Acceso restringido. Se requiere rol de administrador." },
+        { error: "Acceso restringido. Se requiere permiso para gestionar brokers." },
         { status: 403 }
       );
     }
@@ -49,6 +49,8 @@ export async function GET(request: Request) {
           role: data.role || "broker",
           ghlConnected: Boolean(data.ghlConnected || data.ghlLocationId),
           ghlLocationId: data.ghlLocationId || "",
+          onboardingStage: data.onboardingStage || "ventas",
+          packagePaid: Boolean(data.packagePaid),
           createdAt: data.createdAt || "",
           totalClients: clientsSnap.size,
           totalVolume,

@@ -44,6 +44,8 @@ export async function getBrokerProfile(uid: string, defaultName?: string, defaul
     email: defaultEmail || "",
     phone: "",
     tier: "Senior Broker VIP",
+    onboardingStage: "ventas",
+    packagePaid: false,
     ghlLocationId: "",
     ghlConnected: false,
     payoutMethod: "zelle",

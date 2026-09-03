@@ -33,6 +33,12 @@ export interface ClientLead {
   adminNotes?: string;
 }
 
+// Secuencia de citas de onboarding de un broker nuevo (Ventas -> Onboarding Básico
+// -> Onboarding CRM -> Redes Sociales, solo si pagó el 100% del paquete de $750).
+// El staff la avanza manualmente desde el Roster de Brokers, ya que los enlaces de
+// agenda de GHL cambian cada vez y no se pueden pre-cablear por etapa.
+export type OnboardingStage = "ventas" | "onboarding_basico" | "onboarding_crm" | "redes_sociales" | "completado";
+
 export interface BrokerProfileData {
   uid: string;
   displayName: string;
@@ -41,6 +47,10 @@ export interface BrokerProfileData {
   brokerId?: string;
   phone?: string;
   tier?: "Junior Broker" | "Senior Broker VIP" | "Master Broker" | string;
+  onboardingStage?: OnboardingStage;
+  // Reflejo del tag "payment completed (spanish)" en la subcuenta GHL de Emprende 360,
+  // verificado manualmente por el staff (botón "Verificar Pago"), no sincronizado en vivo.
+  packagePaid?: boolean;
   ghlLocationId?: string;
   ghlApiKey?: string;
   ghlSubaccountEmail?: string;

@@ -257,6 +257,8 @@ export default function AdminPanelSection() {
     ...(isFullAdmin ? [
       { id: "roles", label: "Equipo & Roles", icon: ShieldCheck, count: teamMembers.length || undefined, badgeColor: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
       { id: "metrics", label: "Métricas Globales", icon: BarChart3 },
+    ] : []),
+    ...(isFullAdmin || isOnboardingMember ? [
       { id: "brokers", label: "Roster de Brokers", icon: Users, count: brokers.length || undefined },
     ] : []),
     ...(isFullAdmin || isSupport ? [
@@ -359,7 +361,7 @@ export default function AdminPanelSection() {
         />
       )}
       {activeTab === "metrics" && <AdminMetricsTab metrics={metrics} loading={loadingMetrics} />}
-      {activeTab === "brokers" && <AdminBrokersTab brokers={brokers} loading={loadingBrokers} />}
+      {activeTab === "brokers" && <AdminBrokersTab brokers={brokers} loading={loadingBrokers} onRefresh={fetchBrokers} />}
       {activeTab === "failed_sync" && (
         <AdminFailedSyncTab
           failedLeads={failedLeads}
