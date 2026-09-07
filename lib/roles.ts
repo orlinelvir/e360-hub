@@ -141,3 +141,22 @@ export function getRoleIdsForCluster(cluster: string): string[] {
     .filter((r) => r.id !== "broker" && r.allowedClusters.includes(cluster))
     .map((r) => r.id);
 }
+
+// A qué roles se les notifica un ticket nuevo, según su categoría. "support_agent" y
+// "admin" siempre están cubiertos (su descripción de rol ya incluye "asistencia
+// general"); se agrega el especialista de la vertical solo cuando existe uno real
+// en ROLE_DEFINITIONS, para no inventar roles que no existen.
+const TICKET_CATEGORY_ROLES: Record<string, string[]> = {
+  general: ["support_agent", "admin"],
+  ghl_crm: ["support_agent", "admin"],
+  commission: ["admin"],
+  underwriting: ["underwriter_mca", "specialist_real_estate", "specialist_insurance", "support_agent", "admin"],
+  credit_repair: ["support_agent", "admin"],
+  onboarding: ["onboarding_member", "support_agent", "admin"],
+  marketing: ["support_agent", "admin"],
+  corporate_tax: ["specialist_corporate", "support_agent", "admin"]
+};
+
+export function getRoleIdsForTicketCategory(category: string): string[] {
+  return TICKET_CATEGORY_ROLES[category] || ["support_agent", "admin"];
+}

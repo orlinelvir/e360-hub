@@ -69,13 +69,18 @@ export async function markAllNotificationsRead(uid: string): Promise<void> {
 }
 
 /**
+ * UIDs de todos los brokers/staff cuyo campo `role` está en la lista dada.
+ */
+export async function findStaffUidsByRoles(roleIds: string[]): Promise<string[]> {
+  if (!adminDb || roleIds.length === 0) return [];
+  const snap = await adminDb.collection("brokers").where("role", "in", roleIds).get();
+  return snap.docs.map((d) => d.id);
+}
+
+/**
  * UIDs de staff (todos los roles con acceso al cluster, excepto "broker") — usado
  * para notificar al equipo correcto cuando entra una solicitud nueva de esa vertical.
  */
 export async function findStaffUidsForCluster(cluster: string): Promise<string[]> {
-  if (!adminDb) return [];
-  const roleIds = getRoleIdsForCluster(cluster);
-  if (roleIds.length === 0) return [];
-  const snap = await adminDb.collection("brokers").where("role", "in", roleIds).get();
-  return snap.docs.map((d) => d.id);
+  return findStaffUidsByRoles(getRoleIdsForCluster(cluster));
 }

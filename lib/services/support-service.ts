@@ -257,6 +257,26 @@ export async function getAllEnhancedTicketsAdmin(): Promise<(SupportTicketV2 & {
   }
 }
 
+export async function updateEnhancedTicket(uid: string, ticketId: string, fields: Partial<SupportTicketV2>): Promise<void> {
+  if (!adminDb) {
+    const userTickets = memoryTickets.get(uid) || [];
+    const t = userTickets.find((x) => x.id === ticketId);
+    if (t) Object.assign(t, fields, { updatedAt: new Date().toISOString() });
+    return;
+  }
+
+  try {
+    await adminDb
+      .collection("brokers")
+      .doc(uid)
+      .collection("enhancedTickets")
+      .doc(ticketId)
+      .set({ ...fields, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    console.warn("Aviso al actualizar campos del ticket en Firestore:", err);
+  }
+}
+
 export async function updateTicketStatus(uid: string, ticketId: string, status: SupportTicketV2["status"]): Promise<void> {
   if (!adminDb) {
     const userTickets = memoryTickets.get(uid) || [];

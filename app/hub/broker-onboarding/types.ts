@@ -97,16 +97,40 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+// Categorías de ticket alineadas 1:1 con los departamentos reales de Contacto Directo,
+// así cada ticket tiene un dueño claro en vez de caer todo en una bandeja genérica.
+export type TicketCategory =
+  | "general"
+  | "ghl_crm"
+  | "commission"
+  | "underwriting"
+  | "credit_repair"
+  | "onboarding"
+  | "marketing"
+  | "corporate_tax";
+
 export interface SupportTicketV2 {
   id: string;
   subject: string;
-  category: "ghl_crm" | "commission" | "underwriting" | "general";
+  category: TicketCategory;
   priority: "low" | "medium" | "high";
   status: "open" | "in_progress" | "resolved";
   createdAt: string;
   updatedAt: string;
   description: string;
   conversationId?: string;
+  // Caso propio del broker vinculado al ticket (opcional), para que el empleado
+  // salte directo al Expediente de Caso en vez de buscar al cliente por nombre.
+  relatedClientId?: string;
+  relatedClientName?: string;
+  // Campo adicional específico de la categoría (ej. "disputedAmount" en Comisiones,
+  // "errorMessage" en CRM Técnico) — ver lib/support/ticket-categories.ts.
+  categoryFields?: Record<string, string>;
+  attachmentPath?: string;
+  attachmentFileName?: string;
+  attachmentContentType?: string;
+  // Resuelto en el servidor al leer el ticket (URL firmada, 15 min) — nunca se guarda.
+  attachmentUrl?: string;
 }
 
 export interface TicketMessage {

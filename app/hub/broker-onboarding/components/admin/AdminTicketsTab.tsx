@@ -10,20 +10,28 @@ import {
   AlertCircle,
   Clock,
   User,
-  Headset
+  Headset,
+  Paperclip
 } from "lucide-react";
+import { getTicketCategoryLabel, getTicketCategoryDef } from "@/lib/support/ticket-categories";
+import { TicketCategory } from "../../types";
 
 export interface AdminTicketItem {
   id: string;
   brokerId: string;
   brokerName: string;
   subject: string;
-  category: "ghl_crm" | "commission" | "underwriting" | "general";
+  category: TicketCategory;
   priority: "low" | "medium" | "high";
   status: "open" | "in_progress" | "resolved";
   description: string;
   createdAt: string;
   updatedAt: string;
+  relatedClientId?: string;
+  relatedClientName?: string;
+  categoryFields?: Record<string, string>;
+  attachmentUrl?: string;
+  attachmentFileName?: string;
 }
 
 interface TicketMessage {
@@ -196,9 +204,10 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
               <h4 className="text-sm font-bold text-white mb-1">{t.subject}</h4>
               <p className="text-xs text-gray-400 line-clamp-1 mb-3">{t.description}</p>
               <div className="flex items-center justify-between text-[10px] text-gray-500 pt-3 border-t border-gray-900">
-                <span className="capitalize bg-gray-900 px-2 py-0.5 rounded-md text-gray-400">{t.category.replace('_', ' ')}</span>
+                <span className="bg-gray-900 px-2 py-0.5 rounded-md text-gray-400">{getTicketCategoryLabel(t.category)}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-cyan-400 font-bold">{t.brokerName}</span>
+                  {t.relatedClientName && <span className="text-cyan-400 font-bold">{t.relatedClientName}</span>}
+                  <span className="text-gray-400 font-bold">{t.brokerName}</span>
                   <span className="flex items-center gap-1"><Clock size={10} /> {new Date(t.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
@@ -258,6 +267,26 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
                   <div className="p-3.5 rounded-2xl rounded-tl-sm bg-[#05101F] border border-gray-800 text-gray-300 text-sm whitespace-pre-wrap">
                     {activeTicket.description}
                   </div>
+                  {activeTicket.categoryFields && Object.keys(activeTicket.categoryFields).length > 0 && (
+                    <div className="text-xs text-gray-400 space-y-0.5 pl-1">
+                      {Object.entries(activeTicket.categoryFields).map(([key, value]) => (
+                        <p key={key}>
+                          <span className="font-bold text-gray-300">{getTicketCategoryDef(activeTicket.category)?.extraField?.label || key}:</span> {value}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {activeTicket.attachmentUrl && (
+                    <a
+                      href={activeTicket.attachmentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-semibold transition-colors"
+                    >
+                      <Paperclip size={14} />
+                      {activeTicket.attachmentFileName || "Ver adjunto"}
+                    </a>
+                  )}
                 </div>
               </div>
 

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Plus, Search, Filter, MessageSquare, AlertCircle } from "lucide-react";
 import { SupportTicketV2 } from "../../types";
 import { useAuth } from "@/components/AuthProvider";
+import { getTicketCategoryLabel } from "@/lib/support/ticket-categories";
 
 interface TicketListProps {
   onSelectTicket: (ticket: SupportTicketV2) => void;
@@ -126,10 +127,13 @@ export default function TicketList({ onSelectTicket, onNewTicket }: TicketListPr
               <p className="text-xs text-gray-400 line-clamp-1 mb-3">{ticket.description}</p>
               
               <div className="flex items-center justify-between text-[10px] text-gray-500 pt-3 border-t border-gray-900">
-                <span className="capitalize bg-gray-900 px-2 py-0.5 rounded-md text-gray-400">
-                  {ticket.category.replace('_', ' ')}
+                <span className="bg-gray-900 px-2 py-0.5 rounded-md text-gray-400">
+                  {getTicketCategoryLabel(ticket.category)}
                 </span>
                 <div className="flex items-center gap-3">
+                  {ticket.relatedClientName && (
+                    <span className="text-cyan-400 font-bold">{ticket.relatedClientName}</span>
+                  )}
                   <span className="flex items-center gap-1"><MessageSquare size={10} /> 1</span>
                   <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
                 </div>

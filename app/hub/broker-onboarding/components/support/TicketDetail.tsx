@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Send, User, Headset, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, User, Headset, Clock, Loader2, Paperclip } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { SupportTicketV2, TicketMessage } from "../../types";
+import { getTicketCategoryLabel, getTicketCategoryDef } from "@/lib/support/ticket-categories";
 
 interface TicketDetailProps {
   ticket: SupportTicketV2;
@@ -105,9 +106,14 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
         </div>
 
         <div className="flex items-center gap-4 text-xs text-gray-400 ml-12 sm:ml-0">
-          <span className="capitalize px-2 py-1 bg-gray-900 rounded-md">
-            {ticket.category.replace('_', ' ')}
+          <span className="px-2 py-1 bg-gray-900 rounded-md">
+            {getTicketCategoryLabel(ticket.category)}
           </span>
+          {ticket.relatedClientName && (
+            <span className="px-2 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-md font-bold">
+              {ticket.relatedClientName}
+            </span>
+          )}
           <span className="flex items-center gap-1">
             <Clock size={14} />
             {new Date(ticket.createdAt).toLocaleDateString()}
@@ -130,6 +136,26 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
             <div className="p-4 rounded-2xl rounded-tl-sm bg-[#05101F] border border-gray-800 text-gray-300 text-sm whitespace-pre-wrap">
               {ticket.description}
             </div>
+            {ticket.categoryFields && Object.keys(ticket.categoryFields).length > 0 && (
+              <div className="text-xs text-gray-400 space-y-0.5 pl-1">
+                {Object.entries(ticket.categoryFields).map(([key, value]) => (
+                  <p key={key}>
+                    <span className="font-bold text-gray-300">{getTicketCategoryDef(ticket.category)?.extraField?.label || key}:</span> {value}
+                  </p>
+                ))}
+              </div>
+            )}
+            {ticket.attachmentUrl && (
+              <a
+                href={ticket.attachmentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-semibold transition-colors"
+              >
+                <Paperclip size={14} />
+                {ticket.attachmentFileName || "Ver adjunto"}
+              </a>
+            )}
           </div>
         </div>
 
