@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { createGHLLocationFromSnapshot } from "@/lib/ghl";
+import { findStaffUidsByRoles, notifyMany } from "@/lib/services/notification-service";
+
+// A quién se le avisa cuando se aprovisiona una subcuenta de broker nueva —
+// "onboarding_member" es el rol cuya descripción es exactamente esto
+// ("aprovisionamiento de subcuentas GHL y entrega de accesos"). Si Samantha
+// necesita verlo, su cuenta del Hub debe tener este rol asignado.
+const ONBOARDING_NOTIFICATION_ROLES = ["onboarding_member", "admin"];
 
 function mapGHLStageToHubStatus(stageName: string, ghlStatus: string): "synced" | "in_progress" | "approved" | "funded" | "rejected" {
   const name = (stageName || "").toLowerCase();
@@ -48,6 +55,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = body.customData && typeof body.customData === "object" ? body.customData : body;
     const eventType = String(data.eventType || body.type || body.event || "");
+
+    // Log universal de diagnóstico: se escribe SIEMPRE, sin importar si el
+    // eventType matchea algo o no, para poder ver qué está mandando GHL
+    // realmente en vez de adivinar (ej. si el campo se llama distinto al
+    // esperado). Se actualiza con el resultado final antes de cada return.
+    const webhookLogRef = await adminDb.collection("ghlWebhookLogs").add({
+      eventType: eventType || "(vacío)",
+      receivedAt: new Date().toISOString(),
+      bodyKeys: Object.keys(body),
+      dataKeys: Object.keys(data),
+      success: null
+    });
 
     // 1. EVENTO: ACTUALIZACIÓN DE PIPELINE / ETAPA DE OPORTUNIDAD EN GHL
     if (
@@ -128,16 +147,13 @@ export async function POST(request: Request) {
 
         await matchedClientDoc.update(updateData);
 
-        // Registro en log de auditoría de Webhooks
-        await adminDb.collection("ghlWebhookLogs").add({
-          eventType: "pipeline_stage_sync",
+        await webhookLogRef.update({
+          success: true,
           stageName,
           ghlStatus,
           mappedStatus,
           brokerId: matchedBrokerId,
-          clientId: matchedClientDoc.id,
-          receivedAt: new Date().toISOString(),
-          success: true
+          clientId: matchedClientDoc.id
         });
 
         return NextResponse.json({
@@ -151,12 +167,14 @@ export async function POST(request: Request) {
       }
 
       console.warn("Webhook GHL Pipeline: No se encontró cliente coincidente", { contactId, opportunityId, contactEmail, stageName });
+      await webhookLogRef.update({ success: false, reason: "client_not_found", contactId, opportunityId, contactEmail });
       return NextResponse.json({ received: true, matched: false, reason: "client_not_found" });
     }
 
     if (eventType === "payment_received") {
       const email = String(data.contactEmail || "").trim().toLowerCase();
       if (!email) {
+        await webhookLogRef.update({ success: false, reason: "missing_contactEmail" });
         return NextResponse.json({ error: "contactEmail requerido" }, { status: 400 });
       }
 
@@ -168,6 +186,7 @@ export async function POST(request: Request) {
 
       if (snap.empty) {
         console.warn("Webhook de pago: no se encontró ronda pendiente para", email);
+        await webhookLogRef.update({ success: false, reason: "no_pending_round", email });
         return NextResponse.json({ received: true, matched: false });
       }
 
@@ -187,6 +206,7 @@ export async function POST(request: Request) {
         });
       }
 
+      await webhookLogRef.update({ success: true, roundId: roundDoc.id, email });
       return NextResponse.json({ received: true, matched: true, roundId: roundDoc.id });
     }
 
@@ -204,6 +224,7 @@ export async function POST(request: Request) {
       const logoColors = String(data.logoColors || "").trim();
 
       if (!email || (!fullName && !businessName)) {
+        await webhookLogRef.update({ success: false, reason: "missing_required_fields", dataReceived: data });
         return NextResponse.json({ error: "Faltan datos mínimos (correo y nombre o negocio)" }, { status: 400 });
       }
 
@@ -213,12 +234,14 @@ export async function POST(request: Request) {
 
       if (!agencyId || !agencyApiKey || !snapshotId) {
         console.error("Auto-provisioning: faltan GHL_AGENCY_ID / GHL_AGENCY_API_KEY / GHL_BROKER_SNAPSHOT_ID en el servidor.");
+        await webhookLogRef.update({ success: false, reason: "missing_server_config" });
         return NextResponse.json({ error: "Servidor no configurado para auto-aprovisionar subcuentas" }, { status: 500 });
       }
 
       const existing = await adminDb.collection("provisionedSubaccounts").where("email", "==", email).limit(1).get();
       if (!existing.empty) {
         const doc = existing.docs[0];
+        await webhookLogRef.update({ success: true, reason: "already_provisioned", email, locationId: doc.data().locationId });
         return NextResponse.json({ received: true, alreadyProvisioned: true, locationId: doc.data().locationId });
       }
 
@@ -255,14 +278,29 @@ export async function POST(request: Request) {
           createdAt: new Date().toISOString()
         });
 
+        await webhookLogRef.update({ success: true, email, businessName, locationId: newLocationId });
+
+        // Avisa al equipo de onboarding (ej. Samantha, si su cuenta tiene ese
+        // rol) para que sepan quién necesita la entrega de CRM en 24-48h —
+        // antes no había ninguna señal de esto fuera de revisar GHL a mano.
+        const staffUids = await findStaffUidsByRoles(ONBOARDING_NOTIFICATION_ROLES);
+        await notifyMany(staffUids, {
+          title: "Nueva subcuenta CRM aprovisionada",
+          message: `${businessName || fullName} (${email}) — entregar acceso al CRM en 24-48h.`,
+          link: "admin"
+        });
+
         return NextResponse.json({ received: true, matched: true, locationId: newLocationId });
       } catch (error) {
         console.error("Error auto-provisionando subcuenta de broker:", error);
+        const message = error instanceof Error ? error.message : "Error desconocido";
+        await webhookLogRef.update({ success: false, reason: "create_location_failed", email, errorMessage: message });
         return NextResponse.json({ error: "No se pudo crear la subcuenta automáticamente" }, { status: 502 });
       }
     }
 
     console.warn("Webhook GHL: eventType no reconocido:", eventType);
+    await webhookLogRef.update({ success: false, reason: "unknown_event_type" });
     return NextResponse.json({ received: true, matched: false, reason: "unknown_event_type" });
   } catch (error) {
     console.error("Error procesando webhook de GHL:", error);

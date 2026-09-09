@@ -96,7 +96,8 @@ export const MASTER_ADMIN_EMAILS = [
   "soporte@emprende360.info",
   "jp@startpoint.biz",
   "elianmena200731@gmail.com",
-  "marioelmormon@gmail.com"
+  "marioelmormon@gmail.com",
+  "samchav.art@gmail.com"
 ];
 
 export function isMasterAdminEmail(email: string | null | undefined): boolean {
