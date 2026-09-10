@@ -22,9 +22,11 @@ import {
   Copy,
   Check,
   Construction,
-  User
+  User,
+  FileText,
+  Upload
 } from "lucide-react";
-import { ClientLead, PipelineStage, CaseNote } from "../types";
+import { ClientLead, PipelineStage, CaseNote, CaseDocument } from "../types";
 import { useAuth } from "@/components/AuthProvider";
 import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
 import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
@@ -84,6 +86,10 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   const [selectedClient, setSelectedClient] = useState<ClientLead | null>(null);
   const [brokerNotes, setBrokerNotes] = useState<CaseNote[]>([]);
   const [loadingBrokerNotes, setLoadingBrokerNotes] = useState<boolean>(false);
+  const [caseDocuments, setCaseDocuments] = useState<(CaseDocument & { downloadUrl: string | null })[]>([]);
+  const [loadingCaseDocuments, setLoadingCaseDocuments] = useState<boolean>(false);
+  const [uploadingDocument, setUploadingDocument] = useState<boolean>(false);
+  const [documentUploadError, setDocumentUploadError] = useState<string>("");
   const [isSyncingGHL, setIsSyncingGHL] = useState<boolean>(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -202,6 +208,58 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     }, 0);
     return () => clearTimeout(timer);
   }, [user, selectedClient]);
+
+  const fetchCaseDocuments = useCallback(async (clientId: string) => {
+    if (!user) return;
+    setLoadingCaseDocuments(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/broker/clients/documents?clientId=${clientId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setCaseDocuments(data.documents || []);
+    } catch (err) {
+      console.error("Error cargando documentos del caso:", err);
+    } finally {
+      setLoadingCaseDocuments(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!selectedClient) {
+        setCaseDocuments([]);
+        return;
+      }
+      fetchCaseDocuments(selectedClient.id);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [selectedClient, fetchCaseDocuments]);
+
+  const handleUploadDocument = async (file: File) => {
+    if (!user || !selectedClient) return;
+    setUploadingDocument(true);
+    setDocumentUploadError("");
+    try {
+      const token = await user.getIdToken();
+      const body = new FormData();
+      body.append("clientId", selectedClient.id);
+      body.append("file", file);
+      const res = await fetch("/api/broker/clients/documents", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al subir el documento");
+      await fetchCaseDocuments(selectedClient.id);
+    } catch (err) {
+      setDocumentUploadError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -817,6 +875,57 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     )}
                   </div>
                 )}
+
+                {/* Documentos del caso — adjuntar o corregir el PDF de la solicitud
+                    después de la admisión inicial (antes solo se podía al crear el caso) */}
+                <div className="mb-6 bg-[#05101F] border border-gray-800 rounded-2xl p-4 space-y-3">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Documentos del Caso</span>
+
+                  {loadingCaseDocuments ? (
+                    <p className="text-xs text-gray-500">Cargando documentos...</p>
+                  ) : caseDocuments.length === 0 ? (
+                    <p className="text-xs text-gray-500">Sin documentos adjuntos todavía.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {caseDocuments.map((doc) => (
+                        <a
+                          key={doc.id}
+                          href={doc.downloadUrl || undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-2 px-3 py-2 bg-[#0A182D] border border-gray-800 rounded-xl text-xs transition-colors ${
+                            doc.downloadUrl ? "text-cyan-400 hover:border-cyan-500/40" : "text-gray-500 pointer-events-none"
+                          }`}
+                        >
+                          <FileText size={14} className="shrink-0" />
+                          <span className="flex-1 truncate">{doc.fileName}</span>
+                          <span className="text-[10px] text-gray-500 shrink-0">{new Date(doc.createdAt).toLocaleDateString()}</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  <label className="flex items-center gap-3 px-4 py-2.5 bg-[#0A182D] border border-dashed border-gray-700 rounded-xl cursor-pointer hover:border-cyan-500 transition-colors">
+                    <Upload size={16} className="text-gray-500 shrink-0" />
+                    <span className="text-xs text-gray-400 truncate">
+                      {uploadingDocument ? "Subiendo..." : "Adjuntar o reemplazar documento (imagen o PDF, máx. 8MB)"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,application/pdf"
+                      className="hidden"
+                      disabled={uploadingDocument}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadDocument(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {documentUploadError && (
+                    <p className="text-[11px] text-red-400">{documentUploadError}</p>
+                  )}
+                </div>
 
                 {/* Cambio de Etapa */}
                 <div className="mb-6 space-y-2">
