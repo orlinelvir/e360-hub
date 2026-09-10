@@ -184,12 +184,38 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
     }
   };
 
-  const handleSyncGHL = () => {
+  const handleSyncGHL = async () => {
+    if (!user) return;
+    const locationId = (profile.ghlLocationId || "").trim();
+    const apiKey = (profile.ghlApiKey || "").trim();
+    if (!locationId || !apiKey) {
+      showToast("Ingresa Location ID y Token PIT antes de verificar.");
+      return;
+    }
+
     setIsSyncingGHL(true);
-    setTimeout(() => {
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/ghl/validate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ locationId, apiKey }),
+      });
+      const data = await res.json();
+      showToast(
+        data.valid
+          ? `Conexión verificada: ${data.locationName || "subcuenta OK"}.`
+          : data.error || "Las credenciales no son válidas."
+      );
+    } catch (err) {
+      console.error("Error verificando conexión GHL:", err);
+      showToast("Error al verificar la conexión con GHL.");
+    } finally {
       setIsSyncingGHL(false);
-      showToast("Conexión con StartPoint CRM verificada.");
-    }, 1200);
+    }
   };
 
   const copyReferralLink = () => {
