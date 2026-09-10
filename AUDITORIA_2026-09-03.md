@@ -216,24 +216,83 @@ Brokers, para pagar por fuera). Calendario de pago (15 y 30 de cada mes)
 ya está en la UI.
 
 --------------------------------------------------------------------------------
+8. REVISIÓN DE SEGURIDAD FORMAL (2026-09-03) — 3 hallazgos reales, corregidos
+--------------------------------------------------------------------------------
+
+>>> CRÍTICO — bypass de autenticación en producción (YA CORREGIDO) <<<
+`verifyAuthToken()` (lib/firebase-admin.ts), usado por TODAS las rutas
+protegidas del Hub: si la verificación criptográfica real de Firebase fallaba
+(token expirado, forjado, firma inválida), el código caía a
+`decodeJwtUnverified()` — que NO valida firma, solo expiración — y devolvía
+esos datos como si fueran una sesión legítima. Cualquiera podía fabricar un
+JWT falso con `{"uid": "...", "email": "fernando.elvire360@gmail.com"}` (sin
+firma real) y el sistema lo aceptaba, incluyendo suplantar a un admin. El
+comentario original decía que era un respaldo "solo para desarrollo local sin
+Service Account", pero el catch se ejecutaba también en producción. Corregido:
+ahora cualquier falla de verificación con Service Account configurado (que es
+siempre el caso en producción) se rechaza (null), sin excepción. El mismo
+patrón (tragar el error y seguir) también existía en /api/auth/session al
+fijar la cookie — corregido igual, por defensa en profundidad.
+
+>>> ALTO — un broker podía auto-otorgarse rol admin vía Firestore (YA
+CORREGIDO) <<<
+`firestore.rules`: la regla de `brokers/{userId}` permitía `allow read, write`
+completo al dueño del documento — sin restricción de campos. Cualquier broker
+podía, desde la consola del navegador (SDK de cliente, sin pasar por ninguna
+ruta API), escribir directo `role:"admin"`, `packagePaid:true`, o inflar
+`referralEarnings`. Confirmado que ningún código legítimo depende de escribir
+esos campos vía cliente (el guardado real de perfil pasa por
+/api/broker/profile con Admin SDK). Corregido: ahora `role`, `tier`,
+`packagePaid`, `referralEarnings`, `referredByUid`, `onboardingStage`,
+`ghlConnected`, `totalVolumeProcessed` y `totalCommissionsPaid` no pueden
+cambiar vía escritura del dueño — solo vía Admin SDK (rutas API con permisos).
+
+>>> MEDIO — un broker podía auto-aprobar su propia solicitud (YA CORREGIDO)
+<<<
+Mismo patrón en `clients/{clientId}`: el broker dueño podía escribir
+`status`/`adminNotes` de su propio caso directo por Firestore, saltándose la
+aprobación del staff. Corregido igual — esos 2 campos ahora son
+exclusivamente del staff (vía /api/admin/cases, Admin SDK).
+
+RIESGO RESIDUAL CONOCIDO (no corregido, documentado para decisión futura):
+`estimatedCommission` en `clients/{clientId}` sigue siendo escribible por el
+broker dueño — el flujo legacy de sincronización de contactos de GHL
+(`saveBrokerClient` en MisClientesSection.tsx) depende de poder escribirlo
+client-side con un valor fijo ($1,250). Cerrar esto requeriría antes decidir
+si ese flujo legacy sigue vigente o se reemplaza, así que se dejó fuera de
+esta pasada para no romper nada sin confirmar primero.
+
+ACCIÓN PENDIENTE DEL USUARIO: desplegar firestore.rules
+(`firebase deploy --only firestore:rules`) para que el fix de Firestore quede
+activo en producción — el fix de verifyAuthToken ya queda activo con el
+próximo deploy normal de Vercel (git push).
+
+--------------------------------------------------------------------------------
 PUNCH LIST CONSOLIDADO — ORDEN SUGERIDO (actualizado)
 --------------------------------------------------------------------------------
 COMPLETADO desde la versión anterior de este documento: adjuntar/reemplazar
 documento en caso existente, Verificar Sync real, dominio del referido + QR
 real + sistema de comisión de $100, instrumentación del webhook de
-auto-provisioning + notificación a onboarding_member.
+auto-provisioning + notificación a onboarding_member, regla huérfana de
+notifications borrada, lint 100% limpio, rate-limiting + truncado del Chat
+IA, los 3 hallazgos de seguridad de la sección 8, y el catálogo de servicios
+editable sin deploy (nueva pestaña "Catálogo de Servicios" en Torre de
+Control — lib/services/service-catalog-service.ts + service-catalog-shared.ts,
+/api/admin/services, /api/services/overrides — el admin edita
+descripción/requisitos/proceso/comisión/formLink/teléfono/estado de
+cualquiera de los 18 servicios sin deploy, y se refleja al instante en el
+catálogo del broker, el formulario de admisión y el Chat IA).
 
-1. Igualar `GHL_WEBHOOK_SECRET` (Vercel) con el header `x-webhook-secret`
+1. Desplegar firestore.rules (`firebase deploy --only firestore:rules`) —
+   activa los fixes de seguridad de Firestore (sección 8) y la nueva
+   colección serviceOverrides.
+2. Igualar `GHL_WEBHOOK_SECRET` (Vercel) con el header `x-webhook-secret`
    del workflow "SaaS - Creación de Subcuenta" en GHL — causa raíz
    confirmada del auto-provisioning (sección 6), acción del usuario.
-2. Borrar el bloque huérfano de "notifications" en firestore.rules (línea
-   ~113) para evitar confusión futura.
 3. Apagar el paso "Email" del workflow "APPLICATION SUBMITTED" en GHL
    (acción del usuario, no de código).
 4. Confirmar member.identityiq.com vs www.identityiq.com.
-5. Catálogo de servicios editable sin deploy.
-6. Calcular comisión real (5%) en credit-repair-intake en vez de $0 fijo.
-7. Limpiar los 4 errores + 13 warnings de lint persistentes.
-8. Rate-limiting + truncado de memoria en el Chat IA.
-9. Revisión de seguridad formal.
+5. Calcular comisión real (5%) en credit-repair-intake en vez de $0 fijo.
+6. Decidir el futuro del flujo legacy de sync de contactos GHL en
+   MisClientesSection.tsx (riesgo residual de estimatedCommission, sección 8).
 ================================================================================
