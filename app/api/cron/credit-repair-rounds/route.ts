@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
+import { createNotification } from "@/lib/services/notification-service";
 
 // "Duración de 6 a 12 meses" según data/services.ts — pasado ese punto se asume
 // que el caso se revisa manualmente en vez de seguir generando rondas solas.
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
       const clientName = (clientData.name as string) || "Cliente";
       const nextRoundNumber = roundNumber + 1;
 
-      const newRoundRef = await clientRef.collection("feeRounds").add({
+      await clientRef.collection("feeRounds").add({
         roundNumber: nextRoundNumber,
         amount: FEE_AMOUNT,
         status: "pending_review",
@@ -91,15 +92,13 @@ export async function GET(request: Request) {
       });
 
       if (brokerId) {
-        await adminDb.collection("notifications").add({
-          recipientId: brokerId,
-          type: "fee_round_due",
+        // Antes escribía a una colección "notifications" a nivel raíz que
+        // ningún cliente leía — nadie veía este aviso nunca. Ahora usa el
+        // centro de notificaciones real (campanita del Hub).
+        await createNotification(brokerId, {
+          title: "Ronda de fee lista",
           message: `Reparación de Crédito · ${clientName}: ronda ${nextRoundNumber} lista. Recuerda pagar a E360 el fee de $${FEE_AMOUNT}.`,
-          clientId: clientRef.id,
-          leadId,
-          roundId: newRoundRef.id,
-          read: false,
-          createdAt: new Date().toISOString()
+          link: "clientes"
         });
       }
 
