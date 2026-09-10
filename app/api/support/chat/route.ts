@@ -10,9 +10,22 @@ import { getKnowledgeBaseContext } from "@/lib/ai/knowledge-base";
 import { generateGeminiResponse, GeminiMessage } from "@/lib/ai/gemini";
 import { getGuideBySlug } from "@/lib/ai/guides";
 import { getVideoBySlug } from "@/lib/ai/videos";
+import { checkRateLimit } from "@/lib/services/rate-limit-service";
 import { ChatMessage } from "@/app/hub/broker-onboarding/types";
 
 const GUIDE_SIGNED_URL_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+// Protección de costo/abuso: el chat llama a la API de Gemini (facturada por
+// token) en cada mensaje — sin esto, un loop de scripts o un usuario
+// insistente podría generar un costo creciente sin límite.
+const RATE_LIMIT_MAX_MESSAGES = 20;
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000; // 5 minutos
+
+// Sin esto, cada turno reenviaba TODA la conversación completa a Gemini desde
+// el primer mensaje — costo y latencia crecientes sin límite en chats largos.
+// Se trunca solo lo que se le manda al modelo; el historial completo se sigue
+// guardando y mostrando en la UI normalmente.
+const MAX_HISTORY_MESSAGES_TO_MODEL = 20;
 
 async function resolveGuideDocuments(slugs: string[]) {
   if (!adminStorage || slugs.length === 0) return [];
@@ -59,6 +72,15 @@ export async function POST(request: Request) {
   }
 
   try {
+    const rateLimit = await checkRateLimit(user.uid, "support-chat", RATE_LIMIT_MAX_MESSAGES, RATE_LIMIT_WINDOW_MS);
+    if (!rateLimit.allowed) {
+      const retrySeconds = Math.ceil((rateLimit.retryAfterMs || 0) / 1000);
+      return NextResponse.json(
+        { error: `Has enviado muchos mensajes seguidos. Intenta de nuevo en ${retrySeconds} segundos.` },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { message } = body;
     let { conversationId } = body;
@@ -81,11 +103,14 @@ export async function POST(request: Request) {
 
     // Obtener historial y contexto
     const chatHistory = await getConversationMessages(user.uid, conversationId);
-    
-    // Mapear historial al formato de Gemini
+
+    // Mapear historial al formato de Gemini — truncado a los últimos N mensajes
+    // (el historial completo se guarda y se muestra en la UI sin este límite,
+    // esto solo acota lo que se manda al modelo en cada llamada).
     const geminiHistory: GeminiMessage[] = chatHistory
       // Filtramos el último mensaje que acabamos de agregar, ya que se pasa por separado
-      .filter(msg => msg.createdAt !== userChatMessage.createdAt) 
+      .filter(msg => msg.createdAt !== userChatMessage.createdAt)
+      .slice(-MAX_HISTORY_MESSAGES_TO_MODEL)
       .map(msg => ({
         role: msg.role === "user" ? "user" : "model",
         parts: [{ text: msg.content }]
