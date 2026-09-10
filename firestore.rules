@@ -15,9 +15,33 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Campos de brokers/{uid} que solo el backend (Admin SDK, vía rutas API que
+    // validan permisos de rol) puede fijar o cambiar — jamás el propio dueño del
+    // documento. Sin esto, cualquier broker podía escribir directo por el SDK de
+    // cliente (ej. desde la consola del navegador) y auto-otorgarse role:"admin",
+    // marcarse packagePaid:true, o inflar referralEarnings, sin pasar por ninguna
+    // ruta API. Confirmado que ningún código legítimo depende de escribir estos
+    // campos vía cliente — el guardado real de perfil pasa por /api/broker/profile
+    // (Admin SDK), que ignora estas reglas.
+    function protectedBrokerFields() {
+      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid'];
+    }
+
     // 0. Reglas para la colección de BROKERS & E360 Hub
     match /brokers/{userId} {
-      allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+      allow read: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+
+      allow create: if (isOwner(userId)
+          && (!('role' in request.resource.data) || request.resource.data.role == 'broker')
+          && (!('packagePaid' in request.resource.data) || request.resource.data.packagePaid == false)
+          && (!('referralEarnings' in request.resource.data) || request.resource.data.referralEarnings == 0))
+        || (isAuthenticated() && getRole() == 'admin');
+
+      allow update: if (isOwner(userId)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedBrokerFields()))
+        || (isAuthenticated() && getRole() == 'admin');
+
+      allow delete: if isAuthenticated() && getRole() == 'admin';
 
       // Notificaciones in-app (broker y staff) — se crean vía Admin SDK desde
       // los mismos disparadores que ya mandan correo (status de caso, nota de
@@ -26,9 +50,25 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
-      // Clientes y Leads scoped por Broker
+      // Contadores de rate-limit (ej. Chat IA) — solo el backend los lee/escribe.
+      match /rateLimits/{key} {
+        allow read, write: if false;
+      }
+
+      // Clientes y Leads scoped por Broker. "status" y "adminNotes" son
+      // exclusivos del staff (vía /api/admin/cases, Admin SDK) — sin esto, un
+      // broker podía auto-aprobar su propia solicitud escribiendo
+      // status:"approved" directo por el SDK de cliente.
       match /clients/{clientId} {
-        allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+        allow read: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+
+        allow create: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+
+        allow update: if (isOwner(userId)
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'adminNotes']))
+          || (isAuthenticated() && getRole() == 'admin');
+
+        allow delete: if isAuthenticated() && getRole() == 'admin';
 
         // Caso de Reparación de Crédito: contiene credenciales cifradas de terceros
         // (CRC/MyFreeScoreNow) y últimos 4 SSN. Solo el backend (Admin SDK, que
@@ -109,21 +149,20 @@ service cloud.firestore {
       allow write: if request.auth != null && getRole() == 'admin';
     }
 
-    // 4. Reglas para NOTIFICACIONES
-    match /notifications/{notifId} {
-      // Cada usuario solo lee sus propias notificaciones
-      allow read: if request.auth != null && resource.data.recipientId == request.auth.uid;
-      // Solo el sistema/Admin puede crear notificaciones
-      allow create: if request.auth != null && getRole() == 'admin';
-      // El usuario puede marcar como leída (update)
-      allow update: if request.auth != null && resource.data.recipientId == request.auth.uid;
-    }
-
-    // 5. Auditoría de subcuentas GHL auto-aprovisionadas desde el Snapshot
+    // 4. Auditoría de subcuentas GHL auto-aprovisionadas desde el Snapshot
     // (solo el webhook, vía Admin SDK, escribe aquí; admin lee para auditar)
     match /provisionedSubaccounts/{docId} {
       allow read: if request.auth != null && getRole() == 'admin';
       allow write: if false;
+    }
+
+    // 5. Overrides de contenido del catálogo de servicios (precio, requisitos,
+    // etc.) — la lectura pública real pasa por /api/services/overrides
+    // (Admin SDK) para que cualquier broker autenticado la use sin necesitar
+    // permisos especiales; la escritura pasa por /api/admin/services, que sí
+    // valida el permiso manage_services. Todo por Admin SDK, nada por cliente.
+    match /serviceOverrides/{serviceId} {
+      allow read, write: if false;
     }
   }
 }

@@ -118,8 +118,14 @@ export async function verifyAuthToken(request: Request) {
       return null;
     }
   } catch (error) {
-    console.warn("⚠️ Error verificando con adminAuth, intentando decodificación de token:", error);
-    const decoded = decodeJwtUnverified(token);
-    return decoded;
+    // Solo se llega aquí cuando SÍ había Service Account configurado y la
+    // verificación criptográfica real falló (token expirado, forjado, firma
+    // inválida). Antes esto caía a decodeJwtUnverified() — que NO valida firma,
+    // solo expiración — permitiendo que cualquiera forjara un JWT con
+    // cualquier uid/email (incluyendo el de un admin) y lo aceptara como
+    // sesión válida. El fallback sin verificar solo es seguro en el otro
+    // branch (sin Service Account, exclusivo de desarrollo local).
+    console.warn("⚠️ Token rechazado: no se pudo verificar con Firebase Admin.", error);
+    return null;
   }
 }

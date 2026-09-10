@@ -13,8 +13,12 @@ export async function POST(request: Request) {
     if (adminAuth) {
       try {
         await adminAuth.verifyIdToken(token);
-      } catch {
-        // En caso de fallo de adminAuth en local, se permite continuar
+      } catch (error) {
+        // Antes esto tragaba el error y seguía de todas formas, fijando una
+        // cookie de sesión para un token que nunca se pudo verificar. Ahora se
+        // rechaza — de defensa en profundidad junto al fix en verifyAuthToken().
+        console.warn("Sesión rechazada: token inválido.", error);
+        return NextResponse.json({ error: "Token inválido" }, { status: 401 });
       }
     }
 
