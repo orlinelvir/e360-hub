@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket } from "lucide-react";
+import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket, Tag } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import AdminCasesTab, { CaseItem } from "./admin/AdminCasesTab";
 import AdminMetricsTab, { MetricsData } from "./admin/AdminMetricsTab";
@@ -10,8 +10,9 @@ import AdminRolesTab, { TeamMember, RoleDefinition } from "./admin/AdminRolesTab
 import AdminFailedSyncTab, { FailedLeadItem } from "./admin/AdminFailedSyncTab";
 import AdminLocationsTab, { AdminLocation } from "./admin/AdminLocationsTab";
 import AdminTicketsTab, { AdminTicketItem } from "./admin/AdminTicketsTab";
+import AdminServicesTab from "./admin/AdminServicesTab";
 
-type AdminTab = "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets";
+type AdminTab = "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets" | "services";
 
 export default function AdminPanelSection() {
   const { user } = useAuth();
@@ -257,6 +258,7 @@ export default function AdminPanelSection() {
     ...(isFullAdmin ? [
       { id: "roles", label: "Equipo & Roles", icon: ShieldCheck, count: teamMembers.length || undefined, badgeColor: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
       { id: "metrics", label: "Métricas Globales", icon: BarChart3 },
+      { id: "services", label: "Catálogo de Servicios", icon: Tag },
     ] : []),
     ...(isFullAdmin || isOnboardingMember ? [
       { id: "brokers", label: "Roster de Brokers", icon: Users, count: brokers.length || undefined },
@@ -374,6 +376,7 @@ export default function AdminPanelSection() {
       {activeTab === "tickets" && (
         <AdminTicketsTab tickets={tickets} loading={loadingTickets} onRefresh={fetchTickets} />
       )}
+      {activeTab === "services" && <AdminServicesTab />}
     </div>
   );
 }

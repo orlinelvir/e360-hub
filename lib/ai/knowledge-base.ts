@@ -1,7 +1,7 @@
 import { adminDb } from "@/lib/firebase-admin";
-import { servicesData } from "@/app/hub/broker-onboarding/data/services";
 import { GUIDES } from "./guides";
 import { VIDEOS } from "./videos";
+import { getEffectiveServicesCatalog } from "@/lib/services/service-catalog-service";
 
 export interface FaqEntry {
   question: string;
@@ -126,8 +126,12 @@ export async function getKnowledgeBaseContext(): Promise<string> {
   }
 
   const faqText = faqs.map(f => `P: ${f.question}\\nR: ${f.answer}`).join("\\n\\n");
-  
-  const servicesText = servicesData.map(s => `
+
+  // Catálogo con los overrides de precio/requisitos/proceso del admin ya
+  // aplicados — si el admin edita algo desde "Catálogo de Servicios", el
+  // Chat IA lo refleja de inmediato, sin deploy.
+  const effectiveCatalog = await getEffectiveServicesCatalog();
+  const servicesText = effectiveCatalog.map(s => `
 SERVICIO: ${s.title}
 Categoría: ${s.category}
 Descripción: ${s.description}

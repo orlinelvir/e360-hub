@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { servicesData, ServiceDetail } from "./data/services";
+import { ServiceOverride, mergeServiceOverride } from "@/lib/services/service-catalog-shared";
 
 import MisClientesSection from "./components/MisClientesSection";
 import SoporteSection from "./components/SoporteSection";
@@ -53,6 +54,7 @@ export default function BrokerOnboardingClient() {
   
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedService, setSelectedService] = useState<ServiceDetail | null>(null);
+  const [serviceOverrides, setServiceOverrides] = useState<Record<string, ServiceOverride>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [checkedServices, setCheckedServices] = useState<Record<string, { reqs: boolean; process: boolean; terms: boolean }>>({});
 
@@ -228,16 +230,37 @@ export default function BrokerOnboardingClient() {
     }
   };
 
+  // Overrides de contenido del catálogo (precio, requisitos, etc.) editados
+  // desde el admin sin deploy — se cargan una vez y se combinan con el
+  // catálogo estático (que sigue siendo la fuente de la estructura: ícono,
+  // cluster de pipeline, departamento).
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!user) return;
+      user.getIdToken()
+        .then((token) => fetch("/api/services/overrides", { headers: { Authorization: `Bearer ${token}` } }))
+        .then((res) => res.json())
+        .then((data) => setServiceOverrides(data.overrides || {}))
+        .catch((err) => console.error("Error cargando overrides de servicios:", err));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [user]);
+
+  const mergedServicesData = useMemo(
+    () => servicesData.map((s) => mergeServiceOverride(s, serviceOverrides[s.id])),
+    [serviceOverrides]
+  );
+
   // Filtrado de servicios según el buscador en tiempo real
   const filteredServices = useMemo(() => {
-    if (!searchQuery.trim()) return servicesData;
+    if (!searchQuery.trim()) return mergedServicesData;
     const query = searchQuery.toLowerCase();
-    return servicesData.filter(service => 
-      service.title.toLowerCase().includes(query) || 
+    return mergedServicesData.filter(service =>
+      service.title.toLowerCase().includes(query) ||
       service.description.toLowerCase().includes(query) ||
       service.requirements.some(req => req.toLowerCase().includes(query))
     );
-  }, [searchQuery]);
+  }, [searchQuery, mergedServicesData]);
 
   // Clasificación por columnas
   const financialServices = useMemo(() => 
@@ -744,7 +767,7 @@ export default function BrokerOnboardingClient() {
 
             {activeTab === "soporte" && (
               <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
-                <SoporteSection brokerName={brokerName} onNavigateToServices={() => setActiveTab("inicio")} />
+                <SoporteSection onNavigateToServices={() => setActiveTab("inicio")} />
               </main>
             )}
 
@@ -1116,6 +1139,7 @@ export default function BrokerOnboardingClient() {
           serviceId={selectedService.id}
           serviceTitle={selectedService.title}
           serviceCategory={selectedService.category}
+          formLink={selectedService.formLink}
           onSuccess={() => {
             if (activeTab === "clientes") {
               // Refresh will happen automatically when user navigates to Mis Clientes

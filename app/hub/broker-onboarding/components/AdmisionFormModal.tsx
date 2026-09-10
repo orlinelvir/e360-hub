@@ -12,6 +12,9 @@ interface AdmisionFormModalProps {
   serviceId: string;
   serviceTitle: string;
   serviceCategory: string;
+  // Enlace oficial ya resuelto por el padre (con overrides del admin
+  // aplicados, si los hay). Si no se pasa, cae al catálogo estático.
+  formLink?: string;
   onSuccess: () => void;
 }
 
@@ -20,6 +23,7 @@ export default function AdmisionFormModal({
   onClose,
   serviceId,
   serviceTitle,
+  formLink,
   onSuccess
 }: AdmisionFormModalProps) {
   const { user } = useAuth();
@@ -46,7 +50,7 @@ export default function AdmisionFormModal({
   // solicitud, así que se bloquea el envío hasta que se cumpla al menos uno.
   const cluster = resolvePipelineCluster(serviceId, serviceTitle);
   const isFinancingService = cluster === "fondeo_rapido" || cluster === "real_estate";
-  const officialFormLink = servicesData.find((s) => s.id === serviceId)?.formLink;
+  const officialFormLink = formLink || servicesData.find((s) => s.id === serviceId)?.formLink;
   const financingGateSatisfied = !isFinancingService || officialFormConfirmed || Boolean(applicationFile);
 
   const handleSubmit = async (e: React.FormEvent) => {
