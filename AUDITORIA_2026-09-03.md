@@ -188,6 +188,20 @@ el primer log real y diagnosticar la causa raíz definitiva. Si Samantha
 necesita ver esta notificación, su cuenta del Hub debe tener el rol
 `onboarding_member` asignado (revisar en "Equipo & Roles").
 
+>>> CAUSA RAÍZ CONFIRMADA (2026-09-03, vía capturas de "Execution logs" de
+GHL) <<<
+Opción (b) de arriba: el paso de Webhook del workflow "SaaS - Creación de
+Subcuenta" está bien configurado (formulario correcto, eventType correcto,
+todos los campos mapeados, publicado) pero devuelve
+`{"error":"No autorizado"}` — el `x-webhook-secret` que manda GHL no
+coincide con `GHL_WEBHOOK_SECRET` en Vercel. Por eso nunca quedó nada
+registrado: el 401 se devolvía ANTES de que el código llegara a escribir
+cualquier log. Se corrigió el código para que los rechazos por secreto
+también queden registrados en `ghlWebhookLogs` de ahora en adelante.
+ACCIÓN DEL USUARIO (no de código): igualar el valor de `GHL_WEBHOOK_SECRET`
+en Vercel con el del header en GHL, republicar el workflow, y volver a
+probar.
+
 --------------------------------------------------------------------------------
 7. SISTEMA DE REFERIDOS DE BROKERS (nuevo, no estaba en el plan original)
 --------------------------------------------------------------------------------
@@ -209,9 +223,9 @@ documento en caso existente, Verificar Sync real, dominio del referido + QR
 real + sistema de comisión de $100, instrumentación del webhook de
 auto-provisioning + notificación a onboarding_member.
 
-1. Volver a llenar el formulario de onboarding CRM de prueba y revisar
-   `ghlWebhookLogs` para diagnosticar la causa raíz del auto-provisioning
-   (sección 6) — sigue pendiente, requiere una prueba real del usuario.
+1. Igualar `GHL_WEBHOOK_SECRET` (Vercel) con el header `x-webhook-secret`
+   del workflow "SaaS - Creación de Subcuenta" en GHL — causa raíz
+   confirmada del auto-provisioning (sección 6), acción del usuario.
 2. Borrar el bloque huérfano de "notifications" en firestore.rules (línea
    ~113) para evitar confusión futura.
 3. Apagar el paso "Email" del workflow "APPLICATION SUBMITTED" en GHL
