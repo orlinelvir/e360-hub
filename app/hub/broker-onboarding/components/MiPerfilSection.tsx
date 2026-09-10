@@ -23,9 +23,14 @@ import {
   Sparkles,
   Info
 } from "lucide-react";
+import QRCode from "qrcode";
 import { BrokerProfileData } from "../types";
 import { useAuth } from "@/components/AuthProvider";
 import { getBrokerProfile, updateBrokerProfile } from "@/lib/services/broker-service";
+
+// Mismo fallback que usa lib/email/client.ts (APP_BASE_URL) para que el enlace
+// de referido y los correos de Resend siempre apunten al mismo dominio.
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://e360-hub.vercel.app";
 
 interface MiPerfilSectionProps {
   brokerName: string;
@@ -77,6 +82,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
   const [savingCRM, setSavingCRM] = useState<boolean>(false);
   const [isSyncingGHL, setIsSyncingGHL] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string>("");
 
   useEffect(() => {
@@ -218,16 +224,24 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
     }
   };
 
+  const displayName = profile.displayName || profile.name || brokerName || "Broker E360";
+  const referralUrl = `${APP_BASE_URL}/hub/broker-onboarding?ref=${referralSlug || "broker"}`;
+
   const copyReferralLink = () => {
-    const link = `https://e360hub.com/b/${referralSlug || "broker"}`;
-    navigator.clipboard.writeText(link);
+    navigator.clipboard.writeText(referralUrl);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
     showToast("Enlace copiado al portapapeles");
   };
 
-  const displayName = profile.displayName || profile.name || brokerName || "Broker E360";
-  const referralUrl = `https://e360hub.com/b/${referralSlug || "broker"}`;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      QRCode.toDataURL(referralUrl, { margin: 1, width: 160 })
+        .then(setQrDataUrl)
+        .catch((err) => console.error("Error generando QR:", err));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [referralUrl]);
 
   return (
     <div className="space-y-8">
@@ -439,14 +453,17 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
           <div>
             <h3 className="text-base font-extrabold text-white flex items-center gap-2">
               <QrCode size={18} className="text-cyan-400" />
-              <span>Enlace de Captura Personalizado & Código QR</span>
+              <span>Refiere Brokers Nuevos & Código QR</span>
             </h3>
             <p className="text-xs text-gray-400 mt-0.5">
-              Comparte este enlace con tus clientes para que sus solicitudes queden automáticamente registradas bajo tu código de broker.
+              Comparte este enlace para invitar a nuevos brokers. Cuando se registren y confirmen el pago de su paquete de $750, ganas $100 de comisión automáticamente.
+            </p>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Los pagos de comisión de referidos se realizan los días <span className="text-gray-300 font-semibold">15 y 30 de cada mes</span>.
             </p>
           </div>
           <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-bold font-mono">
-            ACTIVO
+            ${(Number(profile.referralEarnings) || 0).toLocaleString()} GANADOS
           </span>
         </div>
 
@@ -484,10 +501,14 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
 
           <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 text-center space-y-2 flex flex-col items-center justify-center">
             <div className="w-24 h-24 bg-white p-2 rounded-xl flex items-center justify-center shadow-lg">
-              {/* QR Code Placeholder vector */}
-              <QrCode size={76} className="text-gray-900" />
+              {qrDataUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={qrDataUrl} alt="QR de tu enlace de referido" className="w-full h-full object-contain" />
+              ) : (
+                <QrCode size={76} className="text-gray-300 animate-pulse" />
+              )}
             </div>
-            <p className="text-[10px] font-mono text-gray-400">Escanea para abrir tu portal</p>
+            <p className="text-[10px] font-mono text-gray-400">Escanea para registrarte</p>
           </div>
         </div>
       </div>

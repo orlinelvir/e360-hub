@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useSyncExternalStore } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import {
@@ -64,6 +64,18 @@ export default function BrokerOnboardingClient() {
   const [isAdmisionOpen, setIsAdmisionOpen] = useState<boolean>(false);
 
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
+  const [referralSlugFromUrl, setReferralSlugFromUrl] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      if (ref) {
+        setReferralSlugFromUrl(ref.trim().toLowerCase());
+        setIsSignUp(true);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const isAuthenticated = Boolean(user);
   const userEmail = (user?.email || "").toLowerCase().trim();
@@ -123,7 +135,7 @@ export default function BrokerOnboardingClient() {
           setIsLoadingAuth(false);
           return;
         }
-        await registerWithEmail(emailInput.trim(), passwordInput.trim(), registerName.trim());
+        await registerWithEmail(emailInput.trim(), passwordInput.trim(), registerName.trim(), referralSlugFromUrl || undefined);
       } else {
         if (!emailInput.trim() || !passwordInput.trim()) {
           setLoginError("Ingresa tu correo y contraseña.");

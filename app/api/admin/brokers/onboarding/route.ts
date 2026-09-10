@@ -1,10 +1,13 @@
 import { NextResponse, after } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission } from "@/lib/roles";
 import { getGHLContacts, CRMError } from "@/lib/ghl";
 import { sendBrokerOnboardingEmail } from "@/lib/email/send";
 import { createNotification } from "@/lib/services/notification-service";
 import { OnboardingStage } from "@/app/hub/broker-onboarding/types";
+
+const REFERRAL_COMMISSION = 100;
 
 const VALID_STAGES: OnboardingStage[] = ["ventas", "onboarding_basico", "onboarding_crm", "redes_sociales", "completado"];
 
@@ -71,8 +74,24 @@ export async function PATCH(request: Request) {
         const contact = result.contacts?.find((c) => (c.email || "").toLowerCase() === brokerEmail.toLowerCase());
         const tags = (contact?.tags || []).map((t) => t.toLowerCase());
         const packagePaid = tags.includes(PAYMENT_TAG);
+        const wasAlreadyPaid = Boolean(brokerData.packagePaid);
 
         await brokerRef.update({ packagePaid });
+
+        // Se acredita el referido SOLO la primera vez que se confirma el pago
+        // (evita duplicar los $100 si alguien vuelve a apretar "Verificar Pago").
+        if (packagePaid && !wasAlreadyPaid && brokerData.referredByUid) {
+          const referrerRef = adminDb.collection("brokers").doc(brokerData.referredByUid);
+          await referrerRef.update({ referralEarnings: FieldValue.increment(REFERRAL_COMMISSION) });
+          after(() =>
+            createNotification(brokerData.referredByUid, {
+              title: "¡Ganaste una comisión de referido!",
+              message: `${brokerName} confirmó su pago — se te acreditaron $${REFERRAL_COMMISSION}.`,
+              link: "perfil"
+            })
+          );
+        }
+
         return NextResponse.json({ success: true, packagePaid, contactFound: Boolean(contact) });
       } catch (err) {
         const message = err instanceof CRMError ? err.message : "Error consultando GHL";

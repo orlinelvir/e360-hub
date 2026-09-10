@@ -71,6 +71,14 @@ export interface BrokerProfileData {
     zellePhoneOrEmail?: string;
   };
   referralSlug?: string;
+  // uid del broker que lo refirió (resuelto por servidor a partir del ?ref=slug
+  // capturado al registrarse). $100 de comisión se acredita a ESE broker cuando
+  // este perfil confirma el pago del paquete de $750 (ver packagePaid arriba).
+  referredByUid?: string;
+  // Acumulado de comisiones de $100 por cada broker referido que confirmó su
+  // pago — solo un contador visible, el pago real se hace por fuera (ACH/Zelle)
+  // igual que el resto de comisiones.
+  referralEarnings?: number;
   totalVolumeProcessed?: number;
   totalCommissionsPaid?: number;
   documentsStatus?: {

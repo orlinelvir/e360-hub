@@ -51,6 +51,7 @@ export async function GET(request: Request) {
           ghlLocationId: data.ghlLocationId || "",
           onboardingStage: data.onboardingStage || "ventas",
           packagePaid: Boolean(data.packagePaid),
+          referralEarnings: Number(data.referralEarnings) || 0,
           createdAt: data.createdAt || "",
           totalClients: clientsSnap.size,
           totalVolume,

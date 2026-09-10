@@ -16,6 +16,7 @@ export interface BrokerItem {
   ghlLocationId: string;
   onboardingStage?: OnboardingStage;
   packagePaid?: boolean;
+  referralEarnings?: number;
   createdAt: string;
   totalClients: number;
   totalVolume: number;
@@ -189,6 +190,11 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
                       {b.role === "admin" && (
                         <span className="ml-1 inline-block px-1.5 py-0.5 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded text-[9px] font-bold">
                           ADMIN
+                        </span>
+                      )}
+                      {Boolean(b.referralEarnings) && (
+                        <span className="block mt-1 text-[10px] text-emerald-400 font-bold">
+                          Referidos: ${b.referralEarnings!.toLocaleString()}
                         </span>
                       )}
                     </td>

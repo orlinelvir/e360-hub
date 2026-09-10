@@ -32,7 +32,7 @@ interface AuthContextType {
   profile: BrokerUserProfile | null;
   loading: boolean;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
-  registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
+  registerWithEmail: (email: string, pass: string, name: string, referredBySlug?: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(auth, email, pass);
   };
 
-  const registerWithEmail = async (email: string, pass: string, name: string) => {
+  const registerWithEmail = async (email: string, pass: string, name: string, referredBySlug?: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const newProfile: BrokerUserProfile = {
       uid: cred.user.uid,
@@ -113,6 +113,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     await setDoc(doc(db, "brokers", cred.user.uid), newProfile);
     setProfile(newProfile);
+
+    if (referredBySlug) {
+      try {
+        const token = await cred.user.getIdToken();
+        await fetch("/api/broker/register-referral", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ referralSlug: referredBySlug })
+        });
+      } catch (err) {
+        // No debe bloquear el registro si esto falla — el referido simplemente
+        // no queda atribuido, no es un error fatal para el nuevo broker.
+        console.warn("No se pudo registrar el referido:", err);
+      }
+    }
   };
 
   const loginWithGoogle = async () => {
