@@ -14,11 +14,10 @@ import { SupportTicketV2 } from "../types";
 type SupportTab = "ai" | "tickets" | "faq" | "contact";
 
 interface SoporteSectionProps {
-  brokerName: string;
   onNavigateToServices: () => void;
 }
 
-export default function SoporteSection({ brokerName, onNavigateToServices }: SoporteSectionProps) {
+export default function SoporteSection({ onNavigateToServices }: SoporteSectionProps) {
   const [activeTab, setActiveTab] = useState<SupportTab>("ai");
   
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketV2 | null>(null);
@@ -40,9 +39,7 @@ export default function SoporteSection({ brokerName, onNavigateToServices }: Sop
     setActiveTab("tickets");
   };
 
-  const handleOpenTicket = (category: string) => {
-    // This could optionally open a "New Ticket" modal pre-filled with the category
-    // For now, we'll just switch to the tickets tab where they can create it
+  const handleOpenTicket = () => {
     setActiveTab("tickets");
   };
 
@@ -144,7 +141,7 @@ export default function SoporteSection({ brokerName, onNavigateToServices }: Sop
 
         {activeTab === "faq" && (
           <div className="max-w-5xl mx-auto">
-            <FAQSection onAskAI={(q) => setActiveTab("ai")} />
+            <FAQSection onAskAI={() => setActiveTab("ai")} />
           </div>
         )}
 

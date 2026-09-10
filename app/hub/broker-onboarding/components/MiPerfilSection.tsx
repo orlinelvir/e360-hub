@@ -13,14 +13,12 @@ import {
   Mail,
   Phone,
   Globe,
-  Building,
   MapPin,
   Shield,
   Copy,
   Check,
   FileText,
   User,
-  Sparkles,
   Info
 } from "lucide-react";
 import QRCode from "qrcode";

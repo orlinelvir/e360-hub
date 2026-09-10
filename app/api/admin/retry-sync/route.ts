@@ -147,6 +147,8 @@ export async function POST(request: Request) {
       status: isSynced ? "synced" : "failed_sync",
       ghlContactId: brokerContactId || "",
       ghlOpportunityId: brokerOpportunityId || "",
+      centralContactId: centralContactId || "",
+      centralOpportunityId: centralOpportunityId || "",
       lastActivity: `Reintento de sincronización: ${new Date().toLocaleDateString()}`
     });
 
@@ -154,7 +156,8 @@ export async function POST(request: Request) {
       success: isSynced,
       status: isSynced ? "synced" : "failed_sync",
       brokerContactId,
-      centralContactId
+      centralContactId,
+      centralOpportunityId
     });
   } catch (error) {
     console.error("Admin retry-sync error:", error);

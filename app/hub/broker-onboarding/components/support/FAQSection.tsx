@@ -92,7 +92,7 @@ export default function FAQSection({ onAskAI }: FAQSectionProps) {
           })
         ) : (
           <div className="text-center py-10">
-            <p className="text-gray-400 text-sm mb-4">No encontramos respuestas exactas para "{search}".</p>
+            <p className="text-gray-400 text-sm mb-4">No encontramos respuestas exactas para &quot;{search}&quot;.</p>
             <button
               onClick={() => onAskAI(search)}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-xl text-xs font-bold transition-colors"

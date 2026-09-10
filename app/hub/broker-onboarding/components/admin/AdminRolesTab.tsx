@@ -4,16 +4,12 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck,
-  UserCheck,
   UserPlus,
   Search,
   Mail,
-  Phone,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   X,
-  Layers,
   Key
 } from "lucide-react";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, DollarSign, TrendingUp, Users, Layers, Loader2 } from "lucide-react";
+import { DollarSign, TrendingUp, Users, Layers, Loader2 } from "lucide-react";
 
 export interface MetricsData {
   totalBrokers: number;

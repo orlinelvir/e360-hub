@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Search, Filter, MessageSquare, AlertCircle } from "lucide-react";
+import { Plus, Search, MessageSquare, AlertCircle } from "lucide-react";
 import { SupportTicketV2 } from "../../types";
 import { useAuth } from "@/components/AuthProvider";
 import { getTicketCategoryLabel } from "@/lib/support/ticket-categories";

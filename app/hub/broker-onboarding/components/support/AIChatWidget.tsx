@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Bot, User, Send, Sparkles, ArrowUpRight, Loader2, AlertCircle, FileText, Download, PlayCircle } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
