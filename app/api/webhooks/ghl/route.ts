@@ -44,6 +44,19 @@ export async function POST(request: Request) {
   const providedSecret = secretHeader || secretQuery;
 
   if (process.env.GHL_WEBHOOK_SECRET && providedSecret !== process.env.GHL_WEBHOOK_SECRET) {
+    // Antes esto se rechazaba sin dejar ningún rastro (por eso ghlWebhookLogs
+    // quedó vacío durante semanas mientras el secreto real del problema era un
+    // simple desajuste de secretos entre GHL y Vercel) — ahora sí queda logueado,
+    // aunque sea un 401, para que la próxima vez esto se detecte en minutos.
+    if (adminDb) {
+      await adminDb.collection("ghlWebhookLogs").add({
+        eventType: "(rechazado antes de leer el body)",
+        receivedAt: new Date().toISOString(),
+        success: false,
+        reason: "invalid_secret",
+        providedSecretPrefix: (providedSecret || "").substring(0, 6)
+      });
+    }
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

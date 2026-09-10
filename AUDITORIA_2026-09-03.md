@@ -189,25 +189,37 @@ necesita ver esta notificación, su cuenta del Hub debe tener el rol
 `onboarding_member` asignado (revisar en "Equipo & Roles").
 
 --------------------------------------------------------------------------------
-PUNCH LIST CONSOLIDADO — ORDEN SUGERIDO
+7. SISTEMA DE REFERIDOS DE BROKERS (nuevo, no estaba en el plan original)
 --------------------------------------------------------------------------------
+El enlace de referido nunca funcionó (la ruta ni existía) y no había ningún
+tracking de quién refería a quién. Con la regla de negocio confirmada por el
+usuario ($100 cuando un broker referido confirma el pago de su paquete de
+$750), se construyó de punta a punta: enlace real (?ref=slug), captura del
+referidor al registrarse, acreditación automática de $100 (una sola vez,
+al momento de "Verificar Pago"), notificación in-app, QR real, y
+visibilidad tanto para el broker (Mi Perfil) como para el admin (Roster de
+Brokers, para pagar por fuera). Calendario de pago (15 y 30 de cada mes)
+ya está en la UI.
+
+--------------------------------------------------------------------------------
+PUNCH LIST CONSOLIDADO — ORDEN SUGERIDO (actualizado)
+--------------------------------------------------------------------------------
+COMPLETADO desde la versión anterior de este documento: adjuntar/reemplazar
+documento en caso existente, Verificar Sync real, dominio del referido + QR
+real + sistema de comisión de $100, instrumentación del webhook de
+auto-provisioning + notificación a onboarding_member.
+
 1. Volver a llenar el formulario de onboarding CRM de prueba y revisar
    `ghlWebhookLogs` para diagnosticar la causa raíz del auto-provisioning
-   (sección 6) — ahora sí va a quedar rastro.
-2. Adjuntar/reemplazar documento en un caso YA EXISTENTE (Vanessa) — el más
-   antiguo pendiente, impacto directo en un caso real.
-3. Conectar "Verificar Sync" al endpoint real /api/ghl/validate (ya existe,
-   solo falta usarlo) — hoy miente si las credenciales están rotas.
-4. Confirmar el dominio real del enlace de referido (hoy dice
-   "e360hub.com", posiblemente incorrecto) y generar el QR real.
-5. Borrar el bloque huérfano de "notifications" en firestore.rules (línea
+   (sección 6) — sigue pendiente, requiere una prueba real del usuario.
+2. Borrar el bloque huérfano de "notifications" en firestore.rules (línea
    ~113) para evitar confusión futura.
-6. Apagar el paso "Email" del workflow "APPLICATION SUBMITTED" en GHL
+3. Apagar el paso "Email" del workflow "APPLICATION SUBMITTED" en GHL
    (acción del usuario, no de código).
-7. Confirmar member.identityiq.com vs www.identityiq.com.
-8. Catálogo de servicios editable sin deploy.
-9. Calcular comisión real (5%) en credit-repair-intake en vez de $0 fijo.
-10. Limpiar los 4 errores + 13 warnings de lint persistentes.
-11. Rate-limiting + truncado de memoria en el Chat IA.
-12. Revisión de seguridad formal.
+4. Confirmar member.identityiq.com vs www.identityiq.com.
+5. Catálogo de servicios editable sin deploy.
+6. Calcular comisión real (5%) en credit-repair-intake en vez de $0 fijo.
+7. Limpiar los 4 errores + 13 warnings de lint persistentes.
+8. Rate-limiting + truncado de memoria en el Chat IA.
+9. Revisión de seguridad formal.
 ================================================================================
