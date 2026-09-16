@@ -45,7 +45,7 @@ function parseErrorMessage(status: number, text: string): string {
       return "Token PIT inválido o expirado. Verifica que copiaste correctamente tu Private Integration Token.";
     }
     if (status === 403) {
-      return "Permisos insuficientes. Tu Token PIT no tiene los scopes necesarios. Necesitas: contacts.readonly, contacts.write, opportunities.readonly, opportunities.write.";
+      return `Permisos insuficientes (403) para esta operación en GHL. Detalle real de GHL: "${msg || "sin detalle"}". Revisa los scopes del Token PIT usado.`;
     }
     if (status === 404) {
       return "Location ID no encontrado. Verifica que copiaste correctamente tu Location ID de StartPoint CRM.";

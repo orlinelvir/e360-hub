@@ -38,7 +38,7 @@ const db = getFirestore(app);
   } else {
     logs.docs.forEach((d) => {
       const data = d.data();
-      console.log(`- ${data.receivedAt} | ${data.eventType} | success=${data.success}`);
+      console.log(`- ${data.receivedAt} | ${data.eventType} | success=${data.success} | reason=${data.reason || "-"} | errorMessage=${data.errorMessage || "-"} | email=${data.email || "-"}`);
     });
   }
 
