@@ -3,6 +3,7 @@ import CaseStatusEmail, { CaseEmailStatus } from "./templates/CaseStatusEmail";
 import BrokerNoteEmail from "./templates/BrokerNoteEmail";
 import WelcomeApplicationEmail from "./templates/WelcomeApplicationEmail";
 import BrokerOnboardingEmail from "./templates/BrokerOnboardingEmail";
+import PasswordResetEmail from "./templates/PasswordResetEmail";
 
 /**
  * Envío de notificaciones al broker. Nunca debe tumbar la acción principal
@@ -109,6 +110,40 @@ export async function sendBrokerOnboardingEmail(params: BrokerOnboardingEmailPar
   } catch (err) {
     console.error("Error enviando email de onboarding al broker:", err);
   }
+}
+
+interface PasswordResetEmailParams {
+  brokerEmail: string;
+  brokerName: string;
+  authorName: string;
+  resetLink: string;
+}
+
+// A diferencia de las demás funciones de este archivo, esta SÍ lanza el error
+// en vez de solo loguearlo: aquí el correo ES la acción principal que pidió el
+// admin (enviar el reset), no un efecto secundario de otra cosa — si Resend
+// falla, el admin necesita saberlo para reintentar o avisar al broker por otro medio.
+export async function sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend) {
+    throw new Error("Resend no está configurado en el servidor (falta RESEND_API_KEY).");
+  }
+  if (!params.brokerEmail) {
+    throw new Error("El broker no tiene email registrado.");
+  }
+
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to: params.brokerEmail,
+    subject: "🔐 Restablece tu contraseña de E360 Hub",
+    react: (
+      <PasswordResetEmail
+        brokerName={params.brokerName}
+        authorName={params.authorName}
+        resetLink={params.resetLink}
+      />
+    ),
+  });
 }
 
 interface WelcomeApplicationEmailParams {
