@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { resolveUserRole } from "@/lib/roles";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -19,7 +20,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
     }
 
-    return NextResponse.json({ profile: snap.data() });
+    // El Hub (Torre de Control) decide qué pestañas de admin mostrar según
+    // este "role" — pero MASTER_ADMIN_EMAILS otorga admin sin necesidad de que
+    // el documento de Firestore lo diga explícitamente (así funcionan todas
+    // las rutas /api/admin/* vía resolveUserRole). Si aquí se devolviera el
+    // campo "role" tal cual está en Firestore, un master admin cuyo documento
+    // nunca se actualizó a "admin" vería el panel completo funcionar por API
+    // pero sin las pestañas visibles — justo el bug reportado.
+    const effectiveRole = await resolveUserRole(adminDb, user.uid, user.email);
+
+    return NextResponse.json({ profile: { ...snap.data(), role: effectiveRole } });
   } catch (error) {
     console.error("Broker profile GET error:", error);
     const message = error instanceof Error ? error.message : "Error desconocido";
