@@ -24,12 +24,12 @@ export interface GHLContactPayload {
 /**
  * Obtiene el encabezado de autorización usando la API Key individual del broker o del servidor
  */
-function getHeaders(customApiKey?: string) {
+function getHeaders(customApiKey?: string, version?: string) {
   const apiKey = (customApiKey || "").trim();
   return {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${apiKey}`,
-    "Version": "2021-07-28"
+    "Version": version || "2021-07-28"
   };
 }
 
@@ -347,9 +347,12 @@ export interface CreateLocationFromSnapshotPayload {
  * verifica que la Private Integration de agencia lo tenga habilitado en GHL.
  */
 export async function createGHLLocationFromSnapshot(payload: CreateLocationFromSnapshotPayload, agencyApiKey: string) {
+  // Este endpoint requiere "Version: v3" específicamente (distinto al resto
+  // de la API v2 que usa "2021-07-28") — documentado en
+  // https://marketplace.gohighlevel.com/docs/ghl/locations/create-location/
   const response = await fetch(`${GHL_API_BASE}/locations/`, {
     method: "POST",
-    headers: getHeaders(agencyApiKey),
+    headers: getHeaders(agencyApiKey, "v3"),
     body: JSON.stringify(payload)
   });
 
