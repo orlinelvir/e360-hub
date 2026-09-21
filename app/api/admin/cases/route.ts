@@ -2,9 +2,10 @@ import { NextResponse, after } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
-import { sendCaseStatusEmail } from "@/lib/email/send";
+import { sendCaseStatusEmail, sendWelcomeApplicationEmail } from "@/lib/email/send";
 import { CaseEmailStatus } from "@/lib/email/templates/CaseStatusEmail";
 import { createNotification } from "@/lib/services/notification-service";
+import { deriveCaseStatus, justGotVerified, VALID_REVIEW_STATUSES, ReviewStatus } from "@/lib/services/case-status";
 
 const STATUS_LABELS: Record<CaseEmailStatus, string> = {
   approved: "aprobada",
@@ -55,7 +56,8 @@ export async function GET(request: Request) {
       pipelineCluster: string;
       amount: number;
       estimatedCommission: number;
-      status: string;
+      reviewStatus: string;
+      syncStatus: string;
       createdAt: string;
       lastActivity?: string;
       notes?: string;
@@ -84,6 +86,8 @@ export async function GET(request: Request) {
             return;
           }
 
+          const { reviewStatus, syncStatus } = deriveCaseStatus(c);
+
           allCases.push({
             id: cDoc.id,
             brokerId: bDoc.id,
@@ -98,7 +102,8 @@ export async function GET(request: Request) {
             pipelineCluster: cluster,
             amount: amt,
             estimatedCommission: comm,
-            status: c.status || "synced",
+            reviewStatus,
+            syncStatus,
             createdAt: c.createdAt || "",
             lastActivity: c.lastActivity,
             notes: c.notes,
@@ -145,10 +150,14 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { brokerId, clientId, status, adminNotes, estimatedCommission } = body;
+    const { brokerId, clientId, reviewStatus, adminNotes, estimatedCommission } = body;
 
     if (!brokerId || !clientId) {
       return NextResponse.json({ error: "brokerId y clientId son requeridos" }, { status: 400 });
+    }
+
+    if (reviewStatus !== undefined && !VALID_REVIEW_STATUSES.includes(reviewStatus)) {
+      return NextResponse.json({ error: "reviewStatus inválido" }, { status: 400 });
     }
 
     const clientRef = adminDb.collection("brokers").doc(brokerId).collection("clients").doc(clientId);
@@ -172,21 +181,35 @@ export async function PATCH(request: Request) {
       }
     }
 
-    const previousStatus = client.status;
+    const { reviewStatus: previousReviewStatus } = deriveCaseStatus(client);
 
     const updatePayload: Record<string, unknown> = {
       lastActivity: `Actualizado por Admin: ${new Date().toLocaleDateString()}`
     };
 
-    if (status !== undefined) updatePayload.status = status;
+    if (reviewStatus !== undefined) updatePayload.status = reviewStatus;
     if (adminNotes !== undefined) updatePayload.adminNotes = adminNotes;
     if (estimatedCommission !== undefined) updatePayload.estimatedCommission = Number(estimatedCommission);
 
     await clientRef.update(updatePayload);
 
+    // El cliente se entera de que "recibimos tu aplicación" justo cuando el
+    // caso sale de "Pendiente de Documentos" por primera vez — ej. un caso
+    // creado sin gate (Referir Cliente) que un admin confirma manualmente
+    // tras revisar la documentación por fuera del sistema.
+    if (reviewStatus !== undefined && justGotVerified(previousReviewStatus, reviewStatus as ReviewStatus) && client.email) {
+      after(() =>
+        sendWelcomeApplicationEmail({
+          clientEmail: client.email,
+          clientName: client.name || "Cliente",
+          serviceName: client.serviceName || client.serviceId || "tu solicitud"
+        })
+      );
+    }
+
     // Notificar al broker por correo solo si el status realmente cambió a uno de
     // los 3 estados relevantes (evita reenviar en cada guardado de comisión/notas).
-    if (status !== undefined && status !== previousStatus && NOTIFIABLE_STATUSES.includes(status)) {
+    if (reviewStatus !== undefined && reviewStatus !== previousReviewStatus && NOTIFIABLE_STATUSES.includes(reviewStatus)) {
       const brokerSnap = await adminDb.collection("brokers").doc(brokerId).get();
       const brokerData = brokerSnap.data();
       const brokerEmail = brokerData?.email || "";
@@ -198,14 +221,14 @@ export async function PATCH(request: Request) {
           brokerName,
           clientName: client.name || "Cliente",
           serviceName: client.serviceName || client.serviceId || "Servicio",
-          status,
+          status: reviewStatus,
           amount: Number(client.amount) || undefined,
         })
       );
 
       after(() =>
         createNotification(brokerId, {
-          title: `Solicitud ${STATUS_LABELS[status as CaseEmailStatus]}`,
+          title: `Solicitud ${STATUS_LABELS[reviewStatus as CaseEmailStatus]}`,
           message: `${client.name || "Cliente"} — ${client.serviceName || client.serviceId || "Servicio"}`,
           link: "clientes"
         })

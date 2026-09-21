@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { createGHLLocationFromSnapshot } from "@/lib/ghl";
 import { findStaffUidsByRoles, notifyMany } from "@/lib/services/notification-service";
+import { ReviewStatus } from "@/lib/services/case-status";
 
 // A quién se le avisa cuando se aprovisiona una subcuenta de broker nueva —
 // "onboarding_member" es el rol cuya descripción es exactamente esto
@@ -9,7 +10,7 @@ import { findStaffUidsByRoles, notifyMany } from "@/lib/services/notification-se
 // necesita verlo, su cuenta del Hub debe tener este rol asignado.
 const ONBOARDING_NOTIFICATION_ROLES = ["onboarding_member", "admin"];
 
-function mapGHLStageToHubStatus(stageName: string, ghlStatus: string): "synced" | "in_progress" | "approved" | "funded" | "rejected" {
+function mapGHLStageToHubStatus(stageName: string, ghlStatus: string): ReviewStatus {
   const name = (stageName || "").toLowerCase();
   const status = (ghlStatus || "").toLowerCase();
 
@@ -22,10 +23,10 @@ function mapGHLStageToHubStatus(stageName: string, ghlStatus: string): "synced" 
   if (status === "lost" || status === "abandoned" || name.includes("lost") || name.includes("declin") || name.includes("reject") || name.includes("cancel") || name.includes("no califica")) {
     return "rejected";
   }
-  if (name.includes("underwrit") || name.includes("revis") || name.includes("proceso") || name.includes("evaluac") || name.includes("docs") || name.includes("análisis") || name.includes("analisis")) {
-    return "in_progress";
-  }
-  return "synced";
+  // Cualquier movimiento real de etapa en el pipeline de GHL (incluida esta
+  // rama por defecto) implica que alguien ya está trabajando el caso — nunca
+  // debe quedar clasificado como "pendiente de documentos".
+  return "in_review";
 }
 
 /**

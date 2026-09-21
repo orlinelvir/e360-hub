@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveUserRole } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
+import { deriveCaseStatus } from "@/lib/services/case-status";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -57,8 +58,9 @@ export async function GET(request: Request) {
           totalVolume += amt;
           estimatedCommissions += comm;
 
-          if (c.status === "synced") syncedCount++;
-          else if (c.status === "failed_sync" || c.status === "pending_sync") failedSyncCount++;
+          const { syncStatus } = deriveCaseStatus(c);
+          if (syncStatus === "synced") syncedCount++;
+          else if (syncStatus === "failed" || syncStatus === "pending") failedSyncCount++;
 
           const cluster = resolvePipelineCluster(c.serviceId, c.serviceName);
 

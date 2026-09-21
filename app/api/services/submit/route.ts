@@ -93,7 +93,12 @@ export async function POST(request: Request) {
       lastActivity: "Admitido desde E360 Hub",
       ghlContactId: "",
       ghlOpportunityId: "",
-      status: "pending_sync",
+      // Este endpoint es el formulario real de "Admitir Cliente" — para
+      // servicios de financiamiento ya se validó arriba que hay confirmación
+      // del formulario oficial o un PDF adjunto, así que el caso nace
+      // directamente "en revisión", no como un lead sin verificar.
+      status: "in_review",
+      syncStatus: "pending",
       brokerId: user.uid,
       brokerName,
       brokerEmail
@@ -210,10 +215,10 @@ export async function POST(request: Request) {
 
     const brokerSynced = Boolean(brokerContactId);
     const centralSynced = Boolean(centralContactId);
-    const finalStatus = (brokerSynced || centralSynced) ? "synced" : "failed_sync";
+    const finalSyncStatus = (brokerSynced || centralSynced) ? "synced" : "failed";
 
     await leadRef.update({
-      status: finalStatus,
+      syncStatus: finalSyncStatus,
       ghlContactId: brokerContactId || "",
       ghlOpportunityId: brokerOpportunityId || "",
       brokerContactId,
@@ -243,10 +248,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       leadId: leadRef.id,
-      status: finalStatus,
+      syncStatus: finalSyncStatus,
       brokerSync: brokerSynced,
       centralSync: centralSynced,
-      warning: finalStatus === "failed_sync"
+      warning: finalSyncStatus === "failed"
         ? "El cliente se guardó en E360 Hub, pero no se pudo sincronizar con el CRM. Verifica tus credenciales en 'Mi Perfil' o contacta a soporte."
         : undefined
     });

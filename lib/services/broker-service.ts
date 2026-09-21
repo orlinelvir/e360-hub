@@ -31,6 +31,7 @@ export interface ClientLeadData {
   feeRoundStatus?: "pending_review" | "paid";
   feeRoundNumber?: number;
   status?: string;
+  syncStatus?: string;
   adminNotes?: string;
 }
 

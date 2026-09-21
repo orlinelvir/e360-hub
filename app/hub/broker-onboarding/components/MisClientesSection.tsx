@@ -31,6 +31,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
 import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
 import { resolvePipelineCluster } from "@/lib/service-routing";
+import { deriveCaseStatus, REVIEW_STATUS_META } from "@/lib/services/case-status";
 
 interface MisClientesSectionProps {
   brokerName: string;
@@ -66,15 +67,6 @@ const stageLabels: Record<PipelineStage, { label: string; color: string; bg: str
 // de la solicitud, distinto del `stage` que el broker gestiona por su cuenta.
 const APPLICATION_STATUS_CLUSTERS = ["fondeo_rapido", "real_estate", "seguros"];
 
-const applicationStatusLabels: Record<string, { label: string; color: string; bg: string }> = {
-  synced: { label: "Ingresado en GHL", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30" },
-  in_progress: { label: "En Underwriting", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/30" },
-  approved: { label: "Aprobado", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/30" },
-  funded: { label: "Fondeado / Pagado", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
-  failed_sync: { label: "Fallo de Sincronización", color: "text-red-400", bg: "bg-red-500/10 border-red-500/30" },
-  rejected: { label: "Declinado", color: "text-gray-400", bg: "bg-gray-500/10 border-gray-500/30" },
-};
-
 export default function MisClientesSection({ brokerName, crmLocationId, crmApiKey }: MisClientesSectionProps) {
   const { user } = useAuth();
   const { fetchContacts } = useGHLContacts();
@@ -91,6 +83,8 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   const [uploadingDocument, setUploadingDocument] = useState<boolean>(false);
   const [documentUploadError, setDocumentUploadError] = useState<string>("");
   const [isSyncingGHL, setIsSyncingGHL] = useState<boolean>(false);
+  const [isNotifyingPending, setIsNotifyingPending] = useState<boolean>(false);
+  const [notifyPendingMsg, setNotifyPendingMsg] = useState<string>("");
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -261,6 +255,27 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     }
   };
 
+  const handleNotifyPending = async () => {
+    if (!user || !selectedClient) return;
+    setIsNotifyingPending(true);
+    setNotifyPendingMsg("");
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/broker/clients/notify-pending", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ clientId: selectedClient.id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al notificar al cliente");
+      setNotifyPendingMsg("Correo enviado al cliente con el enlace del formulario.");
+    } catch (err) {
+      setNotifyPendingMsg(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setIsNotifyingPending(false);
+    }
+  };
+
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClientName.trim() || !newClientPhone.trim()) return;
@@ -310,12 +325,35 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
       createdAt: new Date().toISOString().split("T")[0],
       lastActivity: "Enviado a StartPoint CRM · Oportunidad activa",
       ghlContactId: ghlId,
-      notes: newClientNotes.trim() || "Referido por el broker en la plataforma Hub."
+      notes: newClientNotes.trim() || "Referido por el broker en la plataforma Hub.",
+      // "Referir Cliente" no exige ningún formulario ni documento — a
+      // diferencia de "Admitir Cliente" (services/submit), este caso nace
+      // honestamente como "Pendiente de Documentos" en vez de aparecer como
+      // si ya fuera una aplicación en trámite.
+      status: "pending_docs",
+      syncStatus: "pending"
     };
 
     const updated = [newLead, ...clients];
-    saveClients(updated);
+    // Se espera a que el documento quede escrito en Firestore antes de pedirle
+    // al servidor que lo notifique — si no, la ruta de notificación podría
+    // leer el caso antes de que exista.
+    await saveClients(updated);
     setIsAddModalOpen(false);
+
+    // "Referir Cliente" no tiene ningún gate — el caso nace "Pendiente de
+    // Documentos", así que de inmediato le avisamos al CLIENTE (no solo al
+    // broker) que falta el formulario oficial, con el enlace real de su
+    // servicio. No bloquea el flujo si falla (ej. Resend no configurado).
+    if (user) {
+      user.getIdToken().then((token) => {
+        fetch("/api/broker/clients/notify-pending", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ clientId: newLead.id })
+        }).catch((err) => console.warn("No se pudo notificar al cliente del formulario faltante:", err));
+      });
+    }
 
     // Reset fields
     setNewClientName("");
@@ -659,8 +697,8 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
             const safeAmount = Number(client.amount) || 0;
             const safeCommission = Number(client.estimatedCommission) || 0;
             const cluster = resolvePipelineCluster(client.serviceId, client.serviceName);
-            const applicationStatusInfo = client.status ? applicationStatusLabels[client.status] : undefined;
-            const showApplicationStatus = APPLICATION_STATUS_CLUSTERS.includes(cluster) && applicationStatusInfo;
+            const applicationStatusInfo = REVIEW_STATUS_META[deriveCaseStatus(client).reviewStatus];
+            const showApplicationStatus = APPLICATION_STATUS_CLUSTERS.includes(cluster);
             return (
               <motion.div
                 key={client.id}
@@ -701,8 +739,8 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                   </div>
 
                   {/* Estado real de la solicitud, actualizado manualmente por E360 (Financiamiento/Seguros) */}
-                  {showApplicationStatus && applicationStatusInfo && (
-                    <div className={`flex items-center justify-between text-[10px] font-bold px-3 py-2 rounded-xl border ${applicationStatusInfo.bg} ${applicationStatusInfo.color}`}>
+                  {showApplicationStatus && (
+                    <div className={`flex items-center justify-between text-[10px] font-bold px-3 py-2 rounded-xl border ${applicationStatusInfo.bg} ${applicationStatusInfo.color} ${applicationStatusInfo.border}`}>
                       <span>Estado de tu Solicitud (E360)</span>
                       <span>{applicationStatusInfo.label}</span>
                     </div>
@@ -830,13 +868,13 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                 {/* Estado real de la solicitud (Financiamiento/Seguros), solo lectura */}
                 {(() => {
                   const cluster = resolvePipelineCluster(selectedClient.serviceId, selectedClient.serviceName);
-                  const info = selectedClient.status ? applicationStatusLabels[selectedClient.status] : undefined;
-                  if (!APPLICATION_STATUS_CLUSTERS.includes(cluster) || !info) return null;
+                  if (!APPLICATION_STATUS_CLUSTERS.includes(cluster)) return null;
+                  const info = REVIEW_STATUS_META[deriveCaseStatus(selectedClient).reviewStatus];
                   return (
                     <div className="mb-6 bg-[#05101F] border border-gray-800 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold text-gray-400 uppercase">Estado de tu Solicitud (E360)</span>
-                        <span className={`px-2.5 py-1 rounded-full border text-[10px] font-extrabold uppercase tracking-wider ${info.bg} ${info.color}`}>
+                        <span className={`px-2.5 py-1 rounded-full border text-[10px] font-extrabold uppercase tracking-wider ${info.bg} ${info.color} ${info.border}`}>
                           {info.label}
                         </span>
                       </div>
@@ -848,6 +886,26 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     </div>
                   );
                 })()}
+
+                {/* Si el caso nació sin formulario (ej. "Referir Cliente"), permite
+                    avisarle al cliente cuál es el paso que falta, con un solo clic */}
+                {deriveCaseStatus(selectedClient).reviewStatus === "pending_docs" && (
+                  <div className="mb-6 bg-amber-500/5 border border-amber-500/30 rounded-2xl p-4 space-y-2">
+                    <p className="text-[10px] font-bold text-amber-400 uppercase">Falta el formulario oficial</p>
+                    <p className="text-xs text-gray-300">
+                      Este caso todavía no tiene ningún formulario ni documento — el cliente no sabe que le falta este paso.
+                    </p>
+                    <button
+                      onClick={handleNotifyPending}
+                      disabled={isNotifyingPending}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
+                    >
+                      <Mail size={13} />
+                      {isNotifyingPending ? "Enviando..." : "Notificar al Cliente por Correo"}
+                    </button>
+                    {notifyPendingMsg && <p className="text-[11px] text-gray-400">{notifyPendingMsg}</p>}
+                  </div>
+                )}
 
                 {/* Notas de E360 para el broker (solo lectura) */}
                 {(loadingBrokerNotes || brokerNotes.length > 0) && (

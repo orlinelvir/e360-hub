@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission } from "@/lib/roles";
+import { deriveCaseStatus } from "@/lib/services/case-status";
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
       serviceName: string;
       serviceId?: string;
       amount: number;
-      status: string;
+      syncStatus: string;
       createdAt: string;
       notes: string;
       ghlContactId?: string;
@@ -51,7 +52,8 @@ export async function GET(request: Request) {
 
         clientsSnap.docs.forEach((cDoc) => {
           const c = cDoc.data();
-          if (c.status === "failed_sync" || c.status === "pending_sync") {
+          const { syncStatus } = deriveCaseStatus(c);
+          if (syncStatus === "failed" || syncStatus === "pending") {
             failedLeads.push({
               id: cDoc.id,
               brokerId: bDoc.id,
@@ -62,7 +64,7 @@ export async function GET(request: Request) {
               serviceName: c.serviceName || c.serviceId || "Servicio",
               serviceId: c.serviceId,
               amount: Number(c.amount) || 0,
-              status: c.status,
+              syncStatus,
               createdAt: c.createdAt || "",
               notes: c.notes || "",
               ghlContactId: c.ghlContactId,

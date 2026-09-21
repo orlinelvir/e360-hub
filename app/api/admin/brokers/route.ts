@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { deriveCaseStatus } from "@/lib/services/case-status";
 import { resolveUserRole, hasPermission } from "@/lib/roles";
 
 export async function GET(request: Request) {
@@ -35,7 +36,8 @@ export async function GET(request: Request) {
           const cData = c.data();
           const amt = Number(cData.amount) || 0;
           totalVolume += amt;
-          if (cData.status === "failed_sync" || cData.status === "pending_sync") {
+          const { syncStatus } = deriveCaseStatus(cData);
+          if (syncStatus === "failed" || syncStatus === "pending") {
             pendingSyncCount++;
           }
         });

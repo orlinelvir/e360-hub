@@ -144,7 +144,7 @@ export async function POST(request: Request) {
     const isSynced = Boolean(brokerContactId || centralContactId);
 
     await clientRef.update({
-      status: isSynced ? "synced" : "failed_sync",
+      syncStatus: isSynced ? "synced" : "failed",
       ghlContactId: brokerContactId || "",
       ghlOpportunityId: brokerOpportunityId || "",
       centralContactId: centralContactId || "",
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: isSynced,
-      status: isSynced ? "synced" : "failed_sync",
+      syncStatus: isSynced ? "synced" : "failed",
       brokerContactId,
       centralContactId,
       centralOpportunityId

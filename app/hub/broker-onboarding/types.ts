@@ -27,9 +27,14 @@ export interface ClientLead {
   // para poder mostrar el estado del fee sin una lectura extra por cliente.
   feeRoundStatus?: "pending_review" | "paid";
   feeRoundNumber?: number;
-  // Estado real de la solicitud, actualizado manualmente por Admin/Underwriting
-  // (distinto de `stage`, que es el seguimiento propio del broker). Solo lectura para el broker.
+  // Estado real de la solicitud (pending_docs/in_review/approved/rejected/funded
+  // — ver lib/services/case-status.ts), actualizado por Admin/Underwriting o por
+  // GHL (distinto de `stage`, que es el seguimiento propio del broker). Solo
+  // lectura para el broker.
   status?: string;
+  // Resultado de la sincronización con GHL (pending/synced/failed), separado a
+  // propósito de `status` — antes ambos vivían mezclados en el mismo campo.
+  syncStatus?: string;
   adminNotes?: string;
 }
 

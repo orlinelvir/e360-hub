@@ -12,7 +12,7 @@ export interface FailedLeadItem {
   serviceName: string;
   serviceId?: string;
   amount: number;
-  status: string;
+  syncStatus: string;
   createdAt: string;
   notes: string;
 }
@@ -67,7 +67,7 @@ export default function AdminFailedSyncTab({
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-md text-[9px] font-bold uppercase font-mono">
-                    {lead.status}
+                    {lead.syncStatus === "failed" ? "Fallo Sync" : "Sync Pendiente"}
                   </span>
                   <span className="text-xs font-bold text-white">{lead.name}</span>
                   <span className="text-[11px] text-gray-400 font-mono">({lead.serviceName})</span>

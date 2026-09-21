@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { verifyAuthToken, adminDb, adminStorage } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
 import { getCaseDocuments, addCaseDocument } from "@/lib/services/case-service";
+import { deriveCaseStatus, justGotVerified } from "@/lib/services/case-status";
+import { sendWelcomeApplicationEmail } from "@/lib/email/send";
 
 const MAX_DOCUMENT_SIZE = 8 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -129,6 +131,26 @@ export async function POST(request: Request) {
       uploadedByName,
       uploadedById: user.uid
     });
+
+    // Igual que cuando el broker adjunta el documento: si esto es la primera
+    // prueba real de un caso "Pendiente de Documentos", pasa a "En Revisión"
+    // y ahí se le avisa al cliente que recibimos su aplicación.
+    const clientRef = adminDb.collection("brokers").doc(brokerId).collection("clients").doc(clientId);
+    const clientSnap = await clientRef.get();
+    const clientData = clientSnap.data() || {};
+    const { reviewStatus: previousReviewStatus } = deriveCaseStatus(clientData);
+    if (justGotVerified(previousReviewStatus, "in_review")) {
+      await clientRef.update({ status: "in_review" });
+      if (clientData.email) {
+        after(() =>
+          sendWelcomeApplicationEmail({
+            clientEmail: clientData.email,
+            clientName: clientData.name || "Cliente",
+            serviceName: clientData.serviceName || clientData.serviceId || "tu solicitud"
+          })
+        );
+      }
+    }
 
     return NextResponse.json({ success: true, documentId });
   } catch (error) {

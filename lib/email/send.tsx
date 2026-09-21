@@ -4,6 +4,7 @@ import BrokerNoteEmail from "./templates/BrokerNoteEmail";
 import WelcomeApplicationEmail from "./templates/WelcomeApplicationEmail";
 import BrokerOnboardingEmail from "./templates/BrokerOnboardingEmail";
 import PasswordResetEmail from "./templates/PasswordResetEmail";
+import MissingApplicationEmail from "./templates/MissingApplicationEmail";
 
 /**
  * Envío de notificaciones al broker. Nunca debe tumbar la acción principal
@@ -144,6 +145,39 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
       />
     ),
   });
+}
+
+interface MissingApplicationEmailParams {
+  clientEmail: string;
+  clientName: string;
+  brokerName: string;
+  serviceName: string;
+  formLink?: string;
+}
+
+export async function sendMissingApplicationEmail(params: MissingApplicationEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend || !params.clientEmail) return;
+
+  const firstName = params.clientName.trim().split(" ")[0] || params.clientName;
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM_CLIENT,
+      to: params.clientEmail,
+      subject: `Falta un paso para continuar tu solicitud de ${params.serviceName}`,
+      react: (
+        <MissingApplicationEmail
+          clientFirstName={firstName}
+          brokerName={params.brokerName}
+          serviceName={params.serviceName}
+          formLink={params.formLink}
+        />
+      ),
+    });
+  } catch (err) {
+    console.error("Error enviando email de formulario faltante al cliente:", err);
+  }
 }
 
 interface WelcomeApplicationEmailParams {

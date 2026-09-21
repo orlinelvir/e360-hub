@@ -24,6 +24,7 @@ import {
   User
 } from "lucide-react";
 import { CaseNote, CaseNoteCategory, CaseDocument } from "../../types";
+import { ReviewStatus, SyncStatus, REVIEW_STATUS_META, SYNC_STATUS_META, VALID_REVIEW_STATUSES } from "@/lib/services/case-status";
 
 export interface CaseItem {
   id: string;
@@ -39,7 +40,8 @@ export interface CaseItem {
   pipelineCluster: string;
   amount: number;
   estimatedCommission: number;
-  status: string;
+  reviewStatus: string;
+  syncStatus: string;
   createdAt: string;
   lastActivity?: string;
   notes?: string;
@@ -76,6 +78,8 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
   const [caseDocuments, setCaseDocuments] = useState<(CaseDocument & { downloadUrl: string | null })[]>([]);
   const [loadingDocuments, setLoadingDocuments] = useState<boolean>(false);
   const [uploadingDocument, setUploadingDocument] = useState<boolean>(false);
+  const [isNotifyingPending, setIsNotifyingPending] = useState<boolean>(false);
+  const [notifyPendingMsg, setNotifyPendingMsg] = useState<string>("");
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
@@ -111,7 +115,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
         return false;
       }
       // Status
-      if (selectedStatus !== "all" && c.status !== selectedStatus) {
+      if (selectedStatus !== "all" && c.reviewStatus !== selectedStatus) {
         return false;
       }
       // Broker
@@ -131,7 +135,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
     filteredCases.forEach((c) => {
       totalVol += c.amount;
       totalComm += c.estimatedCommission;
-      if (c.status === "funded" || c.status === "approved") {
+      if (c.reviewStatus === "funded" || c.reviewStatus === "approved") {
         fundedCount++;
       }
     });
@@ -172,9 +176,10 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
 
   const openDetailModal = (c: CaseItem) => {
     setActiveCase(c);
-    setEditStatus(c.status);
+    setEditStatus(c.reviewStatus);
     setEditCommission(String(c.estimatedCommission || 0));
     setSaveError("");
+    setNotifyPendingMsg("");
     setActiveDetailTab("case");
     setNewNoteContent("");
     setCaseNotes([]);
@@ -194,7 +199,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
         body: JSON.stringify({
           brokerId: activeCase.brokerId,
           clientId: activeCase.id,
-          status: statusOverride || editStatus,
+          reviewStatus: statusOverride || editStatus,
           estimatedCommission: Number(editCommission) || 0,
         }),
       });
@@ -212,6 +217,26 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
       setSaveError(msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleNotifyPending = async () => {
+    if (!activeCase) return;
+    setIsNotifyingPending(true);
+    setNotifyPendingMsg("");
+    try {
+      const res = await fetch("/api/admin/cases/notify-pending", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brokerId: activeCase.brokerId, clientId: activeCase.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al notificar al cliente");
+      setNotifyPendingMsg("Correo enviado al cliente con el enlace del formulario.");
+    } catch (err) {
+      setNotifyPendingMsg(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setIsNotifyingPending(false);
     }
   };
 
@@ -269,21 +294,35 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
     }
   };
 
+  // Estado de la Solicitud — lo que de verdad importa (revisión/aprobación),
+  // separado del resultado técnico de sincronización con GHL (getSyncBadge).
+  const REVIEW_ICONS: Record<ReviewStatus, typeof CheckCircle2> = {
+    pending_docs: Clock,
+    in_review: Clock,
+    approved: CheckCircle2,
+    rejected: XCircle,
+    funded: CheckCircle2
+  };
+
   const getStatusBadge = (st: string) => {
-    switch (st) {
-      case "funded":
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"><CheckCircle2 size={11} /> Fondeado</span>;
-      case "approved":
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center gap-1"><CheckCircle2 size={11} /> Aprobado</span>;
-      case "in_progress":
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1"><Clock size={11} /> En Underwriting</span>;
-      case "failed_sync":
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1"><AlertTriangle size={11} /> Fallo Sync</span>;
-      case "rejected":
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-700 text-gray-400 border border-gray-600 flex items-center gap-1"><XCircle size={11} /> Declinado</span>;
-      default:
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1"><CheckCircle2 size={11} /> Ingresado GHL</span>;
-    }
+    const reviewStatus = (VALID_REVIEW_STATUSES.includes(st as ReviewStatus) ? st : "pending_docs") as ReviewStatus;
+    const meta = REVIEW_STATUS_META[reviewStatus];
+    const Icon = REVIEW_ICONS[reviewStatus];
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${meta.bg} ${meta.color} border ${meta.border} flex items-center gap-1`}>
+        <Icon size={11} /> {meta.label}
+      </span>
+    );
+  };
+
+  const getSyncBadge = (st: string) => {
+    const syncStatus = (st === "synced" || st === "failed" ? st : "pending") as SyncStatus;
+    const meta = SYNC_STATUS_META[syncStatus];
+    return (
+      <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${meta.bg} ${meta.color} border ${meta.border}`}>
+        {syncStatus === "failed" ? <AlertTriangle size={9} className="inline mr-0.5" /> : null} GHL: {meta.label}
+      </span>
+    );
   };
 
   const getClusterBadge = (cluster: string) => {
@@ -376,12 +415,9 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
               className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500"
             >
               <option value="all">⚡ Todos los Estados</option>
-              <option value="synced">Sincronizado / Ingresado</option>
-              <option value="in_progress">En Underwriting</option>
-              <option value="approved">Aprobado</option>
-              <option value="funded">Fondeado / Pagado</option>
-              <option value="failed_sync">Fallo Sincronización</option>
-              <option value="rejected">Declinado</option>
+              {VALID_REVIEW_STATUSES.map((rs) => (
+                <option key={rs} value={rs}>{REVIEW_STATUS_META[rs].label}</option>
+              ))}
             </select>
           </div>
 
@@ -457,7 +493,12 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
                     <td className="p-4 text-right font-mono font-bold text-cyan-300 text-sm">
                       {formatMoney(c.estimatedCommission)}
                     </td>
-                    <td className="p-4 text-center">{getStatusBadge(c.status)}</td>
+                    <td className="p-4 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        {getStatusBadge(c.reviewStatus)}
+                        {c.syncStatus === "failed" && getSyncBadge(c.syncStatus)}
+                      </div>
+                    </td>
                     <td className="p-4 text-center text-gray-500 font-mono text-[11px]">
                       {c.createdAt || "—"}
                     </td>
@@ -523,8 +564,28 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
                   <p className="text-gray-300"><strong>Broker:</strong> {activeCase.brokerName}</p>
                   <p className="text-gray-300"><strong>Email:</strong> {activeCase.brokerEmail}</p>
                   <p className="text-gray-300"><strong>Tier:</strong> {activeCase.brokerTier}</p>
+                  <div className="pt-1">{getSyncBadge(activeCase.syncStatus)}</div>
                 </div>
               </div>
+
+              {activeCase.reviewStatus === "pending_docs" && (
+                <div className="bg-amber-500/5 border border-amber-500/30 rounded-2xl p-4 space-y-2">
+                  <p className="text-[11px] font-bold text-amber-400 uppercase">Falta el formulario oficial</p>
+                  <p className="text-xs text-gray-300">
+                    Este caso no tiene ningún documento — el cliente puede no saber que le falta este paso.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleNotifyPending}
+                    disabled={isNotifyingPending}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
+                  >
+                    <Mail size={13} />
+                    {isNotifyingPending ? "Enviando..." : "Notificar al Cliente por Correo"}
+                  </button>
+                  {notifyPendingMsg && <p className="text-[11px] text-gray-400">{notifyPendingMsg}</p>}
+                </div>
+              )}
 
               {/* Acciones Rápidas de Decisión */}
               <div className="flex flex-wrap items-center gap-2">
@@ -564,19 +625,16 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-bold text-gray-300 uppercase mb-1.5">
-                    Estado Operativo
+                    Estado de la Solicitud
                   </label>
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value)}
                     className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-500"
                   >
-                    <option value="synced">Sincronizado / Ingresado</option>
-                    <option value="in_progress">En Underwriting</option>
-                    <option value="approved">Aprobado (Listo para oferta)</option>
-                    <option value="funded">Fondeado / Pagado</option>
-                    <option value="failed_sync">Fallo de Sincronización</option>
-                    <option value="rejected">Declinado</option>
+                    {VALID_REVIEW_STATUSES.map((rs) => (
+                      <option key={rs} value={rs}>{REVIEW_STATUS_META[rs].label}</option>
+                    ))}
                   </select>
                 </div>
 
