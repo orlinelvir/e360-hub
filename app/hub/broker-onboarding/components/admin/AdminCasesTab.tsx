@@ -638,7 +638,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSaveCase("rejected")}
+                  onClick={() => setEditStatus("rejected")}
                   disabled={saving}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
                     editStatus === "rejected" ? "bg-gray-600 text-white" : "bg-gray-700/40 text-gray-400 border border-gray-600 hover:bg-gray-700/60"
