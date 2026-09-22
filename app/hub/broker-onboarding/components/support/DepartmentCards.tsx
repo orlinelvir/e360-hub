@@ -20,7 +20,9 @@ import {
   Star,
   BarChart3,
   GraduationCap,
-  Wallet
+  Wallet,
+  Eye,
+  Briefcase
 } from "lucide-react";
 
 interface DepartmentCardsProps {
@@ -50,9 +52,9 @@ const departments: Department[] = [
     id: "general",
     name: "Mario",
     title: "Servicio al Cliente",
-    desc: "Primer filtro de soporte para dudas de plataforma, técnicas y seguimiento general.",
-    phone: "+1 (681) 236-1239",
-    digits: "16812361239",
+    desc: "Soporte general para todas las áreas: dudas de plataforma, técnicas y seguimiento general.",
+    phone: "+1 (917) 284-5636",
+    digits: "19172845636",
     primaryChannel: "sms",
     schedule: ["Lunes 9am – 6pm", "Mar – Vie 9am – 10pm", "Sábado 10am – 4pm"],
     icon: Headphones,
@@ -130,6 +132,17 @@ const departments: Department[] = [
     color: "orange"
   },
   {
+    id: "seguimiento",
+    name: "Elian Mena",
+    title: "Seguimiento de Aplicaciones",
+    desc: "Verificación diaria de la Torre de Control y seguimiento del estatus de tus solicitudes de financiamiento.",
+    phone: "+1 (917) 284-5636",
+    digits: "19172845636",
+    primaryChannel: "wa",
+    icon: Eye,
+    color: "purple"
+  },
+  {
     id: "taxes_legal",
     name: "Valentina",
     title: "Impuestos & Inmigración",
@@ -186,6 +199,13 @@ const resources: Resource[] = [
     desc: "Lun – Vie 10am – 6pm",
     icon: Video,
     action: { type: "external", href: "https://meet.google.com/gbk-bzki-kcd?pli=1" }
+  },
+  {
+    id: "done-for-you",
+    label: "Done For You — Formulario de Pago",
+    desc: "5 servicios de fulfillment (Rep. de Crédito, LLC, Crédito Empresarial, Página Web, CRM) — tú vendes, nosotros lo hacemos",
+    icon: Briefcase,
+    action: { type: "external", href: "https://api.leadconnectorhq.com/widget/form/9SjK8JfTjdRapiGmqF47" }
   }
 ];
 

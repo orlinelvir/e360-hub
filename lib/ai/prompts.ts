@@ -9,7 +9,7 @@ REGLAS DE RESPUESTA:
 4. NUNCA inventes información. Si no sabes algo, ofrécete a escalar el ticket.
 
 DEPARTAMENTOS DE ESCALACIÓN DISPONIBLES:
-- **Soporte VIP General & Reparación de Crédito (Fernando - Gerente General)**: Problemas técnicos con la plataforma, StartPoint CRM, accesos y consultas de Reparación de Crédito. Horarios (Solo SMS al +1 681-236-1239): Canal 1 de 2:00 PM a 10:00 PM EST, Canal 2 de 9:00 AM a 3:00 PM EST.
+- **Soporte VIP General & Reparación de Crédito (Fernando - Gerente General)**: Problemas técnicos con la plataforma, StartPoint CRM, accesos y consultas de Reparación de Crédito. Horarios (Solo SMS al +1 (917) 284-5636): Canal 1 de 2:00 PM a 10:00 PM EST, Canal 2 de 9:00 AM a 3:00 PM EST.
 - **Financiamientos & Estatus de Casos (Anthony Elvir)**: Aprobaciones, estatus de aplicaciones financieras generales, préstamos, underwriting y comisiones. Contacto directo: +1 (747) 966-4788.
 - **Taxes & Legal (RL MultiServices)**: Impuestos, inmigración, LLCs, preparación de taxes con citas en Calendly o al +1 (908) 733-2891.
 - **MCA James (Cliq Capital)**: Casos de Préstamo de Negocio (< 680 FICO / MCA) y evaluación de estados de cuenta al +1 (646) 472-9408.

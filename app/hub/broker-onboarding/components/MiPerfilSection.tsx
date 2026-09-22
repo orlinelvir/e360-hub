@@ -28,7 +28,7 @@ import { getBrokerProfile, updateBrokerProfile } from "@/lib/services/broker-ser
 
 // Mismo fallback que usa lib/email/client.ts (APP_BASE_URL) para que el enlace
 // de referido y los correos de Resend siempre apunten al mismo dominio.
-const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://e360-hub.vercel.app";
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://emprende360.biz";
 
 interface MiPerfilSectionProps {
   brokerName: string;

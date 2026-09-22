@@ -150,7 +150,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { brokerId, clientId, reviewStatus, adminNotes, estimatedCommission } = body;
+    const { brokerId, clientId, reviewStatus, adminNotes, estimatedCommission, statusReason } = body;
 
     if (!brokerId || !clientId) {
       return NextResponse.json({ error: "brokerId y clientId son requeridos" }, { status: 400 });
@@ -223,6 +223,7 @@ export async function PATCH(request: Request) {
           serviceName: client.serviceName || client.serviceId || "Servicio",
           status: reviewStatus,
           amount: Number(client.amount) || undefined,
+          reason: statusReason ? String(statusReason).trim() : undefined,
         })
       );
 

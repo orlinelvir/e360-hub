@@ -10,6 +10,7 @@ interface CaseStatusEmailProps {
   serviceName: string;
   status: CaseEmailStatus;
   amount?: number;
+  reason?: string;
 }
 
 const STATUS_META: Record<
@@ -47,7 +48,7 @@ function formatMoney(amount?: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
 }
 
-export default function CaseStatusEmail({ brokerName, clientName, serviceName, status, amount }: CaseStatusEmailProps) {
+export default function CaseStatusEmail({ brokerName, clientName, serviceName, status, amount, reason }: CaseStatusEmailProps) {
   const meta = STATUS_META[status];
   const formattedAmount = formatMoney(amount);
 
@@ -102,6 +103,25 @@ export default function CaseStatusEmail({ brokerName, clientName, serviceName, s
           </Text>
         )}
       </Section>
+
+      {reason && (
+        <Section
+          style={{
+            backgroundColor: "#2A1414",
+            border: "1px solid #4A2323",
+            borderRadius: "14px",
+            padding: "14px 18px",
+            margin: "0 0 20px",
+          }}
+        >
+          <Text style={{ color: "#F0A0A0", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 6px" }}>
+            Motivo
+          </Text>
+          <Text style={{ color: "#E5C4C4", fontSize: "13px", lineHeight: "20px", margin: 0, whiteSpace: "pre-wrap" }}>
+            {reason}
+          </Text>
+        </Section>
+      )}
 
       <Text style={{ color: "#C4CBD9", fontSize: "13px", lineHeight: "21px", margin: "0 0 22px" }}>
         {meta.nextSteps}

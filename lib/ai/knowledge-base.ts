@@ -43,7 +43,7 @@ const FALLBACK_FAQS: FaqEntry[] = [
   },
   {
     question: "¿Cómo contacto a Soporte General (dudas de plataforma o técnicas)?",
-    answer: "El Soporte General de primer filtro lo atiende Mario por SMS o llamada al +1 (681) 236-1239. Horario: Lunes 9am–6pm, Martes a Viernes 9am–10pm, Sábado 10am–4pm."
+    answer: "El Soporte General de primer filtro lo atiende Mario por SMS o llamada al +1 (917) 284-5636. Horario: Lunes 9am–6pm, Martes a Viernes 9am–10pm, Sábado 10am–4pm."
   },
   {
     question: "¿Con quién consulto dudas del CRM o del proceso de Reparación de Crédito?",

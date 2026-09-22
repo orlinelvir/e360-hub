@@ -35,6 +35,9 @@ export interface ClientLead {
   // Resultado de la sincronización con GHL (pending/synced/failed), separado a
   // propósito de `status` — antes ambos vivían mezclados en el mismo campo.
   syncStatus?: string;
+  // Último umbral de horas hábiles (24/48/72) ya notificado por el cron de
+  // alertas — evita repetir el mismo aviso cada día que el caso sigue pendiente.
+  lastPendingAlertHours?: number;
   adminNotes?: string;
 }
 

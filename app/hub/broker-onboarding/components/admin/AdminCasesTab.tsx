@@ -59,6 +59,7 @@ interface AdminCasesTabProps {
 export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesTabProps) {
   const [search, setSearch] = useState<string>("");
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedBroker, setSelectedBroker] = useState<string>("all");
 
@@ -66,6 +67,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
   const [activeCase, setActiveCase] = useState<CaseItem | null>(null);
   const [editStatus, setEditStatus] = useState<string>("");
   const [editCommission, setEditCommission] = useState<string>("");
+  const [statusReason, setStatusReason] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string>("");
 
@@ -96,6 +98,21 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [cases]);
 
+  // Tipos de financiamiento (serviceId) disponibles dentro del cluster elegido
+  // — se derivan de los casos reales en vez de una lista fija, así un
+  // servicio nuevo aparece automáticamente sin tocar este componente.
+  const uniqueServiceTypes = useMemo(() => {
+    const map = new Map<string, string>();
+    cases
+      .filter((c) => selectedCluster === "all" || c.pipelineCluster === selectedCluster)
+      .forEach((c) => {
+        if (c.serviceId && !map.has(c.serviceId)) {
+          map.set(c.serviceId, c.serviceName);
+        }
+      });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [cases, selectedCluster]);
+
   // Filtrado reactivo
   const filteredCases = useMemo(() => {
     return cases.filter((c) => {
@@ -114,6 +131,10 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
       if (selectedCluster !== "all" && c.pipelineCluster !== selectedCluster) {
         return false;
       }
+      // Tipo específico de financiamiento
+      if (selectedServiceId !== "all" && c.serviceId !== selectedServiceId) {
+        return false;
+      }
       // Status
       if (selectedStatus !== "all" && c.reviewStatus !== selectedStatus) {
         return false;
@@ -124,7 +145,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
       }
       return true;
     });
-  }, [cases, search, selectedCluster, selectedStatus, selectedBroker]);
+  }, [cases, search, selectedCluster, selectedServiceId, selectedStatus, selectedBroker]);
 
   // KPIs agregados de la selección actual
   const kpis = useMemo(() => {
@@ -178,6 +199,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
     setActiveCase(c);
     setEditStatus(c.reviewStatus);
     setEditCommission(String(c.estimatedCommission || 0));
+    setStatusReason("");
     setSaveError("");
     setNotifyPendingMsg("");
     setActiveDetailTab("case");
@@ -201,6 +223,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
           clientId: activeCase.id,
           reviewStatus: statusOverride || editStatus,
           estimatedCommission: Number(editCommission) || 0,
+          statusReason: statusReason.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -378,7 +401,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
 
       {/* 2. Barra de Filtros y Búsqueda */}
       <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Buscador */}
           <div className="relative md:col-span-1">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -395,7 +418,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
           <div>
             <select
               value={selectedCluster}
-              onChange={(e) => setSelectedCluster(e.target.value)}
+              onChange={(e) => { setSelectedCluster(e.target.value); setSelectedServiceId("all"); }}
               className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500"
             >
               <option value="all">📁 Todos los Clusters</option>
@@ -404,6 +427,20 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
               <option value="credit_repair">⚖️ Reparación de Crédito</option>
               <option value="seguros">🛡️ Seguros & Pólizas</option>
               <option value="corporativo">🏢 Corporativo (LLC, Taxes)</option>
+            </select>
+          </div>
+
+          {/* Selector Tipo específico de financiamiento */}
+          <div>
+            <select
+              value={selectedServiceId}
+              onChange={(e) => setSelectedServiceId(e.target.value)}
+              className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500"
+            >
+              <option value="all">🏷️ Todos los Tipos</option>
+              {uniqueServiceTypes.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
             </select>
           </div>
 
@@ -453,7 +490,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
         <div className="bg-[#0A182D]/50 border border-gray-800 rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-gray-300">
-              <thead className="bg-[#05101F] text-gray-400 uppercase font-mono text-[10px] tracking-wider border-b border-gray-800">
+              <thead className="sticky top-0 z-10 bg-[#05101F] text-gray-400 uppercase font-mono text-[10px] tracking-wider border-b border-gray-800">
                 <tr>
                   <th className="p-4">Cliente / Solicitante</th>
                   <th className="p-4">Servicio & Cluster</th>
@@ -650,6 +687,21 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
                   />
                 </div>
               </div>
+
+              {editStatus === "rejected" && (
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-300 uppercase mb-1.5">
+                    Razón del Declinado (se incluye en el correo al broker)
+                  </label>
+                  <textarea
+                    value={statusReason}
+                    onChange={(e) => setStatusReason(e.target.value)}
+                    rows={3}
+                    placeholder="Ej: El cliente no cumple con el mínimo de FICO requerido para este producto..."
+                    className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 resize-none"
+                  />
+                </div>
+              )}
 
               {/* Expediente de Caso: Notas segmentadas + Documentos */}
               <div className="border border-gray-800 rounded-2xl overflow-hidden">

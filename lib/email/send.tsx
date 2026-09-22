@@ -19,6 +19,7 @@ interface CaseStatusEmailParams {
   serviceName: string;
   status: CaseEmailStatus;
   amount?: number;
+  reason?: string;
 }
 
 export async function sendCaseStatusEmail(params: CaseStatusEmailParams): Promise<void> {
@@ -43,6 +44,7 @@ export async function sendCaseStatusEmail(params: CaseStatusEmailParams): Promis
           serviceName={params.serviceName}
           status={params.status}
           amount={params.amount}
+          reason={params.reason}
         />
       ),
     });

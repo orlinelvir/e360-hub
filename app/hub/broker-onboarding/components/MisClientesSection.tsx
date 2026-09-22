@@ -65,7 +65,7 @@ const stageLabels: Record<PipelineStage, { label: string; color: string; bg: str
 
 // Clusters donde E360 (underwriting/aseguradora) da seguimiento manual del status real
 // de la solicitud, distinto del `stage` que el broker gestiona por su cuenta.
-const APPLICATION_STATUS_CLUSTERS = ["fondeo_rapido", "real_estate", "seguros"];
+const APPLICATION_STATUS_CLUSTERS = ["fondeo_rapido", "real_estate", "seguros", "credit_repair"];
 
 export default function MisClientesSection({ brokerName, crmLocationId, crmApiKey }: MisClientesSectionProps) {
   const { user } = useAuth();

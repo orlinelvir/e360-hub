@@ -25,4 +25,4 @@ export const EMAIL_FROM = process.env.RESEND_FROM_EMAIL || "E360 Hub <onboarding
 export const EMAIL_FROM_CLIENT =
   process.env.RESEND_FROM_CLIENT_EMAIL || process.env.RESEND_FROM_EMAIL || "Departamento de Aplicaciones <onboarding@resend.dev>";
 
-export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://e360-hub.vercel.app";
+export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://emprende360.biz";
