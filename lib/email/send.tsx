@@ -62,9 +62,15 @@ interface BrokerNoteEmailParams {
   noteContent: string;
 }
 
-export async function sendBrokerNoteEmail(params: BrokerNoteEmailParams): Promise<void> {
+// A diferencia de la mayoría de funciones de este archivo, esta SÍ reporta el
+// resultado real en vez de tragarse el error en silencio: el equipo de
+// underwriting depende de que esta nota realmente le llegue al broker, y
+// antes no había forma de saber si Resend había fallado — parecía "enviado"
+// aunque nunca llegara.
+export async function sendBrokerNoteEmail(params: BrokerNoteEmailParams): Promise<{ sent: boolean; error?: string }> {
   const resend = getResendClient();
-  if (!resend || !params.brokerEmail) return;
+  if (!resend) return { sent: false, error: "Resend no está configurado en el servidor (falta RESEND_API_KEY)." };
+  if (!params.brokerEmail) return { sent: false, error: "El broker no tiene email registrado." };
 
   try {
     await resend.emails.send({
@@ -81,8 +87,11 @@ export async function sendBrokerNoteEmail(params: BrokerNoteEmailParams): Promis
         />
       ),
     });
+    return { sent: true };
   } catch (err) {
     console.error("Error enviando email de nota para el broker:", err);
+    const message = err instanceof Error ? err.message : "Error desconocido al enviar el correo.";
+    return { sent: false, error: message };
   }
 }
 

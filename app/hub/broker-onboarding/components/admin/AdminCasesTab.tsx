@@ -20,8 +20,7 @@ import {
   FileText,
   Paperclip,
   Download,
-  Send,
-  User
+  Send
 } from "lucide-react";
 import { CaseNote, CaseNoteCategory, CaseDocument } from "../../types";
 import { ReviewStatus, SyncStatus, REVIEW_STATUS_META, SYNC_STATUS_META, VALID_REVIEW_STATUSES } from "@/lib/services/case-status";
@@ -82,6 +81,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
   const [uploadingDocument, setUploadingDocument] = useState<boolean>(false);
   const [isNotifyingPending, setIsNotifyingPending] = useState<boolean>(false);
   const [notifyPendingMsg, setNotifyPendingMsg] = useState<string>("");
+  const [noteFeedback, setNoteFeedback] = useState<{ text: string; ok: boolean } | null>(null);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
@@ -202,6 +202,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
     setStatusReason("");
     setSaveError("");
     setNotifyPendingMsg("");
+    setNoteFeedback(null);
     setActiveDetailTab("case");
     setNewNoteContent("");
     setCaseNotes([]);
@@ -267,6 +268,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
     if (!activeCase || !newNoteContent.trim() || activeDetailTab === "documents") return;
     setSavingNote(true);
     setSaveError("");
+    setNoteFeedback(null);
     try {
       const res = await fetch("/api/admin/cases/notes", {
         method: "POST",
@@ -283,6 +285,17 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
 
       setNewNoteContent("");
       fetchCaseNotes(activeCase.brokerId, activeCase.id);
+
+      // Solo "Notas para el Broker" dispara un correo real — confirmarlo en
+      // pantalla en vez de asumir que salió, que fue justo la confusión que
+      // llevó a pensar que el sistema de notas no funcionaba.
+      if (activeDetailTab === "broker") {
+        if (data.emailResult?.sent) {
+          setNoteFeedback({ text: "✓ Correo enviado al broker.", ok: true });
+        } else {
+          setNoteFeedback({ text: `⚠ La nota se guardó, pero el correo no se envió: ${data.emailResult?.error || "error desconocido"}`, ok: false });
+        }
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error desconocido";
       setSaveError(msg);
@@ -707,17 +720,18 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
               <div className="border border-gray-800 rounded-2xl overflow-hidden">
                 <div className="flex items-center overflow-x-auto bg-[#05101F] border-b border-gray-800">
                   {[
-                    { id: "observation" as const, label: "Notas de Observación", icon: FileText },
-                    { id: "case" as const, label: "Notas del Caso", icon: MessageSquare },
-                    { id: "broker" as const, label: "Notas para el Broker", icon: User },
-                    { id: "documents" as const, label: "Documentos", icon: Paperclip },
+                    { id: "observation" as const, label: "Notas de Observación", icon: FileText, hint: "Interna" },
+                    { id: "case" as const, label: "Notas del Caso", icon: MessageSquare, hint: "Interna" },
+                    { id: "broker" as const, label: "Notas para el Broker", icon: Mail, hint: "Envía correo" },
+                    { id: "documents" as const, label: "Documentos", icon: Paperclip, hint: null },
                   ].map((tab) => {
                     const Icon = tab.icon;
                     return (
                       <button
                         key={tab.id}
                         type="button"
-                        onClick={() => setActiveDetailTab(tab.id)}
+                        onClick={() => { setActiveDetailTab(tab.id); setNoteFeedback(null); }}
+                        title={tab.hint || undefined}
                         className={`flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-bold whitespace-nowrap border-b-2 transition-colors ${
                           activeDetailTab === tab.id
                             ? "border-cyan-400 text-cyan-400"
@@ -726,6 +740,11 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
                       >
                         <Icon size={13} />
                         <span>{tab.label}</span>
+                        {tab.hint && (
+                          <span className={`text-[8px] font-mono normal-case px-1.5 py-0.5 rounded ${tab.id === "broker" ? "bg-emerald-500/20 text-emerald-400" : "bg-gray-700 text-gray-400"}`}>
+                            {tab.hint}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -796,26 +815,33 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
                       />
                     </label>
                   ) : (
-                    <div className="relative">
-                      <textarea
-                        rows={2}
-                        value={newNoteContent}
-                        onChange={(e) => setNewNoteContent(e.target.value)}
-                        placeholder={
-                          activeDetailTab === "broker"
-                            ? "Escribe una actualización que el broker podrá ver en su panel..."
-                            : "Escribe una nota interna sobre este caso..."
-                        }
-                        className="w-full bg-[#0A182D] border border-gray-800 rounded-xl p-3 pr-12 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 resize-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddNote}
-                        disabled={!newNoteContent.trim() || savingNote}
-                        className="absolute right-2.5 bottom-2.5 p-2 bg-cyan-500 text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {savingNote ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                      </button>
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <textarea
+                          rows={2}
+                          value={newNoteContent}
+                          onChange={(e) => setNewNoteContent(e.target.value)}
+                          placeholder={
+                            activeDetailTab === "broker"
+                              ? "Escribe una actualización — se le enviará por correo al broker de inmediato..."
+                              : "Escribe una nota interna sobre este caso (no se envía a nadie)..."
+                          }
+                          className="w-full bg-[#0A182D] border border-gray-800 rounded-xl p-3 pr-12 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 resize-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddNote}
+                          disabled={!newNoteContent.trim() || savingNote}
+                          className="absolute right-2.5 bottom-2.5 p-2 bg-cyan-500 text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {savingNote ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                        </button>
+                      </div>
+                      {noteFeedback && (
+                        <p className={`text-[11px] ${noteFeedback.ok ? "text-emerald-400" : "text-amber-400"}`}>
+                          {noteFeedback.text}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

@@ -102,22 +102,24 @@ export async function POST(request: Request) {
       authorId: user.uid
     });
 
+    let emailResult: { sent: boolean; error?: string } | undefined;
+
     if (category === "broker") {
       const brokerSnap = await adminDb.collection("brokers").doc(brokerId).get();
       const brokerData = brokerSnap.data();
       const brokerEmail = brokerData?.email || "";
       const brokerName = brokerData?.displayName || brokerData?.name || "Broker";
 
-      after(() =>
-        sendBrokerNoteEmail({
-          brokerEmail,
-          brokerName,
-          clientName: access.client.name || "Cliente",
-          serviceName: access.client.serviceName || access.client.serviceId || "Servicio",
-          authorName,
-          noteContent: trimmedContent,
-        })
-      );
+      // Se espera el resultado real (no fire-and-forget) para poder avisarle
+      // al staff en pantalla si el correo de verdad salió o no.
+      emailResult = await sendBrokerNoteEmail({
+        brokerEmail,
+        brokerName,
+        clientName: access.client.name || "Cliente",
+        serviceName: access.client.serviceName || access.client.serviceId || "Servicio",
+        authorName,
+        noteContent: trimmedContent,
+      });
 
       after(() =>
         createNotification(brokerId, {
@@ -128,7 +130,7 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, noteId });
+    return NextResponse.json({ success: true, noteId, emailResult });
   } catch (error) {
     console.error("Admin case notes POST error:", error);
     const message = error instanceof Error ? error.message : "Error desconocido";
