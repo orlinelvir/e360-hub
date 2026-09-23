@@ -4,7 +4,7 @@ import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
 import { getCaseNotes, addCaseNote } from "@/lib/services/case-service";
 import { CaseNoteCategory } from "@/app/hub/broker-onboarding/types";
-import { sendBrokerNoteEmail } from "@/lib/email/send";
+import { sendBrokerNoteEmail, sendClientCaseUpdateEmail } from "@/lib/email/send";
 import { createNotification } from "@/lib/services/notification-service";
 
 const VALID_CATEGORIES: CaseNoteCategory[] = ["observation", "case", "broker"];
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { brokerId, clientId, category, content } = body;
+    const { brokerId, clientId, category, content, notifyClient } = body;
 
     if (!brokerId || !clientId || !content) {
       return NextResponse.json({ error: "brokerId, clientId y content son requeridos" }, { status: 400 });
@@ -130,7 +130,22 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, noteId, emailResult });
+    let clientEmailResult: { sent: boolean; error?: string } | undefined;
+
+    // Que el broker se entere no siempre es suficiente para que el caso
+    // avance — a veces quien tiene que actuar (llenar algo, responder una
+    // pregunta) es el cliente directamente. Es opcional y solo aplica junto
+    // a una nota "broker", nunca en las categorías internas.
+    if (category === "broker" && notifyClient === true) {
+      clientEmailResult = await sendClientCaseUpdateEmail({
+        clientEmail: access.client.email || "",
+        clientName: access.client.name || "Cliente",
+        serviceName: access.client.serviceName || access.client.serviceId || "Servicio",
+        noteContent: trimmedContent,
+      });
+    }
+
+    return NextResponse.json({ success: true, noteId, emailResult, clientEmailResult });
   } catch (error) {
     console.error("Admin case notes POST error:", error);
     const message = error instanceof Error ? error.message : "Error desconocido";

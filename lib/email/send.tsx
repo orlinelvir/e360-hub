@@ -5,6 +5,7 @@ import WelcomeApplicationEmail from "./templates/WelcomeApplicationEmail";
 import BrokerOnboardingEmail from "./templates/BrokerOnboardingEmail";
 import PasswordResetEmail from "./templates/PasswordResetEmail";
 import MissingApplicationEmail from "./templates/MissingApplicationEmail";
+import ClientCaseUpdateEmail from "./templates/ClientCaseUpdateEmail";
 
 /**
  * Envío de notificaciones al broker. Nunca debe tumbar la acción principal
@@ -90,6 +91,44 @@ export async function sendBrokerNoteEmail(params: BrokerNoteEmailParams): Promis
     return { sent: true };
   } catch (err) {
     console.error("Error enviando email de nota para el broker:", err);
+    const message = err instanceof Error ? err.message : "Error desconocido al enviar el correo.";
+    return { sent: false, error: message };
+  }
+}
+
+interface ClientCaseUpdateEmailParams {
+  clientEmail: string;
+  clientName: string;
+  serviceName: string;
+  noteContent: string;
+}
+
+// Igual que sendBrokerNoteEmail: reporta el resultado real en vez de
+// tragarse el error, porque el punto de esta función es precisamente que el
+// cliente reciba la actualización sin depender de que el broker se la reenvíe.
+export async function sendClientCaseUpdateEmail(params: ClientCaseUpdateEmailParams): Promise<{ sent: boolean; error?: string }> {
+  const resend = getResendClient();
+  if (!resend) return { sent: false, error: "Resend no está configurado en el servidor (falta RESEND_API_KEY)." };
+  if (!params.clientEmail) return { sent: false, error: "El cliente no tiene un correo registrado." };
+
+  const firstName = params.clientName.trim().split(" ")[0] || params.clientName;
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM_CLIENT,
+      to: params.clientEmail,
+      subject: `Actualización sobre tu solicitud de ${params.serviceName}`,
+      react: (
+        <ClientCaseUpdateEmail
+          clientFirstName={firstName}
+          serviceName={params.serviceName}
+          noteContent={params.noteContent}
+        />
+      ),
+    });
+    return { sent: true };
+  } catch (err) {
+    console.error("Error enviando email de actualización al cliente:", err);
     const message = err instanceof Error ? err.message : "Error desconocido al enviar el correo.";
     return { sent: false, error: message };
   }
