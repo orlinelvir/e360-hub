@@ -303,7 +303,7 @@ export const servicesData: ServiceDetail[] = [
     pipelineCluster: "seguros",
     status: "active",
     statusLabel: "Activo",
-    description: "Pólizas de seguro automotriz personal, cotizando y comparando precios con las aseguradoras más importantes de USA.",
+    description: "⚠️ Disponible por el momento solo en Texas y California. Pólizas de seguro automotriz personal, cotizando y comparando precios con las aseguradoras más importantes de USA.",
     requirements: [
       "Información del vehículo (año, marca, modelo o número VIN)",
       "Licencia de conducir de todos los conductores del núcleo familiar",
@@ -356,7 +356,7 @@ export const servicesData: ServiceDetail[] = [
     pipelineCluster: "seguros",
     status: "active",
     statusLabel: "Activo",
-    description: "Seguros residenciales (homeowners) para proteger la estructura física de la vivienda, propiedad personal y responsabilidad civil del asegurado.",
+    description: "⚠️ Disponible por el momento solo en Texas, California y Florida. Seguros residenciales (homeowners) para proteger la estructura física de la vivienda, propiedad personal y responsabilidad civil del asegurado.",
     requirements: [
       "Dirección física exacta de la vivienda",
       "Año de construcción, tipo de techo y detalles estructurales claves",
