@@ -1,12 +1,13 @@
-export type ActiveTab = "inicio" | "clientes" | "soporte" | "perfil" | "admin";
+export type ActiveTab = "inicio" | "clientes" | "soporte" | "perfil" | "admin" | "recursos";
 
-export type PipelineStage = 
+export type PipelineStage =
   | "lead"
   | "qualification"
   | "docs_pending"
   | "submitted"
   | "approved"
-  | "paid";
+  | "paid"
+  | "rejected";
 
 export interface ClientLead {
   id: string;

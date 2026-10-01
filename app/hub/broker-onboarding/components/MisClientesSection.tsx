@@ -60,7 +60,8 @@ const stageLabels: Record<PipelineStage, { label: string; color: string; bg: str
   docs_pending: { label: "Docs Pendientes", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/30" },
   submitted: { label: "Sometido a Banco", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/30" },
   approved: { label: "Aprobado", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
-  paid: { label: "Comisión Pagada", color: "text-green-400", bg: "bg-green-500/10 border-green-500/30" }
+  paid: { label: "Comisión Pagada", color: "text-green-400", bg: "bg-green-500/10 border-green-500/30" },
+  rejected: { label: "No Aprobado", color: "text-gray-400", bg: "bg-gray-500/10 border-gray-500/30" }
 };
 
 // Clusters donde E360 (underwriting/aseguradora) da seguimiento manual del status real
@@ -989,19 +990,21 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                 <div className="mb-6 space-y-2">
                   <label className="block text-xs font-semibold text-gray-400 uppercase">Cambiar Etapa en Pipeline:</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {Object.entries(stageLabels).map(([stKey, stInfo]) => (
-                      <button
-                        key={stKey}
-                        onClick={() => handleUpdateStage(selectedClient.id, stKey as PipelineStage)}
-                        className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${
-                          selectedClient.stage === stKey
-                            ? `${stInfo.bg} ${stInfo.color} border-current ring-1 ring-cyan-500/40`
-                            : "bg-[#05101F] border-gray-800 text-gray-400 hover:text-white"
-                        }`}
-                      >
-                        {stInfo.label}
-                      </button>
-                    ))}
+                    {Object.entries(stageLabels)
+                      .filter(([stKey]) => stKey !== "rejected")
+                      .map(([stKey, stInfo]) => (
+                        <button
+                          key={stKey}
+                          onClick={() => handleUpdateStage(selectedClient.id, stKey as PipelineStage)}
+                          className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${
+                            selectedClient.stage === stKey
+                              ? `${stInfo.bg} ${stInfo.color} border-current ring-1 ring-cyan-500/40`
+                              : "bg-[#05101F] border-gray-800 text-gray-400 hover:text-white"
+                          }`}
+                        >
+                          {stInfo.label}
+                        </button>
+                      ))}
                   </div>
                 </div>
 

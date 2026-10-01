@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { createGHLLocationFromSnapshot } from "@/lib/ghl";
 import { findStaffUidsByRoles, notifyMany } from "@/lib/services/notification-service";
-import { ReviewStatus } from "@/lib/services/case-status";
+import { ReviewStatus, mapReviewStatusToPipelineStage } from "@/lib/services/case-status";
 
 // A quién se le avisa cuando se aprovisiona una subcuenta de broker nueva —
 // "onboarding_member" es el rol cuya descripción es exactamente esto
@@ -150,6 +150,7 @@ export async function POST(request: Request) {
       if (matchedClientDoc) {
         const updateData: Record<string, unknown> = {
           status: mappedStatus,
+          stage: mapReviewStatusToPipelineStage(mappedStatus),
           ghlStageName: stageName || undefined,
           lastActivity: `GHL Pipeline: ${stageName || ghlStatus} (${new Date().toLocaleDateString()})`,
           updatedAt: new Date().toISOString()

@@ -20,6 +20,7 @@ export interface AdminServiceItem {
   formLink: string;
   supportPhone: string;
   supportPhoneFormatted: string;
+  sla?: string;
   updatedAt?: string;
   updatedByName?: string;
 }
@@ -34,6 +35,7 @@ interface EditForm {
   formLink: string;
   supportPhone: string;
   supportPhoneFormatted: string;
+  sla: string;
   status: AdminServiceItem["status"];
   statusLabel: string;
 }
@@ -56,6 +58,7 @@ function toForm(service: AdminServiceItem): EditForm {
     formLink: service.formLink,
     supportPhone: service.supportPhone,
     supportPhoneFormatted: service.supportPhoneFormatted,
+    sla: service.sla || "",
     status: service.status,
     statusLabel: service.statusLabel
   };
@@ -127,6 +130,7 @@ export default function AdminServicesTab() {
             formLink: form.formLink,
             supportPhone: form.supportPhone,
             supportPhoneFormatted: form.supportPhoneFormatted,
+            sla: form.sla.trim() || undefined,
             status: form.status,
             statusLabel: form.statusLabel
           }
@@ -322,6 +326,18 @@ export default function AdminServicesTab() {
                     className="w-full bg-[#05101F] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1.5">Compromiso de Respuesta (SLA)</label>
+                <input
+                  type="text"
+                  value={form.sla}
+                  onChange={(e) => setForm({ ...form, sla: e.target.value })}
+                  placeholder="Ej: El agente contactará al cliente en 24-48 horas hábiles."
+                  className="w-full bg-[#05101F] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                />
+                <p className="text-[10px] text-gray-500 mt-1">Visible en el detalle del servicio para que el broker sepa qué esperar.</p>
               </div>
 
               <div>

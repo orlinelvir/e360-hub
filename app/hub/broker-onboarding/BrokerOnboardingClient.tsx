@@ -27,6 +27,7 @@ import MisClientesSection from "./components/MisClientesSection";
 import SoporteSection from "./components/SoporteSection";
 import MiPerfilSection from "./components/MiPerfilSection";
 import AdminPanelSection from "./components/AdminPanelSection";
+import ResourcesSection from "./components/ResourcesSection";
 import GHLOnboardingWizardModal from "./components/GHLOnboardingWizardModal";
 import AdmisionFormModal from "./components/AdmisionFormModal";
 import CreditRepairIntakeModal from "./components/CreditRepairIntakeModal";
@@ -517,6 +518,7 @@ export default function BrokerOnboardingClient() {
                     { id: "inicio", label: "Inicio / Servicios" },
                     { id: "clientes", label: "Mis Clientes (CRM)" },
                     { id: "soporte", label: "Soporte VIP" },
+                    { id: "recursos", label: "Recursos" },
                     { id: "perfil", label: "Mi Perfil" },
                     ...(isAdmin ? [{ id: "admin", label: "Torre de Control" }] : isStaff ? [{ id: "admin", label: "Gestión de Casos" }] : [])
                   ].map((tab) => (
@@ -584,6 +586,7 @@ export default function BrokerOnboardingClient() {
                   { id: "inicio", label: "Inicio" },
                   { id: "clientes", label: "Clientes" },
                   { id: "soporte", label: "Soporte" },
+                  { id: "recursos", label: "Recursos" },
                   { id: "perfil", label: "Perfil" },
                   ...(isAdmin ? [{ id: "admin", label: "Torre Control" }] : isStaff ? [{ id: "admin", label: "Casos" }] : [])
                 ].map((tab) => (
@@ -771,6 +774,12 @@ export default function BrokerOnboardingClient() {
               </main>
             )}
 
+            {activeTab === "recursos" && (
+              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+                <ResourcesSection />
+              </main>
+            )}
+
             {activeTab === "perfil" && (
               <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
                 <MiPerfilSection brokerName={brokerName} />
@@ -920,6 +929,19 @@ export default function BrokerOnboardingClient() {
                     <p className="text-gray-200 text-xs font-semibold mt-1">{selectedService.timeframe}</p>
                   </div>
                 </div>
+
+                {/* SLA de Respuesta */}
+                {selectedService.sla && (
+                  <div className="flex items-center gap-3 bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-2xl">
+                    <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+                      <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Compromiso de Respuesta</h4>
+                      <p className="text-gray-200 text-xs font-semibold mt-1">{selectedService.sla}</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Confirmación Obligatoria de Lectura & Desbloqueo del Formulario */}
                 {selectedService.status === "upcoming" ? (

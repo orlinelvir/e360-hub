@@ -23,6 +23,7 @@ export interface ServiceOverride {
   supportPhoneFormatted?: string;
   status?: ServiceDetail["status"];
   statusLabel?: string;
+  sla?: string;
   updatedAt?: string;
   updatedByName?: string;
 }
@@ -30,7 +31,7 @@ export interface ServiceOverride {
 export const OVERRIDABLE_KEYS: (keyof ServiceOverride)[] = [
   "title", "description", "requirements", "process", "timeframe",
   "comission", "formLink", "supportPhone", "supportPhoneFormatted",
-  "status", "statusLabel"
+  "status", "statusLabel", "sla"
 ];
 
 export function mergeServiceOverride(service: ServiceDetail, override?: ServiceOverride): ServiceDetail {

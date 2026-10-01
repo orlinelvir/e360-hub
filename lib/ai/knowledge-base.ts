@@ -8,6 +8,37 @@ export interface FaqEntry {
   answer: string;
 }
 
+/**
+ * Devuelve las FAQs como arreglo estructurado (usado por la UI de Preguntas
+ * Frecuentes del Hub). Intenta leer de Firestore; si falla o está vacío, cae
+ * al fallback hardcodeado para que la UI nunca quede en blanco.
+ */
+export async function getFaqs(): Promise<FaqEntry[]> {
+  let faqs = [...FALLBACK_FAQS];
+
+  try {
+    if (adminDb) {
+      const snap = await adminDb.collection("supportKnowledge").get();
+      if (!snap.empty) {
+        const firestoreFaqs: FaqEntry[] = snap.docs.map(doc => {
+          const data = doc.data();
+          return {
+            question: data.question || "",
+            answer: data.answer || ""
+          };
+        }).filter(f => f.question && f.answer);
+        if (firestoreFaqs.length > 0) {
+          faqs = firestoreFaqs;
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error cargando FAQs desde Firestore:", error);
+  }
+
+  return faqs;
+}
+
 const FALLBACK_FAQS: FaqEntry[] = [
   {
     question: "¿Cómo accedo a mi subcuenta StartPoint CRM?",

@@ -1,46 +1,67 @@
 "use client";
 
-import { useState } from "react";
-import { Search, ChevronDown, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, ChevronDown, Sparkles, Loader2 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
-const faqsData = [
-  {
-    category: "CRM & Plataforma",
-    q: "¿Cómo accedo a mi subcuenta StartPoint CRM?",
-    a: "Cada broker autorizado recibe un correo de invitación a su subcuenta de CRM con su Location ID exclusivo. Si no lo has recibido, abre un ticket de soporte o solicita el reenvío desde la sección 'Mi Perfil'."
-  },
-  {
-    category: "Comisiones",
-    q: "¿Cuándo y cómo recibo el pago de mis comisiones?",
-    a: "Las comisiones se procesan los días viernes de cada semana mediante la vía seleccionada en tu perfil (Depósito Directo / ACH o Zelle). Aplica para préstamos fondeados o servicios cerrados hasta el miércoles anterior."
-  },
-  {
-    category: "Underwriting",
-    q: "¿Qué documentación necesita un cliente para Préstamo de Negocio (MCA)?",
-    a: "El cliente debe presentar: 1) Últimos 4 estados de cuenta bancarios de la empresa, 2) Identificación oficial vigente del dueño, 3) Número EIN y Voided Check de la cuenta corporativa."
-  },
-  {
-    category: "Servicios",
-    q: "¿Puedo referir clientes si no tengo licencias de seguros?",
-    a: "¡Sí! Como broker registrado en E360 Hub puedes referir clientes de seguros de auto, casa o comercial. Si no cuentas con licencia personal, nuestro departamento de suscripción procesa el caso y tú recibes honorarios por referido."
-  },
-  {
-    category: "Underwriting",
-    q: "¿Qué hago si mi cliente figura con fondos insuficientes (NSF) excesivos?",
-    a: "Si el cliente tiene más de 3-4 marcajes de NSF en un mismo mes, sugerimos esperar a cerrar el ciclo bancario actual manteniendo saldo positivo antes de someter la aplicación a los bancos."
-  }
-];
+interface FaqItem {
+  category: string;
+  q: string;
+  a: string;
+}
 
 interface FAQSectionProps {
   onAskAI: (question: string) => void;
 }
 
+function inferCategory(question: string): string {
+  const q = question.toLowerCase();
+  if (q.includes("crm") || q.includes("hub") || q.includes("plataforma") || q.includes("sync")) return "CRM & Plataforma";
+  if (q.includes("comision") || q.includes("pago") || q.includes("zelle") || q.includes("ach")) return "Comisiones";
+  if (q.includes("seguro") || q.includes("poliza") || q.includes("cotizacion")) return "Seguros";
+  if (q.includes("credito") || q.includes("fico") || q.includes("score") || q.includes("reparacion")) return "Crédito & Fondeo";
+  if (q.includes("llc") || q.includes("empresa") || q.includes("incorporacion") || q.includes("ein")) return "Corporativo";
+  if (q.includes("impuesto") || q.includes("tax") || q.includes("itin")) return "Taxes & Inmigración";
+  if (q.includes("marketing") || q.includes("publicidad") || q.includes("post")) return "Marketing";
+  return "General";
+}
+
 export default function FAQSection({ onAskAI }: FAQSectionProps) {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [openIdx, setOpenIdx] = useState<number | null>(0);
+  const [faqsData, setFaqsData] = useState<FaqItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filteredFaqs = faqsData.filter(f => 
-    f.q.toLowerCase().includes(search.toLowerCase()) || 
+  useEffect(() => {
+    if (!user) return;
+    const fetchFaqs = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("/api/support/faqs", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error al cargar FAQs");
+        const data = await res.json();
+        const items: FaqItem[] = (data.faqs || []).map((f: { question?: string; answer?: string; category?: string }) => ({
+          category: f.category || inferCategory(f.question || ""),
+          q: f.question || "",
+          a: f.answer || ""
+        }));
+        setFaqsData(items);
+      } catch (err) {
+        console.error("Error cargando FAQs:", err);
+        setError("No se pudieron cargar las FAQs. Intenta recargar la página.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFaqs();
+  }, [user]);
+
+  const filteredFaqs = faqsData.filter(f =>
+    f.q.toLowerCase().includes(search.toLowerCase()) ||
     f.a.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -62,8 +83,18 @@ export default function FAQSection({ onAskAI }: FAQSectionProps) {
         />
       </div>
 
+      {error && (
+        <div className="max-w-2xl mx-auto p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-300 text-center">
+          {error}
+        </div>
+      )}
+
       <div className="max-w-3xl mx-auto space-y-3 pt-4">
-        {filteredFaqs.length > 0 ? (
+        {loading ? (
+          <div className="py-12 text-center text-gray-400 text-sm flex items-center justify-center gap-2">
+            <Loader2 size={16} className="animate-spin" /> Cargando preguntas frecuentes...
+          </div>
+        ) : filteredFaqs.length > 0 ? (
           filteredFaqs.map((faq, idx) => {
             const isOpen = openIdx === idx;
             return (

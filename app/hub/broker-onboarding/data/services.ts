@@ -36,6 +36,8 @@ export interface ServiceDetail {
   formLink: string;
   supportPhone: string;
   supportPhoneFormatted: string;
+  // SLA opcional para mostrar compromisos de respuesta (ej. seguros: 24-48h).
+  sla?: string;
 }
 
 export const servicesData: ServiceDetail[] = [
@@ -318,7 +320,8 @@ export const servicesData: ServiceDetail[] = [
     comission: "Comisión completa directa de la póliza (si tiene licencia) o bono por referido (sin licencia).",
     formLink: "https://api.leadconnectorhq.com/widget/form/E8DVdcBCS2GwqB7EqgI1",
     supportPhone: "tel:+19172845636",
-    supportPhoneFormatted: "+1 (917) 284-5636"
+    supportPhoneFormatted: "+1 (917) 284-5636",
+    sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
   },
   {
     id: "commercial-auto-insurance",
@@ -345,7 +348,8 @@ export const servicesData: ServiceDetail[] = [
     comission: "Comisión sobre la prima comercial adjudicada o tarifa de referido.",
     formLink: "https://api.leadconnectorhq.com/widget/form/60emAjUAUDqQYyNl0Zld",
     supportPhone: "tel:+19172845636",
-    supportPhoneFormatted: "+1 (917) 284-5636"
+    supportPhoneFormatted: "+1 (917) 284-5636",
+    sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
   },
   {
     id: "home-insurance",
@@ -371,7 +375,8 @@ export const servicesData: ServiceDetail[] = [
     comission: "Comisión sobre prima anual (con licencia) o tarifa de referido (sin licencia).",
     formLink: "https://api.leadconnectorhq.com/widget/form/Yig6zhFlJ3M0GHbsD4oH",
     supportPhone: "tel:+19172845636",
-    supportPhoneFormatted: "+1 (917) 284-5636"
+    supportPhoneFormatted: "+1 (917) 284-5636",
+    sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
   },
   {
     id: "business-insurance",
@@ -398,7 +403,8 @@ export const servicesData: ServiceDetail[] = [
     comission: "Comisión comercial según la póliza adjudicada (o referido a agentes de E360).",
     formLink: "https://api.leadconnectorhq.com/widget/form/gwG8U5ZnUFKsLFp0uXe3",
     supportPhone: "tel:+19172845636",
-    supportPhoneFormatted: "+1 (917) 284-5636"
+    supportPhoneFormatted: "+1 (917) 284-5636",
+    sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
   },
   {
     id: "workers-comp",
@@ -425,7 +431,8 @@ export const servicesData: ServiceDetail[] = [
     comission: "Comisión sobre prima de nómina contratada por la empresa.",
     formLink: "https://api.leadconnectorhq.com/widget/form/W7oUNvRvQ9NMjTnmx0YV",
     supportPhone: "tel:+19172845636",
-    supportPhoneFormatted: "+1 (917) 284-5636"
+    supportPhoneFormatted: "+1 (917) 284-5636",
+    sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
   },
   {
     id: "immigration-services",
@@ -506,7 +513,8 @@ export const servicesData: ServiceDetail[] = [
     comission: "Sólo brokers con licencia de vida activa: 80% al 100% de la prima pagada el primer año.",
     formLink: "Formulario en desarrollo",
     supportPhone: "tel:+19172845636",
-    supportPhoneFormatted: "+1 (917) 284-5636"
+    supportPhoneFormatted: "+1 (917) 284-5636",
+    sla: "El agente de seguros contactará al cliente en 24-72 horas hábiles."
   },
   {
     id: "health-insurance",
@@ -532,6 +540,7 @@ export const servicesData: ServiceDetail[] = [
     comission: "Sólo brokers con licencia de salud activa: comisión mensual recurrente por miembro inscrito.",
     formLink: "Formulario en desarrollo",
     supportPhone: "tel:+19172845636",
-    supportPhoneFormatted: "+1 (917) 284-5636"
+    supportPhoneFormatted: "+1 (917) 284-5636",
+    sla: "El agente de seguros contactará al cliente en 24-72 horas hábiles."
   }
 ];

@@ -14,6 +14,40 @@
 export type ReviewStatus = "pending_docs" | "in_review" | "approved" | "rejected" | "funded";
 export type SyncStatus = "pending" | "synced" | "failed";
 
+// Etapa visible para el broker en "Mis Clientes" — debe mantenerse en sync con
+// PipelineStage de app/hub/broker-onboarding/types.ts y stageLabels en
+// MisClientesSection.tsx.
+export type PipelineStage =
+  | "lead"
+  | "qualification"
+  | "docs_pending"
+  | "submitted"
+  | "approved"
+  | "paid"
+  | "rejected";
+
+/**
+ * Convierte el estado real de revisión (ReviewStatus) en la etapa que ve el
+ * broker en su dashboard. Así cuando GHL/Admin actualiza `status`, el broker
+ * ve el movimiento reflejado en `stage` sin depender de sincronización manual.
+ */
+export function mapReviewStatusToPipelineStage(status: ReviewStatus): PipelineStage {
+  switch (status) {
+    case "pending_docs":
+      return "docs_pending";
+    case "in_review":
+      return "submitted";
+    case "approved":
+      return "approved";
+    case "rejected":
+      return "rejected";
+    case "funded":
+      return "paid";
+    default:
+      return "lead";
+  }
+}
+
 export const VALID_REVIEW_STATUSES: ReviewStatus[] = ["pending_docs", "in_review", "approved", "rejected", "funded"];
 
 interface StatusMeta {
