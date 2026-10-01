@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "npx tsx --test tests/*.test.ts",
     "grant-admin": "npx tsx scripts/grant-admin.ts",
-    "deploy:rules": "firebase deploy --only firestore:rules,storage"
+    "deploy:rules": "firebase deploy --only firestore:rules,storage",
+    "seed:faqs": "npx tsx scripts/seed-faqs.ts"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",

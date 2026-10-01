@@ -6,6 +6,7 @@ import BrokerOnboardingEmail from "./templates/BrokerOnboardingEmail";
 import PasswordResetEmail from "./templates/PasswordResetEmail";
 import MissingApplicationEmail from "./templates/MissingApplicationEmail";
 import ClientCaseUpdateEmail from "./templates/ClientCaseUpdateEmail";
+import TicketUpdateEmail, { TicketUpdateKind } from "./templates/TicketUpdateEmail";
 
 /**
  * Envío de notificaciones al broker. Nunca debe tumbar la acción principal
@@ -252,4 +253,52 @@ export async function sendWelcomeApplicationEmail(params: WelcomeApplicationEmai
   } catch (err) {
     console.error("Error enviando email de bienvenida al cliente:", err);
   }
+}
+
+interface TicketUpdateEmailParams {
+  brokerEmail: string;
+  brokerName: string;
+  ticketSubject: string;
+  senderName: string;
+  messagePreview?: string;
+}
+
+// Los dos avisos de tickets (respuesta del staff y cierre) comparten plantilla;
+// el broker debe enterarse por correo además de la notificación in-app, porque
+// el reclamo que originó esto fue exactamente "le respondí y nunca me avisaron".
+async function sendTicketUpdateEmail(kind: TicketUpdateKind, params: TicketUpdateEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend || !params.brokerEmail) return;
+
+  const subject =
+    kind === "reply"
+      ? `Soporte respondió a tu ticket: ${params.ticketSubject}`
+      : `Ticket resuelto: ${params.ticketSubject}`;
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: params.brokerEmail,
+      subject,
+      react: (
+        <TicketUpdateEmail
+          kind={kind}
+          brokerName={params.brokerName}
+          ticketSubject={params.ticketSubject}
+          senderName={params.senderName}
+          messagePreview={params.messagePreview}
+        />
+      ),
+    });
+  } catch (err) {
+    console.error(`Error enviando email de ticket (${kind}):`, err);
+  }
+}
+
+export async function sendTicketReplyEmail(params: TicketUpdateEmailParams): Promise<void> {
+  await sendTicketUpdateEmail("reply", params);
+}
+
+export async function sendTicketResolvedEmail(params: TicketUpdateEmailParams): Promise<void> {
+  await sendTicketUpdateEmail("resolved", params);
 }

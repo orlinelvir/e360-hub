@@ -1,8 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { createGHLLocationFromSnapshot } from "@/lib/ghl";
-import { findStaffUidsByRoles, notifyMany } from "@/lib/services/notification-service";
+import { findStaffUidsByRoles, notifyMany, createNotification } from "@/lib/services/notification-service";
 import { ReviewStatus, mapReviewStatusToPipelineStage } from "@/lib/services/case-status";
+import { sendCaseStatusEmail } from "@/lib/email/send";
+import { CaseEmailStatus } from "@/lib/email/templates/CaseStatusEmail";
+
+// Mismos estados que notifica el cambio manual desde el panel admin
+// (app/api/admin/cases/route.ts) — el broker debe enterarse igual cuando el
+// estado lo mueve GHL automáticamente vía webhook.
+const NOTIFIABLE_STATUSES: CaseEmailStatus[] = ["approved", "rejected", "funded"];
+const STATUS_LABELS: Record<CaseEmailStatus, string> = {
+  approved: "aprobada",
+  rejected: "declinada",
+  funded: "fondeada"
+};
 
 // A quién se le avisa cuando se aprovisiona una subcuenta de broker nueva —
 // "onboarding_member" es el rol cuya descripción es exactamente esto
@@ -148,6 +160,12 @@ export async function POST(request: Request) {
       }
 
       if (matchedClientDoc) {
+        // Se lee el estado previo para distinguir un cambio real de estado de
+        // un webhook repetido — solo se notifica cuando algo cambió.
+        const prevSnap = await matchedClientDoc.get();
+        const prevData = prevSnap.data() || {};
+        const previousStatus = String(prevData.status || "");
+
         const updateData: Record<string, unknown> = {
           status: mappedStatus,
           stage: mapReviewStatusToPipelineStage(mappedStatus),
@@ -161,6 +179,40 @@ export async function POST(request: Request) {
         }
 
         await matchedClientDoc.update(updateData);
+
+        // Notificación al broker: aprobado / declinado / fondeado que llega
+        // desde GHL debe avisar al broker igual que si lo marcó el admin.
+        if (
+          matchedBrokerId &&
+          previousStatus !== mappedStatus &&
+          NOTIFIABLE_STATUSES.includes(mappedStatus as CaseEmailStatus)
+        ) {
+          const status = mappedStatus as CaseEmailStatus;
+          const brokerSnap = await adminDb.collection("brokers").doc(matchedBrokerId).get();
+          const brokerData = brokerSnap.data();
+          const clientName = prevData.name || "Cliente";
+          const serviceName = prevData.serviceName || prevData.serviceId || "Servicio";
+          const amount = monetaryValue > 0 ? monetaryValue : Number(prevData.amount) || undefined;
+
+          after(() =>
+            sendCaseStatusEmail({
+              brokerEmail: brokerData?.email || "",
+              brokerName: brokerData?.displayName || brokerData?.name || "Broker",
+              clientName,
+              serviceName,
+              status,
+              amount
+            })
+          );
+
+          after(() =>
+            createNotification(matchedBrokerId, {
+              title: `Solicitud ${STATUS_LABELS[status]}`,
+              message: `${clientName} — ${serviceName}`,
+              link: "clientes"
+            })
+          );
+        }
 
         await webhookLogRef.update({
           success: true,

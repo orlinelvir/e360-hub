@@ -158,13 +158,73 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { ticketId, status } = body;
+    const { ticketId, status, rating, ratingComment } = body;
 
-    if (!ticketId || !status) {
-      return NextResponse.json({ error: "ticketId y status son requeridos" }, { status: 400 });
+    if (!ticketId || (status === undefined && rating === undefined)) {
+      return NextResponse.json({ error: "ticketId y status o rating son requeridos" }, { status: 400 });
     }
 
-    await updateTicketStatus(user.uid, ticketId, status);
+    let previousStatus: string | undefined;
+    let ticketSubject = "Un ticket de soporte";
+    let ticketCategory: TicketCategory = "general";
+    if (adminDb) {
+      const snap = await adminDb
+        .collection("brokers")
+        .doc(user.uid)
+        .collection("enhancedTickets")
+        .doc(ticketId)
+        .get();
+      previousStatus = snap.data()?.status;
+      ticketSubject = snap.data()?.subject || ticketSubject;
+      ticketCategory = (snap.data()?.category as TicketCategory) || ticketCategory;
+    }
+
+    if (status !== undefined) {
+      await updateTicketStatus(user.uid, ticketId, status);
+
+      // El broker reabrió un ticket que estaba resuelto: si el staff no se entera,
+      // el ticket vuelve a quedar invisible — el mismo hueco que originó la crisis.
+      if (status === "open" && previousStatus === "resolved") {
+        after(async () => {
+          const staffUids = await findStaffUidsByRoles(getRoleIdsForTicketCategory(ticketCategory));
+          await notifyMany(staffUids, {
+            title: "Ticket reabierto por el broker",
+            message: `${user.name || user.email || "Broker"}: ${ticketSubject}`,
+            link: "admin"
+          });
+        });
+      }
+    }
+
+    // Encuesta de satisfacción: solo tickets resueltos y solo una vez.
+    if (rating !== undefined) {
+      const value = Math.round(Number(rating));
+      if (!Number.isFinite(value) || value < 1 || value > 5) {
+        return NextResponse.json({ error: "La calificación debe ser de 1 a 5" }, { status: 400 });
+      }
+      if (previousStatus !== undefined && previousStatus !== "resolved") {
+        return NextResponse.json({ error: "Solo puedes calificar tickets resueltos" }, { status: 400 });
+      }
+
+      await updateEnhancedTicket(user.uid, ticketId, {
+        rating: value,
+        ...(ratingComment ? { ratingComment: String(ratingComment).slice(0, 500) } : {}),
+        ratedAt: new Date().toISOString()
+      });
+
+      // Calificaciones bajas (1-2): el equipo debe enterarse de inmediato para
+      // reabrir/contactar — una estrella mala silenciosa es una queja futura.
+      if (value <= 2) {
+        after(async () => {
+          const staffUids = await findStaffUidsByRoles(getRoleIdsForTicketCategory(ticketCategory));
+          await notifyMany(staffUids, {
+            title: `Calificación baja: ${value} estrella${value > 1 ? "s" : ""}`,
+            message: `${user.name || user.email || "Broker"} calificó "${ticketSubject}". Revisa si es necesario reabrirlo.`,
+            link: "admin"
+          });
+        });
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

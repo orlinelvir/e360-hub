@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { verifyAuthToken, adminDb, adminStorage } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission } from "@/lib/roles";
 import { getAllEnhancedTicketsAdmin, updateTicketStatus } from "@/lib/services/support-service";
+import { createNotification } from "@/lib/services/notification-service";
+import { sendTicketResolvedEmail } from "@/lib/email/send";
 
 const ATTACHMENT_SIGNED_URL_EXPIRY_MS = 15 * 60 * 1000;
 
@@ -95,7 +97,40 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "brokerId, ticketId y status son requeridos" }, { status: 400 });
     }
 
+    const ticketSnap = await adminDb
+      .collection("brokers")
+      .doc(brokerId)
+      .collection("enhancedTickets")
+      .doc(ticketId)
+      .get();
+    const previousStatus = ticketSnap.data()?.status;
+
     await updateTicketStatus(brokerId, ticketId, status);
+
+    // Crítico: aviso al broker cuando su ticket se marca como resuelto. Antes
+    // el cierre era silencioso — el broker podía tener la solución sin saberlo.
+    if (status === "resolved" && previousStatus !== "resolved") {
+      const brokerSnap = await adminDb.collection("brokers").doc(brokerId).get();
+      const brokerData = brokerSnap.data();
+      const ticketSubject = ticketSnap.data()?.subject || "tu ticket de soporte";
+
+      after(() =>
+        createNotification(brokerId, {
+          title: "Ticket resuelto",
+          message: `${ticketSubject} — marcado como resuelto por Soporte E360`,
+          link: "soporte"
+        })
+      );
+
+      after(() =>
+        sendTicketResolvedEmail({
+          brokerEmail: brokerData?.email || "",
+          brokerName: brokerData?.displayName || brokerData?.name || "Broker",
+          ticketSubject,
+          senderName: user.name || user.email || "Soporte E360"
+        })
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

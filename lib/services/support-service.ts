@@ -282,22 +282,40 @@ export async function updateTicketStatus(uid: string, ticketId: string, status: 
     const userTickets = memoryTickets.get(uid) || [];
     const t = userTickets.find(x => x.id === ticketId);
     if (t) {
+      if (status === "resolved" && t.status !== "resolved") t.resolvedAt = new Date().toISOString();
       t.status = status;
       t.updatedAt = new Date().toISOString();
+      if (status !== "resolved") t.escalated = false;
     }
     return;
   }
 
   try {
-    await adminDb
+    const ref = adminDb
       .collection("brokers")
       .doc(uid)
       .collection("enhancedTickets")
-      .doc(ticketId)
-      .set({
-        status,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
+      .doc(ticketId);
+
+    // Se lee el estado previo para no pisar resolvedAt si ya estaba resuelto
+    // y para saber si corresponde limpiar una escalación activa.
+    const snap = await ref.get();
+    const previousStatus = snap.data()?.status as SupportTicketV2["status"] | undefined;
+
+    const payload: Record<string, unknown> = {
+      status,
+      updatedAt: new Date().toISOString()
+    };
+    if (status === "resolved" && previousStatus !== "resolved") {
+      payload.resolvedAt = new Date().toISOString();
+    }
+    if (status !== "resolved") {
+      // Cualquier transición activa (respuesta, reapertura) limpia la bandera
+      // de escalación; escalatedAt queda como histórico para métricas.
+      payload.escalated = false;
+    }
+
+    await ref.set(payload, { merge: true });
   } catch (err) {
     console.warn("Aviso al actualizar estado del ticket en Firestore:", err);
   }

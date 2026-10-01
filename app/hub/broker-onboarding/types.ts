@@ -148,6 +148,21 @@ export interface SupportTicketV2 {
   attachmentContentType?: string;
   // Resuelto en el servidor al leer el ticket (URL firmada, 15 min) — nunca se guarda.
   attachmentUrl?: string;
+  // ---- Seguimiento de SLA / métricas de soporte (lib/support/ticket-sla.ts) ----
+  // Primera respuesta de un agente (se fija al responder; mide el SLA de respuesta).
+  firstResponseAt?: string;
+  // Cuándo se resolvió (se fija al pasar a "resolved"; mide tiempo de resolución).
+  resolvedAt?: string;
+  // Escalación automática por vencimiento de SLA (cron ticket-escalations).
+  // `escalated` es el estado actual (se limpia cuando el agente responde);
+  // `escalatedAt`/`escalationReason` quedan como histórico.
+  escalated?: boolean;
+  escalatedAt?: string;
+  escalationReason?: string;
+  // Encuesta de satisfacción del broker al cerrar el ticket (1-5).
+  rating?: number;
+  ratingComment?: string;
+  ratedAt?: string;
 }
 
 export interface TicketMessage {

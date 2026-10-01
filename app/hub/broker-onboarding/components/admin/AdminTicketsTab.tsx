@@ -11,9 +11,15 @@ import {
   Clock,
   User,
   Headset,
-  Paperclip
+  Paperclip,
+  Star
 } from "lucide-react";
 import { getTicketCategoryLabel, getTicketCategoryDef } from "@/lib/support/ticket-categories";
+import {
+  isResponseSlaBreached,
+  wasResolvedWithinSla,
+  formatDurationMs
+} from "@/lib/support/ticket-sla";
 import { TicketCategory } from "../../types";
 
 export interface AdminTicketItem {
@@ -32,6 +38,16 @@ export interface AdminTicketItem {
   categoryFields?: Record<string, string>;
   attachmentUrl?: string;
   attachmentFileName?: string;
+  // Seguimiento de SLA / métricas (ver lib/support/ticket-sla.ts)
+  firstResponseAt?: string;
+  resolvedAt?: string;
+  escalated?: boolean;
+  escalatedAt?: string;
+  escalationReason?: string;
+  // Encuesta de satisfacción del broker
+  rating?: number;
+  ratingComment?: string;
+  ratedAt?: string;
 }
 
 interface TicketMessage {
@@ -91,6 +107,56 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
       return true;
     });
   }, [tickets, search, statusFilter]);
+
+  // Métricas de soporte: SLA de respuesta, tiempos y satisfacción — la prueba
+  // numérica de que el compromiso anunciado a la comunidad se está cumpliendo.
+  const metrics = useMemo(() => {
+    // Ojo con react-hooks/purity: nada de Date.now() directo en render —
+    // isResponseSlaBreached calcula el "ahora" dentro de la librería.
+    const open = tickets.filter((t) => t.status === "open").length;
+    const inProgress = tickets.filter((t) => t.status === "in_progress").length;
+    const resolved = tickets.filter((t) => t.status === "resolved").length;
+    const escalated = tickets.filter((t) => t.escalated).length;
+
+    const overdue = tickets.filter((t) => isResponseSlaBreached(t)).length;
+
+    const responded = tickets.filter(
+      (t) =>
+        t.firstResponseAt &&
+        !Number.isNaN(Date.parse(t.firstResponseAt)) &&
+        !Number.isNaN(Date.parse(t.createdAt))
+    );
+    const avgFirstMs = responded.length
+      ? responded.reduce(
+          (acc, t) => acc + (Date.parse(t.firstResponseAt!) - Date.parse(t.createdAt)),
+          0
+        ) / responded.length
+      : null;
+
+    const withResolvedClock = tickets.filter((t) => t.resolvedAt);
+    const withinSla = withResolvedClock.filter((t) => wasResolvedWithinSla(t));
+    const pctSla = withResolvedClock.length
+      ? Math.round((withinSla.length / withResolvedClock.length) * 100)
+      : null;
+
+    const rated = tickets.filter((t) => typeof t.rating === "number");
+    const avgRating = rated.length
+      ? rated.reduce((acc, t) => acc + (t.rating || 0), 0) / rated.length
+      : null;
+
+    return {
+      open,
+      inProgress,
+      resolved,
+      escalated,
+      overdue,
+      avgFirstMs,
+      pctSla,
+      resolvedWithClock: withResolvedClock.length,
+      avgRating,
+      ratedCount: rated.length
+    };
+  }, [tickets]);
 
   const openTicket = async (ticket: AdminTicketItem) => {
     setActiveTicket(ticket);
@@ -153,6 +219,56 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
 
   return (
     <div className="space-y-4">
+      {/* Métricas de soporte (SLA, tiempos, satisfacción) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Abiertos</p>
+          <p className="text-2xl font-extrabold mt-1 text-blue-400">{metrics.open}</p>
+        </div>
+        <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">En proceso</p>
+          <p className="text-2xl font-extrabold mt-1 text-amber-400">{metrics.inProgress}</p>
+        </div>
+        <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Resueltos</p>
+          <p className="text-2xl font-extrabold mt-1 text-emerald-400">{metrics.resolved}</p>
+        </div>
+        <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">SLA vencidos</p>
+          <p className={`text-2xl font-extrabold mt-1 ${metrics.overdue > 0 ? "text-red-400" : "text-gray-500"}`}>
+            {metrics.overdue}
+          </p>
+          <p className="text-[10px] text-gray-600 mt-0.5">sin primera respuesta</p>
+        </div>
+        <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Escalados</p>
+          <p className={`text-2xl font-extrabold mt-1 ${metrics.escalated > 0 ? "text-purple-400" : "text-gray-500"}`}>
+            {metrics.escalated}
+          </p>
+        </div>
+        <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">1ª respuesta prom.</p>
+          <p className="text-2xl font-extrabold mt-1 text-cyan-400">
+            {metrics.avgFirstMs !== null ? formatDurationMs(metrics.avgFirstMs) : "—"}
+          </p>
+        </div>
+        <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">SLA cumplido</p>
+          <p className={`text-2xl font-extrabold mt-1 ${metrics.pctSla !== null && metrics.pctSla < 80 ? "text-red-400" : "text-emerald-400"}`}>
+            {metrics.pctSla !== null ? `${metrics.pctSla}%` : "—"}
+          </p>
+          <p className="text-[10px] text-gray-600 mt-0.5">de {metrics.resolvedWithClock} resueltos</p>
+        </div>
+        <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Satisfacción</p>
+          <p className="text-2xl font-extrabold mt-1 text-amber-400 flex items-baseline gap-1">
+            {metrics.avgRating !== null ? metrics.avgRating.toFixed(1) : "—"}
+            {metrics.avgRating !== null && <Star size={14} className="fill-amber-400 text-amber-400 self-center" />}
+          </p>
+          <p className="text-[10px] text-gray-600 mt-0.5">{metrics.ratedCount} calificado{metrics.ratedCount === 1 ? "" : "s"}</p>
+        </div>
+      </div>
+
       {/* Filtros */}
       <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-grow">
@@ -206,6 +322,15 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
               <div className="flex items-center justify-between text-[10px] text-gray-500 pt-3 border-t border-gray-900">
                 <span className="bg-gray-900 px-2 py-0.5 rounded-md text-gray-400">{getTicketCategoryLabel(t.category)}</span>
                 <div className="flex items-center gap-3">
+                  {typeof t.rating === "number" && (
+                    <span className="flex items-center gap-0.5 text-amber-400 font-bold" title={`Calificación del broker: ${t.rating}/5`}>
+                      <Star size={10} className="fill-amber-400" /> {t.rating}
+                    </span>
+                  )}
+                  {t.escalated && <span className="text-purple-400 font-bold">Escalado</span>}
+                  {t.status !== "resolved" && isResponseSlaBreached(t) && (
+                    <span className="text-red-400 font-bold">SLA vencido</span>
+                  )}
                   {t.relatedClientName && <span className="text-cyan-400 font-bold">{t.relatedClientName}</span>}
                   <span className="text-gray-400 font-bold">{t.brokerName}</span>
                   <span className="flex items-center gap-1"><Clock size={10} /> {new Date(t.createdAt).toLocaleDateString()}</span>
@@ -252,7 +377,18 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
                   {getStatusLabel(s)}
                 </button>
               ))}
+              {typeof activeTicket.rating === "number" && (
+                <span className="ml-auto flex items-center gap-1 text-[11px] font-bold text-amber-400" title="Calificación del broker">
+                  <Star size={12} className="fill-amber-400" /> {activeTicket.rating}/5
+                </span>
+              )}
             </div>
+
+            {activeTicket.escalated && activeTicket.escalationReason && (
+              <div className="px-3 py-2 bg-purple-500/10 border-b border-purple-500/20 text-[11px] text-purple-300">
+                <span className="font-bold">Escalado automáticamente:</span> {activeTicket.escalationReason}
+              </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
               <div className="flex gap-3">

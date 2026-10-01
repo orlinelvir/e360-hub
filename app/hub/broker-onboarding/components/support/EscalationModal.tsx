@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, AlertCircle, Loader2, Upload } from "lucide-react";
+import { X, Send, AlertCircle, Loader2, Upload, Clock } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { SupportTicketV2, TicketCategory } from "../../types";
 import { TICKET_CATEGORIES, getTicketCategoryDef } from "@/lib/support/ticket-categories";
+import { getTicketSlaLabel } from "@/lib/support/ticket-sla";
 import { getBrokerClients, ClientLeadData } from "@/lib/services/broker-service";
 
 interface EscalationModalProps {
@@ -149,8 +150,13 @@ export default function EscalationModal({ isOpen, contextData, conversationId, o
               >
                 <option value="low">Baja (Respuesta en 72h)</option>
                 <option value="medium">Media (Respuesta en 24h)</option>
-                <option value="high">Alta (Urgente)</option>
+                <option value="high">Alta (Respuesta en 4h)</option>
               </select>
+              <p className="mt-2 flex items-center gap-1.5 text-[11px] text-cyan-300">
+                <Clock size={12} className="shrink-0" />
+                Compromiso de respuesta de Soporte E360:{" "}
+                <span className="font-bold">{getTicketSlaLabel(priority)}</span>
+              </p>
             </div>
 
             {clients.length > 0 && (

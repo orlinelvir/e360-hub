@@ -6,6 +6,7 @@ import { Plus, Search, MessageSquare, AlertCircle } from "lucide-react";
 import { SupportTicketV2 } from "../../types";
 import { useAuth } from "@/components/AuthProvider";
 import { getTicketCategoryLabel } from "@/lib/support/ticket-categories";
+import { getTicketSlaShortLabel, isResponseSlaBreached } from "@/lib/support/ticket-sla";
 
 interface TicketListProps {
   onSelectTicket: (ticket: SupportTicketV2) => void;
@@ -119,9 +120,27 @@ export default function TicketList({ onSelectTicket, onNewTicket }: TicketListPr
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-mono text-cyan-400 font-bold">{ticket.id}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${getStatusBadge(ticket.status)}`}>
-                  {getStatusLabel(ticket.status)}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {ticket.escalated && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border bg-purple-500/10 text-purple-400 border-purple-500/30">
+                      Escalado
+                    </span>
+                  )}
+                  {ticket.status !== "resolved" && (
+                    isResponseSlaBreached(ticket) ? (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border bg-red-500/10 text-red-400 border-red-500/30">
+                        SLA vencido
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border bg-cyan-500/10 text-cyan-400 border-cyan-500/30">
+                        SLA {getTicketSlaShortLabel(ticket.priority)}
+                      </span>
+                    )
+                  )}
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${getStatusBadge(ticket.status)}`}>
+                    {getStatusLabel(ticket.status)}
+                  </span>
+                </div>
               </div>
               <h4 className="text-sm font-bold text-white mb-1">{ticket.subject}</h4>
               <p className="text-xs text-gray-400 line-clamp-1 mb-3">{ticket.description}</p>
