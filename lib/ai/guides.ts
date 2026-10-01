@@ -24,7 +24,9 @@ export const GUIDES: GuideEntry[] = [
   { slug: "lead-flow", title: "Cheatsheet Lead Flow", description: "Diagrama de flujo de cómo manejar y procesar leads entrantes.", storagePath: "guides/lead-flow.pdf" },
   { slug: "consolidacion-synchrony", title: "Cheatsheet Consolidación Synchrony", description: "Detalles sobre opciones de consolidación de deudas con Synchrony.", storagePath: "guides/consolidacion-synchrony.pdf" },
   { slug: "prestamos-empresariales", title: "Cheatsheet Préstamos Empresariales", description: "Resumen rápido de opciones de préstamos empresariales.", storagePath: "guides/prestamos-empresariales.pdf" },
-  { slug: "onboarding-broker", title: "Descripción de Onboarding para Broker", description: "Descripción general del proceso de onboarding para nuevos brokers.", storagePath: "guides/onboarding-broker.pdf" }
+  { slug: "onboarding-broker", title: "Descripción de Onboarding para Broker", description: "Descripción general del proceso de onboarding para nuevos brokers.", storagePath: "guides/onboarding-broker.pdf" },
+  { slug: "loan-structures", title: "E360 Loan Structures", description: "Detalles completos de Líneas de Crédito, MCA, Startup Funding, E-Commerce y programas de contratistas.", storagePath: "guides/_E360_Loan_Structures_Spanish.pdf" },
+  { slug: "llc-fees-by-state", title: "Costos de LLC por Estado", description: "Lista de los Filing Fees y costos anuales para LLCs en los 50 estados (Secretary of State).", storagePath: "guides/LLC_Fees_By_State_With_Websites.pdf" }
 ];
 
 export function getGuideBySlug(slug: string): GuideEntry | undefined {

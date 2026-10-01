@@ -1,6 +1,7 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { GUIDES } from "./guides";
 import { VIDEOS } from "./videos";
+import { LLC_FEES_BY_STATE } from "./llc-fees";
 import { getEffectiveServicesCatalog } from "@/lib/services/service-catalog-service";
 
 // FaqEntry y FALLBACK_FAQS viven en un archivo sin dependencias de Firebase
@@ -103,12 +104,21 @@ Tiempo estimado: ${s.timeframe}
 Departamento de escalación: ${s.centralDepartment}
 `).join("\\n");
 
+  // Costos de LLC
+  const llcText = LLC_FEES_BY_STATE.map(
+    s => `- ${s.state}: Filing Fee ${s.filingFee}, Anual/Bienal ${s.annualFee} (${s.website})`
+  ).join("\\n");
+
   return `
 --- BASE DE CONOCIMIENTO (FAQs) ---
 ${faqText}
 
 --- CATÁLOGO DE SERVICIOS Y COMISIONES ---
 ${servicesText}
+
+--- COSTOS DE REGISTRO DE EMPRESAS POR ESTADO ---
+Los siguientes son los costos del estado (Secretary of State). Al cliente se le cobra este costo MÁS los honorarios de E360 (que puedes revisar en el Catálogo de Servicios).
+${llcText}
 
 --- GUÍAS Y RECURSOS ---
 ${GUIDES_REFERENCE}
