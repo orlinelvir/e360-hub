@@ -203,7 +203,10 @@ const resources: Resource[] = [
   {
     id: "done-for-you",
     label: "Done For You — Formulario de Pago",
-    desc: "5 servicios de fulfillment (Rep. de Crédito, LLC, Crédito Empresarial, Página Web, CRM) — tú vendes, nosotros lo hacemos",
+    // Registro de Empresa (LLC/Corp) salió de este formulario — ese servicio
+    // ahora se deriva directamente a la plataforma de RL Multisourcing
+    // (decisión de Yampiero, reunión del 1 de octubre 2026).
+    desc: "4 servicios de fulfillment (Rep. de Crédito, Crédito Empresarial, Página Web, CRM) — tú vendes, nosotros lo hacemos",
     icon: Briefcase,
     action: { type: "external", href: "https://api.leadconnectorhq.com/widget/form/9SjK8JfTjdRapiGmqF47" }
   }
