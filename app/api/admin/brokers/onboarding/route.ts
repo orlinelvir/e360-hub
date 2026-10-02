@@ -78,6 +78,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       authStatus,
+      lastLogin: data.lastLogin || null,
       ghl: {
         ghlLocationId: data.ghlLocationId || "",
         ghlSubaccountEmail: data.ghlSubaccountEmail || "",

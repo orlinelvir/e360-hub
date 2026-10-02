@@ -70,6 +70,7 @@ export async function POST(request: Request) {
     const message: TicketMessage = {
       sender: "agent",
       senderName: user.name || user.email || "Soporte E360",
+      senderId: user.uid,
       content,
       createdAt: new Date().toISOString()
     };

@@ -58,6 +58,13 @@ interface BrokerGhlDetail {
   ghlApiKeyPreview: string;
 }
 
+interface BrokerLastLogin {
+  at: string;
+  city?: string;
+  region?: string;
+  country?: string;
+}
+
 export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBrokersTabProps) {
   const { user } = useAuth();
   const [search, setSearch] = useState<string>("");
@@ -71,6 +78,7 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
   const [detailTarget, setDetailTarget] = useState<BrokerItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [authStatus, setAuthStatus] = useState<BrokerAuthStatus | null>(null);
+  const [lastLogin, setLastLogin] = useState<BrokerLastLogin | null>(null);
   const [ghlDetail, setGhlDetail] = useState<BrokerGhlDetail | null>(null);
   const [detailError, setDetailError] = useState("");
   const [detailNotice, setDetailNotice] = useState("");
@@ -159,6 +167,7 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
     setDetailError("");
     setDetailNotice("");
     setAuthStatus(null);
+    setLastLogin(null);
     setGhlDetail(null);
     setDetailLoading(true);
     try {
@@ -170,6 +179,7 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al cargar el detalle del broker");
       setAuthStatus(data.authStatus);
+      setLastLogin(data.lastLogin || null);
       setGhlDetail(data.ghl);
       setGhlForm({
         ghlLocationId: data.ghl?.ghlLocationId || "",
@@ -506,6 +516,12 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
                           <p className="text-gray-500">Email verificado: <span className="text-gray-300 font-bold">{authStatus?.emailVerified ? "Sí" : "No"}</span></p>
                           <p className="text-gray-500">Creada: <span className="text-gray-300">{formatDate(authStatus?.creationTime)}</span></p>
                           <p className="text-gray-500">Último acceso: <span className="text-gray-300">{formatDate(authStatus?.lastSignInTime)}</span></p>
+                          <p className="text-gray-500 col-span-2">
+                            Última ubicación:{" "}
+                            <span className="text-gray-300">
+                              {lastLogin ? [lastLogin.city, lastLogin.region, lastLogin.country].filter(Boolean).join(", ") || "Desconocida" : "Sin registro"}
+                            </span>
+                          </p>
                         </div>
 
                         <div className="flex flex-wrap gap-2 pt-1">

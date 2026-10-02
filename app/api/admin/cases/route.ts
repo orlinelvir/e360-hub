@@ -156,6 +156,9 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "brokerId y clientId son requeridos" }, { status: 400 });
     }
 
+    const actingStaffSnap = await adminDb.collection("brokers").doc(user.uid).get();
+    const actingStaffName = actingStaffSnap.data()?.displayName || actingStaffSnap.data()?.name || user.email || "Staff";
+
     if (reviewStatus !== undefined && !VALID_REVIEW_STATUSES.includes(reviewStatus)) {
       return NextResponse.json({ error: "reviewStatus inválido" }, { status: 400 });
     }
@@ -184,7 +187,14 @@ export async function PATCH(request: Request) {
     const { reviewStatus: previousReviewStatus } = deriveCaseStatus(client);
 
     const updatePayload: Record<string, unknown> = {
-      lastActivity: `Actualizado por Admin: ${new Date().toLocaleDateString()}`
+      lastActivity: `Actualizado por Admin: ${new Date().toLocaleDateString()}`,
+      // Quién tocó el caso por última vez — antes nada registraba esto, lo
+      // que hacía imposible medir actividad real de staff por persona.
+      updatedByUid: user.uid,
+      updatedByName: actingStaffName,
+      // Timestamp ISO real (lastActivity de arriba es solo texto legible, no
+      // sirve para filtrar por fecha) — lo necesita el panel de Actividad del Staff.
+      updatedAt: new Date().toISOString()
     };
 
     if (reviewStatus !== undefined) updatePayload.status = reviewStatus;

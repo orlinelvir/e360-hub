@@ -96,6 +96,32 @@ export interface BrokerProfileData {
     directDepositAuth?: boolean;
   };
   createdAt?: string;
+  // Último inicio de sesión — ubicación aproximada por IP (la que provee
+  // automáticamente la red de Vercel, sin servicio externo ni costo). Nunca
+  // ubicación precisa/GPS: el navegador no lo permite sin pedir permiso
+  // explícito cada vez, así que esto es lo único que se puede capturar sin
+  // que el usuario tenga que aceptar nada en cada acceso.
+  lastLogin?: {
+    at: string;
+    ip?: string;
+    city?: string;
+    region?: string;
+    country?: string;
+    userAgent?: string;
+  };
+}
+
+// Un registro histórico por cada inicio de sesión — vive en la subcolección
+// brokers/{uid}/loginHistory, separado de `lastLogin` (que solo guarda el más
+// reciente) para poder ver un historial, no solo el último acceso.
+export interface LoginHistoryEntry {
+  id?: string;
+  at: string;
+  ip?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  userAgent?: string;
 }
 
 // Nuevos tipos para soporte
@@ -169,6 +195,9 @@ export interface TicketMessage {
   id?: string;
   sender: "broker" | "agent";
   senderName: string;
+  // uid real de quien respondió (solo "agent") — permite medir actividad de
+  // staff por persona en vez de solo por nombre (que puede repetirse/cambiar).
+  senderId?: string;
   content: string;
   createdAt: string;
 }

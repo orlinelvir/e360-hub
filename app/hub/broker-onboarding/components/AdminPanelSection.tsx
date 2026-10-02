@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket, Tag } from "lucide-react";
+import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket, Tag, UserCheck } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import AdminCasesTab, { CaseItem } from "./admin/AdminCasesTab";
 import AdminMetricsTab, { MetricsData } from "./admin/AdminMetricsTab";
@@ -11,8 +11,9 @@ import AdminFailedSyncTab, { FailedLeadItem } from "./admin/AdminFailedSyncTab";
 import AdminLocationsTab, { AdminLocation } from "./admin/AdminLocationsTab";
 import AdminTicketsTab, { AdminTicketItem } from "./admin/AdminTicketsTab";
 import AdminServicesTab from "./admin/AdminServicesTab";
+import AdminStaffActivityTab, { StaffActivityItem, BacklogByCluster } from "./admin/AdminStaffActivityTab";
 
-type AdminTab = "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets" | "services";
+type AdminTab = "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets" | "services" | "staff_activity";
 
 export default function AdminPanelSection() {
   const { user } = useAuth();
@@ -42,6 +43,11 @@ export default function AdminPanelSection() {
 
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState<boolean>(false);
+
+  const [staffActivity, setStaffActivity] = useState<StaffActivityItem[]>([]);
+  const [backlogByCluster, setBacklogByCluster] = useState<BacklogByCluster>({});
+  const [staffActivityWindow, setStaffActivityWindow] = useState<number>(7);
+  const [loadingStaffActivity, setLoadingStaffActivity] = useState<boolean>(false);
 
   const [currentUserRole, setCurrentUserRole] = useState<string>("broker");
   const [error, setError] = useState<string>("");
@@ -84,6 +90,32 @@ export default function AdminPanelSection() {
     } finally {
       setLoadingMetrics(false);
     }
+  };
+
+  const fetchStaffActivity = async (days: number = staffActivityWindow) => {
+    if (!user) return;
+    setLoadingStaffActivity(true);
+    setError("");
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/admin/staff-activity?days=${days}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al cargar la actividad del staff.");
+      setStaffActivity(data.staff || []);
+      setBacklogByCluster(data.backlogByCluster || {});
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error desconocido";
+      setError(msg);
+    } finally {
+      setLoadingStaffActivity(false);
+    }
+  };
+
+  const handleChangeStaffActivityWindow = (days: number) => {
+    setStaffActivityWindow(days);
+    fetchStaffActivity(days);
   };
 
   const fetchBrokers = async () => {
@@ -246,9 +278,10 @@ export default function AdminPanelSection() {
     else if (tab === "failed_sync") fetchFailedLeads();
     else if (tab === "locations") fetchLocations();
     else if (tab === "tickets") fetchTickets();
+    else if (tab === "staff_activity") fetchStaffActivity();
   };
 
-  const isRefreshing = loadingCases || loadingMetrics || loadingBrokers || loadingRoles || loadingFailedLeads || loadingLocations || loadingTickets;
+  const isRefreshing = loadingCases || loadingMetrics || loadingBrokers || loadingRoles || loadingFailedLeads || loadingLocations || loadingTickets || loadingStaffActivity;
   const isFullAdmin = currentUserRole === "admin";
   const isSupport = currentUserRole === "support_agent";
   const isOnboardingMember = currentUserRole === "onboarding_member";
@@ -259,6 +292,7 @@ export default function AdminPanelSection() {
       { id: "roles", label: "Equipo & Roles", icon: ShieldCheck, count: teamMembers.length || undefined, badgeColor: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
       { id: "metrics", label: "Métricas Globales", icon: BarChart3 },
       { id: "services", label: "Catálogo de Servicios", icon: Tag },
+      { id: "staff_activity", label: "Actividad del Staff", icon: UserCheck },
     ] : []),
     ...(isFullAdmin || isOnboardingMember ? [
       { id: "brokers", label: "Roster de Brokers", icon: Users, count: brokers.length || undefined },
@@ -377,6 +411,15 @@ export default function AdminPanelSection() {
         <AdminTicketsTab tickets={tickets} loading={loadingTickets} onRefresh={fetchTickets} />
       )}
       {activeTab === "services" && <AdminServicesTab />}
+      {activeTab === "staff_activity" && (
+        <AdminStaffActivityTab
+          staff={staffActivity}
+          backlogByCluster={backlogByCluster}
+          windowDays={staffActivityWindow}
+          loading={loadingStaffActivity}
+          onChangeWindow={handleChangeStaffActivityWindow}
+        />
+      )}
     </div>
   );
 }
