@@ -2,16 +2,20 @@ import { Heading, Text, Section } from "@react-email/components";
 import EmailLayout from "./EmailLayout";
 
 interface WelcomeApplicationEmailProps {
-  clientFirstName: string;
+  brokerName: string;
+  clientName: string;
   serviceName: string;
 }
 
-export default function WelcomeApplicationEmail({ clientFirstName, serviceName }: WelcomeApplicationEmailProps) {
+// Antes le llegaba directo al cliente final. JP fue explícito: el cliente
+// firmó contrato con el broker, no con E360, así que esta notificación es
+// para el broker — es él quien le avisa a su cliente, con su propia voz.
+export default function WelcomeApplicationEmail({ brokerName, clientName, serviceName }: WelcomeApplicationEmailProps) {
   return (
     <EmailLayout
-      previewText={`Hemos recibido tu solicitud de ${serviceName} — en 24 a 72 horas tendrás noticias nuestras`}
-      eyebrow="Departamento de Aplicaciones"
-      audience="client"
+      previewText={`La solicitud de ${clientName} fue recibida — en 24 a 72 horas tendrás una respuesta`}
+      eyebrow="Torre de Control · Nueva Solicitud"
+      audience="broker"
     >
       <div
         style={{
@@ -32,12 +36,13 @@ export default function WelcomeApplicationEmail({ clientFirstName, serviceName }
       </div>
 
       <Heading style={{ color: "#ffffff", fontSize: "21px", margin: "0 0 14px", lineHeight: "28px" }}>
-        ¡Hola {clientFirstName}! Recibimos tu solicitud
+        ¡Hola {brokerName}! Recibimos la solicitud de {clientName}
       </Heading>
 
       <Text style={{ color: "#C4CBD9", fontSize: "14px", lineHeight: "22px", margin: "0 0 16px" }}>
-        Gracias por confiar en nosotros para tu trámite de <span style={{ color: "#ffffff", fontWeight: 700 }}>{serviceName}</span>.
-        Ya tenemos tu información y nuestro equipo comenzó a revisarla.
+        El trámite de <span style={{ color: "#ffffff", fontWeight: 700 }}>{serviceName}</span> de tu cliente{" "}
+        <span style={{ color: "#ffffff", fontWeight: 700 }}>{clientName}</span> ya quedó registrado y nuestro equipo
+        comenzó a revisarlo.
       </Text>
 
       <Section
@@ -53,20 +58,14 @@ export default function WelcomeApplicationEmail({ clientFirstName, serviceName }
           ¿Qué sigue?
         </Text>
         <Text style={{ color: "#C4CBD9", fontSize: "13px", lineHeight: "21px", margin: 0 }}>
-          En un plazo de <span style={{ color: "#ffffff", fontWeight: 700 }}>24 a 72 horas</span> nuestro equipo se pondrá en contacto
-          contigo con una respuesta o para solicitarte información adicional si hace falta. Te recomendamos estar pendiente de tu
-          teléfono y correo electrónico.
+          En un plazo de <span style={{ color: "#ffffff", fontWeight: 700 }}>24 a 72 horas</span> tendrás una respuesta
+          o te pediremos información adicional si hace falta. Te recomendamos avisarle a tu cliente que su solicitud
+          ya está en trámite.
         </Text>
       </Section>
 
       <Text style={{ color: "#8A94A6", fontSize: "13px", lineHeight: "21px", margin: 0 }}>
-        Si tienes alguna pregunta mientras tanto, puedes responder directamente a este correo y con gusto te asistiremos.
-      </Text>
-
-      <Text style={{ color: "#C4CBD9", fontSize: "13px", margin: "20px 0 0" }}>
-        Gracias por tu confianza,
-        <br />
-        <span style={{ color: "#ffffff", fontWeight: 700 }}>Equipo de Atención al Cliente · Emprende 360</span>
+        Si tienes alguna pregunta mientras tanto, puedes responder directamente a este correo.
       </Text>
     </EmailLayout>
   );

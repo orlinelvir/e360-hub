@@ -230,7 +230,8 @@ export async function POST(request: Request) {
 
     after(() =>
       sendWelcomeApplicationEmail({
-        clientEmail: email,
+        brokerEmail,
+        brokerName,
         clientName: fullName,
         serviceName: service || "tu solicitud",
       })

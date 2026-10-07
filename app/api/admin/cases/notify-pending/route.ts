@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
-import { notifyClientOfMissingApplication } from "@/lib/services/pending-notification-service";
+import { notifyBrokerOfMissingApplication } from "@/lib/services/pending-notification-service";
 
 export async function POST(request: Request) {
   const user = await verifyAuthToken(request);
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const result = await notifyClientOfMissingApplication(brokerId, clientId);
+    const result = await notifyBrokerOfMissingApplication(brokerId, clientId);
     if (!result.success) {
       return NextResponse.json({ error: result.error || "No se pudo enviar la notificación" }, { status: 400 });
     }

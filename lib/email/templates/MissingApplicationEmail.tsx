@@ -2,20 +2,23 @@ import { Heading, Text, Button, Section } from "@react-email/components";
 import EmailLayout from "./EmailLayout";
 
 interface MissingApplicationEmailProps {
-  clientFirstName: string;
   brokerName: string;
+  clientName: string;
   serviceName: string;
   formLink?: string;
 }
 
-export default function MissingApplicationEmail({ clientFirstName, brokerName, serviceName, formLink }: MissingApplicationEmailProps) {
+// Antes le llegaba directo al cliente final. JP fue explícito: el cliente
+// firmó contrato con el broker, no con E360, así que esta notificación es
+// para el broker — es él quien le comparte el enlace a su cliente.
+export default function MissingApplicationEmail({ brokerName, clientName, serviceName, formLink }: MissingApplicationEmailProps) {
   const hasRealLink = Boolean(formLink && formLink.startsWith("http"));
 
   return (
     <EmailLayout
-      previewText={`Falta un paso para continuar tu solicitud de ${serviceName}`}
-      eyebrow="Departamento de Aplicaciones"
-      audience="client"
+      previewText={`A ${clientName} le falta un paso para continuar su solicitud de ${serviceName}`}
+      eyebrow="Torre de Control · Formulario Pendiente"
+      audience="broker"
     >
       <div
         style={{
@@ -36,13 +39,13 @@ export default function MissingApplicationEmail({ clientFirstName, brokerName, s
       </div>
 
       <Heading style={{ color: "#ffffff", fontSize: "21px", margin: "0 0 14px", lineHeight: "28px" }}>
-        Hola {clientFirstName}, falta un paso para continuar
+        Hola {brokerName}, a {clientName} le falta un paso
       </Heading>
 
       <Text style={{ color: "#C4CBD9", fontSize: "14px", lineHeight: "22px", margin: "0 0 16px" }}>
-        <span style={{ color: "#ffffff", fontWeight: 700 }}>{brokerName}</span> te refirió con nosotros para tu trámite de{" "}
-        <span style={{ color: "#ffffff", fontWeight: 700 }}>{serviceName}</span>, pero todavía no hemos recibido tu formulario
-        oficial de solicitud — sin él, no podemos comenzar a revisar tu caso.
+        Tu cliente <span style={{ color: "#ffffff", fontWeight: 700 }}>{clientName}</span> todavía no tiene registrado
+        el formulario oficial de su trámite de <span style={{ color: "#ffffff", fontWeight: 700 }}>{serviceName}</span> —
+        sin él no podemos comenzar a revisar el caso.
       </Text>
 
       <Section
@@ -59,8 +62,8 @@ export default function MissingApplicationEmail({ clientFirstName, brokerName, s
         </Text>
         <Text style={{ color: "#C4CBD9", fontSize: "13px", lineHeight: "21px", margin: 0 }}>
           {hasRealLink
-            ? "Completa el formulario oficial usando el botón de abajo. Toma solo unos minutos y es el único paso pendiente."
-            : `Comunícate con ${brokerName} o con nuestro equipo para que te compartan el formulario oficial de tu trámite.`}
+            ? "Comparte el enlace de abajo directamente con tu cliente para que complete el formulario oficial. Toma solo unos minutos."
+            : "Comunícate con nuestro equipo para obtener el formulario oficial de este trámite y compártelo con tu cliente."}
         </Text>
       </Section>
 
@@ -78,19 +81,13 @@ export default function MissingApplicationEmail({ clientFirstName, brokerName, s
               textDecoration: "none",
             }}
           >
-            Completar formulario
+            Abrir formulario
           </Button>
         </Section>
       )}
 
       <Text style={{ color: "#8A94A6", fontSize: "13px", lineHeight: "21px", margin: 0 }}>
-        Si ya lo llenaste o tienes alguna pregunta, responde directamente a este correo y con gusto te ayudamos.
-      </Text>
-
-      <Text style={{ color: "#C4CBD9", fontSize: "13px", margin: "20px 0 0" }}>
-        Gracias por tu confianza,
-        <br />
-        <span style={{ color: "#ffffff", fontWeight: 700 }}>Equipo de Atención al Cliente · Emprende 360</span>
+        Si tu cliente ya lo llenó o tienes alguna pregunta, responde directamente a este correo.
       </Text>
     </EmailLayout>
   );

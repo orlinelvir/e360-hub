@@ -4,13 +4,13 @@ import { sendMissingApplicationEmail } from "@/lib/email/send";
 import { deriveCaseStatus } from "@/lib/services/case-status";
 
 /**
- * Le avisa al CLIENTE (no al broker) que su caso sigue "Pendiente de
- * Documentos" y le comparte el enlace real del formulario oficial de su
- * servicio, para que sepa exactamente qué paso falta — antes no existía
- * ninguna forma de que el cliente supiera que el "Referir Cliente" de su
- * broker no era suficiente para que su solicitud avanzara.
+ * Le avisa al BROKER (nunca directo al cliente — así lo pidió JP: el cliente
+ * firmó contrato con el broker, no con E360) que el caso de su cliente sigue
+ * "Pendiente de Documentos", con el enlace real del formulario oficial para
+ * que el propio broker se lo reenvíe. Antes este correo llegaba directo al
+ * cliente final, lo que generaba confusión de marca y exposición legal.
  */
-export async function notifyClientOfMissingApplication(
+export async function notifyBrokerOfMissingApplication(
   brokerId: string,
   clientId: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -25,21 +25,22 @@ export async function notifyClientOfMissingApplication(
   if (reviewStatus !== "pending_docs") {
     return { success: false, error: "Este caso ya tiene una revisión registrada, no está pendiente de documentos." };
   }
-  if (!client.email) {
-    return { success: false, error: "El cliente no tiene un correo registrado." };
-  }
 
   const brokerSnap = await adminDb.collection("brokers").doc(brokerId).get();
-  const brokerName = brokerSnap.data()?.displayName || brokerSnap.data()?.name || "Tu broker";
+  const brokerName = brokerSnap.data()?.displayName || brokerSnap.data()?.name || "Broker";
+  const brokerEmail = brokerSnap.data()?.email || "";
+  if (!brokerEmail) {
+    return { success: false, error: "El broker no tiene un correo registrado." };
+  }
 
   const catalog = await getEffectiveServicesCatalog();
   const service = catalog.find((s) => s.id === client.serviceId);
   const formLink = service?.formLink && service.formLink.startsWith("http") ? service.formLink : undefined;
 
   await sendMissingApplicationEmail({
-    clientEmail: client.email,
-    clientName: client.name || "Cliente",
+    brokerEmail,
     brokerName,
+    clientName: client.name || "Cliente",
     serviceName: client.serviceName || client.serviceId || "tu solicitud",
     formLink
   });

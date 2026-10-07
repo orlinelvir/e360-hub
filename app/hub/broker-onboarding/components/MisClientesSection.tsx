@@ -269,7 +269,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al notificar al cliente");
-      setNotifyPendingMsg("Correo enviado al cliente con el enlace del formulario.");
+      setNotifyPendingMsg("Te enviamos el enlace del formulario por correo para que se lo compartas a tu cliente.");
     } catch (err) {
       setNotifyPendingMsg(err instanceof Error ? err.message : "Error desconocido");
     } finally {
@@ -343,16 +343,17 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     setIsAddModalOpen(false);
 
     // "Referir Cliente" no tiene ningún gate — el caso nace "Pendiente de
-    // Documentos", así que de inmediato le avisamos al CLIENTE (no solo al
-    // broker) que falta el formulario oficial, con el enlace real de su
-    // servicio. No bloquea el flujo si falla (ej. Resend no configurado).
+    // Documentos", así que de inmediato nos enviamos a nosotros mismos (el
+    // broker) el enlace real del formulario oficial que falta, para
+    // compartirlo con el cliente. No bloquea el flujo si falla (ej. Resend
+    // no configurado).
     if (user) {
       user.getIdToken().then((token) => {
         fetch("/api/broker/clients/notify-pending", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ clientId: newLead.id })
-        }).catch((err) => console.warn("No se pudo notificar al cliente del formulario faltante:", err));
+        }).catch((err) => console.warn("No se pudo enviar el recordatorio del formulario faltante:", err));
       });
     }
 

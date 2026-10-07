@@ -203,14 +203,22 @@ export async function PATCH(request: Request) {
 
     await clientRef.update(updatePayload);
 
-    // El cliente se entera de que "recibimos tu aplicación" justo cuando el
+    const brokerSnap = await adminDb.collection("brokers").doc(brokerId).get();
+    const brokerData = brokerSnap.data();
+    const brokerEmail = brokerData?.email || "";
+    const brokerName = brokerData?.displayName || brokerData?.name || "Broker";
+
+    // El broker se entera de que "recibimos la aplicación" justo cuando el
     // caso sale de "Pendiente de Documentos" por primera vez — ej. un caso
     // creado sin gate (Referir Cliente) que un admin confirma manualmente
-    // tras revisar la documentación por fuera del sistema.
-    if (reviewStatus !== undefined && justGotVerified(previousReviewStatus, reviewStatus as ReviewStatus) && client.email) {
+    // tras revisar la documentación por fuera del sistema. Nunca le llega
+    // directo al cliente — JP fue explícito: el cliente firmó contrato con
+    // el broker, no con E360, así que toda comunicación pasa por el broker.
+    if (reviewStatus !== undefined && justGotVerified(previousReviewStatus, reviewStatus as ReviewStatus) && brokerEmail) {
       after(() =>
         sendWelcomeApplicationEmail({
-          clientEmail: client.email,
+          brokerEmail,
+          brokerName,
           clientName: client.name || "Cliente",
           serviceName: client.serviceName || client.serviceId || "tu solicitud"
         })
@@ -220,11 +228,6 @@ export async function PATCH(request: Request) {
     // Notificar al broker por correo solo si el status realmente cambió a uno de
     // los 3 estados relevantes (evita reenviar en cada guardado de comisión/notas).
     if (reviewStatus !== undefined && reviewStatus !== previousReviewStatus && NOTIFIABLE_STATUSES.includes(reviewStatus)) {
-      const brokerSnap = await adminDb.collection("brokers").doc(brokerId).get();
-      const brokerData = brokerSnap.data();
-      const brokerEmail = brokerData?.email || "";
-      const brokerName = brokerData?.displayName || brokerData?.name || "Broker";
-
       after(() =>
         sendCaseStatusEmail({
           brokerEmail,

@@ -34,11 +34,17 @@ export default function EmailLayout({ previewText, eyebrow, audience = "broker",
               <tbody>
                 <tr>
                   <td style={{ width: 44 }}>
-                    <Img src={`${APP_BASE_URL}/logo.png`} alt="E360" width="40" height="40" style={styles.logo} />
+                    <Img
+                      src={`${APP_BASE_URL}/logo.png`}
+                      alt={audience === "client" ? "" : "E360"}
+                      width="40"
+                      height="40"
+                      style={styles.logo}
+                    />
                   </td>
                   <td style={{ paddingLeft: "12px" }}>
                     {eyebrow && <Text style={styles.eyebrow}>{eyebrow}</Text>}
-                    <Text style={styles.brand}>E360 Hub</Text>
+                    {audience === "broker" && <Text style={styles.brand}>E360 Hub</Text>}
                   </td>
                 </tr>
               </tbody>
@@ -52,7 +58,7 @@ export default function EmailLayout({ previewText, eyebrow, audience = "broker",
           <Section>
             <Text style={styles.footer}>
               {audience === "client"
-                ? "Emprende 360 — Gracias por confiar en nosotros."
+                ? "Gracias por confiar en nosotros para darle seguimiento a tu trámite."
                 : "Emprende 360 · E360 Hub — Torre de Control para Brokers"}
             </Text>
             <Text style={styles.footerSmall}>

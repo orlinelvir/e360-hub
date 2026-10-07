@@ -1,11 +1,10 @@
-import { getResendClient, EMAIL_FROM, EMAIL_FROM_CLIENT } from "./client";
+import { getResendClient, EMAIL_FROM } from "./client";
 import CaseStatusEmail, { CaseEmailStatus } from "./templates/CaseStatusEmail";
 import BrokerNoteEmail from "./templates/BrokerNoteEmail";
 import WelcomeApplicationEmail from "./templates/WelcomeApplicationEmail";
 import BrokerOnboardingEmail from "./templates/BrokerOnboardingEmail";
 import PasswordResetEmail from "./templates/PasswordResetEmail";
 import MissingApplicationEmail from "./templates/MissingApplicationEmail";
-import ClientCaseUpdateEmail from "./templates/ClientCaseUpdateEmail";
 import TicketUpdateEmail, { TicketUpdateKind } from "./templates/TicketUpdateEmail";
 
 /**
@@ -97,44 +96,6 @@ export async function sendBrokerNoteEmail(params: BrokerNoteEmailParams): Promis
   }
 }
 
-interface ClientCaseUpdateEmailParams {
-  clientEmail: string;
-  clientName: string;
-  serviceName: string;
-  noteContent: string;
-}
-
-// Igual que sendBrokerNoteEmail: reporta el resultado real en vez de
-// tragarse el error, porque el punto de esta función es precisamente que el
-// cliente reciba la actualización sin depender de que el broker se la reenvíe.
-export async function sendClientCaseUpdateEmail(params: ClientCaseUpdateEmailParams): Promise<{ sent: boolean; error?: string }> {
-  const resend = getResendClient();
-  if (!resend) return { sent: false, error: "Resend no está configurado en el servidor (falta RESEND_API_KEY)." };
-  if (!params.clientEmail) return { sent: false, error: "El cliente no tiene un correo registrado." };
-
-  const firstName = params.clientName.trim().split(" ")[0] || params.clientName;
-
-  try {
-    await resend.emails.send({
-      from: EMAIL_FROM_CLIENT,
-      to: params.clientEmail,
-      subject: `Actualización sobre tu solicitud de ${params.serviceName}`,
-      react: (
-        <ClientCaseUpdateEmail
-          clientFirstName={firstName}
-          serviceName={params.serviceName}
-          noteContent={params.noteContent}
-        />
-      ),
-    });
-    return { sent: true };
-  } catch (err) {
-    console.error("Error enviando email de actualización al cliente:", err);
-    const message = err instanceof Error ? err.message : "Error desconocido al enviar el correo.";
-    return { sent: false, error: message };
-  }
-}
-
 interface BrokerOnboardingEmailParams {
   brokerEmail: string;
   brokerName: string;
@@ -199,59 +160,60 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
 }
 
 interface MissingApplicationEmailParams {
-  clientEmail: string;
-  clientName: string;
+  brokerEmail: string;
   brokerName: string;
+  clientName: string;
   serviceName: string;
   formLink?: string;
 }
 
+// Le llega al broker, nunca directo al cliente final — ver nota en
+// notifyBrokerOfMissingApplication sobre por qué cambió.
 export async function sendMissingApplicationEmail(params: MissingApplicationEmailParams): Promise<void> {
   const resend = getResendClient();
-  if (!resend || !params.clientEmail) return;
-
-  const firstName = params.clientName.trim().split(" ")[0] || params.clientName;
+  if (!resend || !params.brokerEmail) return;
 
   try {
     await resend.emails.send({
-      from: EMAIL_FROM_CLIENT,
-      to: params.clientEmail,
-      subject: `Falta un paso para continuar tu solicitud de ${params.serviceName}`,
+      from: EMAIL_FROM,
+      to: params.brokerEmail,
+      subject: `A ${params.clientName} le falta un paso en su solicitud de ${params.serviceName}`,
       react: (
         <MissingApplicationEmail
-          clientFirstName={firstName}
           brokerName={params.brokerName}
+          clientName={params.clientName}
           serviceName={params.serviceName}
           formLink={params.formLink}
         />
       ),
     });
   } catch (err) {
-    console.error("Error enviando email de formulario faltante al cliente:", err);
+    console.error("Error enviando email de formulario faltante al broker:", err);
   }
 }
 
 interface WelcomeApplicationEmailParams {
-  clientEmail: string;
+  brokerEmail: string;
+  brokerName: string;
   clientName: string;
   serviceName: string;
 }
 
+// Le llega al broker, nunca directo al cliente final — JP: el cliente firmó
+// contrato con el broker, no con E360, así que la comunicación pasa por él.
 export async function sendWelcomeApplicationEmail(params: WelcomeApplicationEmailParams): Promise<void> {
   const resend = getResendClient();
-  if (!resend || !params.clientEmail) return;
-
-  const firstName = params.clientName.trim().split(" ")[0] || params.clientName;
+  if (!resend || !params.brokerEmail) return;
 
   try {
     await resend.emails.send({
-      from: EMAIL_FROM_CLIENT,
-      to: params.clientEmail,
-      subject: `Hemos recibido tu solicitud de ${params.serviceName}`,
-      react: <WelcomeApplicationEmail clientFirstName={firstName} serviceName={params.serviceName} />,
+      from: EMAIL_FROM,
+      to: params.brokerEmail,
+      subject: `Recibimos la solicitud de ${params.clientName}`,
+      react: <WelcomeApplicationEmail brokerName={params.brokerName} clientName={params.clientName} serviceName={params.serviceName} />,
     });
   } catch (err) {
-    console.error("Error enviando email de bienvenida al cliente:", err);
+    console.error("Error enviando email de bienvenida al broker:", err);
   }
 }
 

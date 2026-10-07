@@ -12,17 +12,13 @@ export function getResendClient(): Resend | null {
 }
 
 /**
- * Remitentes configurables: mientras emprende360.biz no esté verificado en Resend,
- * ambos caen al default de pruebas de Resend (onboarding@resend.dev). Una vez
- * verificado el dominio, basta con setear las env vars en Vercel sin tocar código.
- *
- * Se usan dos identidades distintas, igual que ya hacen a mano en GHL:
- * - EMAIL_FROM: notificaciones internas al broker (Torre de Control).
- * - EMAIL_FROM_CLIENT: correos al cliente final, mismo remitente que ya usan
- *   sus workflows de GHL ("Departamento De Aplicaciones" <ayuda@emprende360.biz>).
+ * Remitente único: todas las notificaciones del Hub son internas (al broker),
+ * nunca directas al cliente final — el cliente firmó contrato con su broker,
+ * no con E360, así que toda la correspondencia pasa por él.
+ * Mientras emprende360.biz no esté verificado en Resend, cae al default de
+ * pruebas (onboarding@resend.dev); una vez verificado, basta con setear la
+ * env var en Vercel sin tocar código.
  */
 export const EMAIL_FROM = process.env.RESEND_FROM_EMAIL || "E360 Hub <onboarding@resend.dev>";
-export const EMAIL_FROM_CLIENT =
-  process.env.RESEND_FROM_CLIENT_EMAIL || process.env.RESEND_FROM_EMAIL || "Departamento de Aplicaciones <onboarding@resend.dev>";
 
 export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://emprende360.biz";

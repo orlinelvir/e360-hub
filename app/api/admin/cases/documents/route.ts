@@ -141,10 +141,14 @@ export async function POST(request: Request) {
     const { reviewStatus: previousReviewStatus } = deriveCaseStatus(clientData);
     if (justGotVerified(previousReviewStatus, "in_review")) {
       await clientRef.update({ status: "in_review" });
-      if (clientData.email) {
+      const brokerSnap = await adminDb.collection("brokers").doc(brokerId).get();
+      const brokerEmail = brokerSnap.data()?.email || "";
+      const brokerName = brokerSnap.data()?.displayName || brokerSnap.data()?.name || "Broker";
+      if (brokerEmail) {
         after(() =>
           sendWelcomeApplicationEmail({
-            clientEmail: clientData.email,
+            brokerEmail,
+            brokerName,
             clientName: clientData.name || "Cliente",
             serviceName: clientData.serviceName || clientData.serviceId || "tu solicitud"
           })

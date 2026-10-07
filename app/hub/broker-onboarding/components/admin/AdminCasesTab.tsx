@@ -256,7 +256,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al notificar al cliente");
-      setNotifyPendingMsg("Correo enviado al cliente con el enlace del formulario.");
+      setNotifyPendingMsg("Le enviamos el enlace del formulario al broker para que se lo comparta a su cliente.");
     } catch (err) {
       setNotifyPendingMsg(err instanceof Error ? err.message : "Error desconocido");
     } finally {
