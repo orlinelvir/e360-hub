@@ -103,8 +103,14 @@ service cloud.firestore {
         allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
       }
 
+      // El broker no puede tener permiso de escritura directa aquí: "puede crear y
+      // calificar su ticket, pero no puede marcarlo resolved/in_progress" no se puede
+      // expresar de forma segura en reglas de Firestore (mismo problema que caseNotes
+      // arriba) — si se permitiera, un broker podría auto-resolver una escalación por
+      // SLA vencido y silenciarla antes de que el staff la vea. Todo el acceso (lectura
+      // incluida, ya servida por GET /api/support/tickets con Admin SDK) pasa por rutas API.
       match /enhancedTickets/{ticketId}/{allPaths=**} {
-        allow read, write: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
+        allow read, write: if false;
       }
 
       // Conversaciones y mensajes con el Asistente IA

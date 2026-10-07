@@ -164,6 +164,14 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "ticketId y status o rating son requeridos" }, { status: 400 });
     }
 
+    // El broker solo puede reabrir su propio ticket (status "open"). Marcarlo
+    // "resolved" o "in_progress" es exclusivo del staff vía /api/admin/tickets
+    // — si no, un broker podría auto-resolver una escalación por SLA vencido
+    // y silenciarla antes de que el staff la vea.
+    if (status !== undefined && status !== "open") {
+      return NextResponse.json({ error: "Solo el equipo de soporte puede cambiar el ticket a este estado" }, { status: 403 });
+    }
+
     let previousStatus: string | undefined;
     let ticketSubject = "Un ticket de soporte";
     let ticketCategory: TicketCategory = "general";
