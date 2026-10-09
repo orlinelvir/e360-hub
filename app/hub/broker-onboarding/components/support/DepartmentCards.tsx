@@ -209,6 +209,15 @@ const resources: Resource[] = [
     desc: "4 servicios de fulfillment (Rep. de Crédito, Crédito Empresarial, Página Web, CRM) — tú vendes, nosotros lo hacemos",
     icon: Briefcase,
     action: { type: "external", href: "https://api.leadconnectorhq.com/widget/form/9SjK8JfTjdRapiGmqF47" }
+  },
+  {
+    id: "rl-multisourcing",
+    label: "Equipo de RL Multisourcing",
+    // Pedido de JP por nota de voz: sala siempre disponible para dudas de LLC,
+    // EIN e ITIN — el equipo que recibe lo que salió de Done For You arriba.
+    desc: "Dudas de LLC, EIN e ITIN — Lun – Vie 10am – 6pm",
+    icon: Video,
+    action: { type: "external", href: "https://meet.google.com/gbk-bzki-kcd" }
   }
 ];
 

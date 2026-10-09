@@ -182,7 +182,7 @@ export const servicesData: ServiceDetail[] = [
       "Divulgación de cierre, firma final y entrega de llaves."
     ],
     timeframe: "DSCR/Dinero Duro: 5-30 días. FHA/Convencionales: 30-45 días. Nueva construcción: 45-90 días.",
-    comission: "Comisión basada en la tabla de puntos de originación del préstamo.",
+    comission: "Comisión del 3% al 8% del monto financiado (ciertos préstamos como FHA, Convencionales o con Down Payment Assistance tienen regulaciones que limitan la comisión de 0.5% a 2%).",
     formLink: "https://api.leadconnectorhq.com/widget/form/K9P2nfr7uoerIVXdS2hi",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636"
