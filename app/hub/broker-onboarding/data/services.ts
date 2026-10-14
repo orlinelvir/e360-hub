@@ -172,7 +172,7 @@ export const servicesData: ServiceDetail[] = [
       "FHA: 580+ FICO para 3.5% de enganche; con 500-579 se requiere 10% de enganche",
       "Convencional: 620+ FICO, enganche desde 3% para primerizos, 2 años de taxes/W2",
       "DSCR (Inversionistas): 620-680+ FICO, 20-25% de enganche, propiedad debe generar rentas >= pago mensual de hipoteca (DSCR >= 1.0)",
-      "Dinero Duro / Harmony: 550+ FICO, 10-35% de enganche, basado en la solidez del proyecto (ARV de la propiedad >= 70%)"
+      "Dinero Duro / Harmony: 550+ FICO, 10-35% de enganche, basado en la solidez del proyecto (ARV de la propiedad >= 70%). Si es un préstamo Hard Money, envía el work scope (desglose o cotización del negocio) a info@emprende360.biz."
     ],
     process: [
       "Cita inicial obligatoria con el Oficial de Préstamos para analizar el caso.",
