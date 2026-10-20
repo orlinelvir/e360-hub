@@ -176,7 +176,17 @@ interface Resource {
 const resources: Resource[] = [
   { id: "business-loan", label: "Préstamos de Negocios", desc: "Aplicación en línea — ve a Inicio / Servicios", icon: Building2, action: { type: "internal" } },
   { id: "credit-repair", label: "Reparación de Crédito", desc: "Comenzar proceso — ve a Inicio / Servicios", icon: Star, action: { type: "internal" } },
-  { id: "adios-deudas", label: "AdiosDeudas — Negociación de Deudas", desc: "Admitir cliente — ve a Inicio / Servicios", icon: HandCoins, action: { type: "internal" } },
+  { id: "adios-deudas", label: "AdiosDeudas — Admitir Cliente", desc: "Negociación de Deudas — ve a Inicio / Servicios", icon: HandCoins, action: { type: "internal" } },
+  {
+    id: "quantum-debt-solutions",
+    label: "AdiosDeudas — Soporte y Referidos",
+    // Contacto operativo del broker — nunca se le comparte al cliente final.
+    // Puesto justo al lado de "Admitir Cliente" arriba para que se lea como
+    // un par (admitir / contactar al proveedor), no como una tarjeta repetida.
+    desc: "Dudas de elegibilidad o enviar un referido — support@quantumdebtsolutions.com",
+    icon: Phone,
+    action: { type: "external", href: "mailto:support@quantumdebtsolutions.com" }
+  },
   { id: "incorporation", label: "Registro de Compañía", desc: "Formulario de inscripción — ve a Inicio / Servicios", icon: ClipboardList, action: { type: "internal" } },
   {
     id: "credit-report",
@@ -227,16 +237,6 @@ const resources: Resource[] = [
     desc: "Dudas de LLC, EIN e ITIN — Lun – Vie 10am – 6pm",
     icon: Video,
     action: { type: "external", href: "https://meet.google.com/gbk-bzki-kcd" }
-  },
-  {
-    id: "quantum-debt-solutions",
-    label: "Equipo de Quantum Debt Solutions (AdiosDeudas)",
-    // Contacto operativo del broker — nunca se le comparte al cliente final.
-    // Para dudas de elegibilidad o para enviar un referido directo al equipo
-    // de Roberto Saldivar antes de admitir al cliente en el Hub.
-    desc: "Dudas de elegibilidad o enviar un referido — support@quantumdebtsolutions.com",
-    icon: HandCoins,
-    action: { type: "external", href: "mailto:support@quantumdebtsolutions.com" }
   }
 ];
 
