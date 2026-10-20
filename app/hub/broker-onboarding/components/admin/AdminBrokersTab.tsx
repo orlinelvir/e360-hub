@@ -219,6 +219,11 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
   const handleToggleAccountDisabled = async () => {
     if (!detailTarget || !authStatus) return;
     const nextDisabled = !authStatus.disabled;
+    // Deshabilitar bloquea el login al instante — a diferencia de Declinar un
+    // caso (que ya pide confirmar), esto nunca tenía ningún paso de seguridad.
+    if (nextDisabled && !window.confirm(`¿Deshabilitar la cuenta de ${detailTarget.displayName || detailTarget.email}? No podrá iniciar sesión hasta que la vuelvas a habilitar.`)) {
+      return;
+    }
     setIsTogglingAccount(true);
     setDetailError("");
     setDetailNotice("");

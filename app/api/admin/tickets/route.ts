@@ -1,5 +1,5 @@
 import { NextResponse, after } from "next/server";
-import { verifyAuthToken, adminDb, adminStorage } from "@/lib/firebase-admin";
+import { verifyAuthToken, adminDb, adminStorage, adminAuth } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission } from "@/lib/roles";
 import { getAllEnhancedTicketsAdmin, updateTicketStatus } from "@/lib/services/support-service";
 import { createNotification } from "@/lib/services/notification-service";
@@ -36,7 +36,20 @@ export async function GET(request: Request) {
       brokerIds.map(async (id) => {
         const snap = await db.collection("brokers").doc(id).get();
         const data = snap.data();
-        brokerNames.set(id, data?.displayName || data?.name || data?.email || id);
+        let name = data?.displayName || data?.name || data?.email;
+        // Si el doc de Firestore quedó incompleto (ej. auto-provisioning viejo
+        // que no guardó displayName/email), cae al perfil real de Firebase
+        // Auth antes de mostrar el UID crudo — el ticket mostraba el ID del
+        // broker en vez de su nombre, obligando al agente a preguntárselo.
+        if (!name && adminAuth) {
+          try {
+            const authUser = await adminAuth.getUser(id);
+            name = authUser.displayName || authUser.email || undefined;
+          } catch {
+            // El usuario tampoco existe en Auth — no queda más que el UID.
+          }
+        }
+        brokerNames.set(id, name || id);
       })
     );
 

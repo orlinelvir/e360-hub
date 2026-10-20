@@ -37,6 +37,8 @@ export default function AdmisionFormModal({
   });
   const [applicationFile, setApplicationFile] = useState<File | null>(null);
   const [officialFormConfirmed, setOfficialFormConfirmed] = useState(false);
+  const [isHardMoney, setIsHardMoney] = useState(false);
+  const [workScopeFile, setWorkScopeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
@@ -50,6 +52,7 @@ export default function AdmisionFormModal({
   // solicitud, así que se bloquea el envío hasta que se cumpla al menos uno.
   const cluster = resolvePipelineCluster(serviceId, serviceTitle);
   const isFinancingService = cluster === "fondeo_rapido" || cluster === "real_estate";
+  const isMortgageService = serviceId === "mortgage-loan";
   const officialFormLink = formLink || servicesData.find((s) => s.id === serviceId)?.formLink;
   const financingGateSatisfied = !isFinancingService || officialFormConfirmed || Boolean(applicationFile);
 
@@ -85,6 +88,12 @@ export default function AdmisionFormModal({
       if (applicationFile) {
         body.append("applicationFile", applicationFile);
       }
+      if (isMortgageService) {
+        body.append("isHardMoney", String(isHardMoney));
+        if (workScopeFile) {
+          body.append("workScopeFile", workScopeFile);
+        }
+      }
 
       const response = await fetch("/api/services/submit", {
         method: "POST",
@@ -117,6 +126,8 @@ export default function AdmisionFormModal({
         });
         setApplicationFile(null);
         setOfficialFormConfirmed(false);
+        setIsHardMoney(false);
+        setWorkScopeFile(null);
         setSuccess(false);
         setWarning("");
       }, data.warning ? 5000 : 2000);
@@ -209,7 +220,7 @@ export default function AdmisionFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Monto Solicitado (USD)
+              {serviceId === "adios-deudas" ? "Monto Total de Deuda (USD)" : "Monto Solicitado (USD)"}
             </label>
             <input
               type="number"
@@ -217,7 +228,7 @@ export default function AdmisionFormModal({
               value={formData.amount}
               onChange={handleChange}
               className="w-full px-4 py-2 bg-[#05101F] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
-              placeholder="50000"
+              placeholder={serviceId === "adios-deudas" ? "20000" : "50000"}
               min="0"
               step="1000"
             />
@@ -301,6 +312,45 @@ export default function AdmisionFormModal({
                   <p className="text-[11px] text-amber-300">
                     Selecciona la opción 1 o la opción 2 para poder admitir a este cliente.
                   </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isMortgageService && (
+            <div className="p-4 bg-[#05101F] border border-gray-800 rounded-lg space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isHardMoney}
+                  onChange={(e) => setIsHardMoney(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="text-sm font-medium text-gray-200">¿Es un préstamo Hard Money / Dinero Duro?</span>
+              </label>
+
+              {isHardMoney && (
+                <div className="space-y-2 pl-7">
+                  <p className="text-[11px] text-gray-500">
+                    Adjunta el work scope (desglose o cotización del negocio) y se lo enviamos de una vez a info@emprende360.biz — así no se te olvida.
+                  </p>
+                  <label className="flex items-center gap-3 px-4 py-3 bg-[#0A182D] border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500 transition-colors">
+                    <Upload size={18} className="text-gray-500 shrink-0" />
+                    <span className="text-xs text-gray-400 truncate">
+                      {workScopeFile ? workScopeFile.name : "Sube el work scope (PDF o imagen, máx. 8MB)"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => setWorkScopeFile(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                  {!workScopeFile && (
+                    <p className="text-[11px] text-amber-400">
+                      Si todavía no lo tienes, puedes admitir al cliente igual — solo recuerda enviarlo tú mismo a info@emprende360.biz en cuanto lo tengas.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

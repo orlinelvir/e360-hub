@@ -1,12 +1,27 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken } from "@/lib/firebase-admin";
 import { validateGHLCredentials } from "@/lib/ghl";
+import { checkRateLimit } from "@/lib/services/rate-limit-service";
+
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 
 export async function POST(request: Request) {
   try {
     const user = await verifyAuthToken(request);
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    // Sin esto, este endpoint es un oráculo para probar pares locationId/apiKey
+    // de GHL sin límite — defensa en profundidad además del rate limit propio de GHL.
+    const rateLimit = await checkRateLimit(user.uid, "ghl-validate", RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+    if (!rateLimit.allowed) {
+      const retrySeconds = Math.ceil((rateLimit.retryAfterMs || 0) / 1000);
+      return NextResponse.json(
+        { valid: false, error: `Demasiados intentos seguidos. Intenta de nuevo en ${retrySeconds} segundos.` },
+        { status: 429 }
+      );
     }
 
     const body = await request.json();

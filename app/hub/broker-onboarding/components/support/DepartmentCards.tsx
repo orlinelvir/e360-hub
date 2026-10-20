@@ -22,7 +22,8 @@ import {
   GraduationCap,
   Wallet,
   Eye,
-  Briefcase
+  Briefcase,
+  HandCoins
 } from "lucide-react";
 
 interface DepartmentCardsProps {
@@ -175,6 +176,7 @@ interface Resource {
 const resources: Resource[] = [
   { id: "business-loan", label: "Préstamos de Negocios", desc: "Aplicación en línea — ve a Inicio / Servicios", icon: Building2, action: { type: "internal" } },
   { id: "credit-repair", label: "Reparación de Crédito", desc: "Comenzar proceso — ve a Inicio / Servicios", icon: Star, action: { type: "internal" } },
+  { id: "adios-deudas", label: "AdiosDeudas — Negociación de Deudas", desc: "Admitir cliente — ve a Inicio / Servicios", icon: HandCoins, action: { type: "internal" } },
   { id: "incorporation", label: "Registro de Compañía", desc: "Formulario de inscripción — ve a Inicio / Servicios", icon: ClipboardList, action: { type: "internal" } },
   {
     id: "credit-report",
@@ -192,6 +194,13 @@ const resources: Resource[] = [
     action: { type: "external", href: "https://docs.google.com/spreadsheets/d/1-aNKno39Klfz2epZLE2mUjYRNYv_tVB63qGvGyoCK6E/edit?gid=828467088#gid=828467088" }
   },
   { id: "mortgage-loan", label: "Préstamos Hipotecarios", desc: "Información y proceso — ve a Inicio / Servicios", icon: Home, action: { type: "internal" } },
+  {
+    id: "calculadora-hipotecaria",
+    label: "Calculadora Hipotecaria + DPA",
+    desc: "FHA, Convencional, DSCR, Fix & Flip, Refi + asistencia de enganche por estado",
+    icon: Calculator,
+    action: { type: "external", href: "/calculadora-hipotecaria.html" }
+  },
   { id: "e360-library", label: "E360 Library", desc: "Acceso al curso", icon: GraduationCap, action: { type: "external", href: "https://e360library.com" } },
   {
     id: "zoom-taxes",
@@ -218,6 +227,16 @@ const resources: Resource[] = [
     desc: "Dudas de LLC, EIN e ITIN — Lun – Vie 10am – 6pm",
     icon: Video,
     action: { type: "external", href: "https://meet.google.com/gbk-bzki-kcd" }
+  },
+  {
+    id: "quantum-debt-solutions",
+    label: "Equipo de Quantum Debt Solutions (AdiosDeudas)",
+    // Contacto operativo del broker — nunca se le comparte al cliente final.
+    // Para dudas de elegibilidad o para enviar un referido directo al equipo
+    // de Roberto Saldivar antes de admitir al cliente en el Hub.
+    desc: "Dudas de elegibilidad o enviar un referido — support@quantumdebtsolutions.com",
+    icon: HandCoins,
+    action: { type: "external", href: "mailto:support@quantumdebtsolutions.com" }
   }
 ];
 

@@ -3,11 +3,17 @@ import { verifyAuthToken, adminDb, adminStorage } from "@/lib/firebase-admin";
 import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
 import { resolvePipelineCluster, resolveCentralDepartment } from "@/lib/service-routing";
-import { sendWelcomeApplicationEmail } from "@/lib/email/send";
+import { sendWelcomeApplicationEmail, sendHardMoneyWorkScopeEmail } from "@/lib/email/send";
 import { addCaseDocument } from "@/lib/services/case-service";
-import { notifyMany, findStaffUidsForCluster } from "@/lib/services/notification-service";
+import { notifyStaffOfNewCase } from "@/lib/services/notification-service";
+import { checkRateLimit } from "@/lib/services/rate-limit-service";
+import { servicesData } from "@/app/hub/broker-onboarding/data/services";
 
 const MAX_APPLICATION_FILE_SIZE = 8 * 1024 * 1024;
+const WORK_SCOPE_SIGNED_URL_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+const ALLOWED_WORK_SCOPE_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+const RATE_LIMIT_MAX = 15;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 export async function POST(request: Request) {
   const user = await verifyAuthToken(request);
@@ -17,6 +23,15 @@ export async function POST(request: Request) {
 
   if (!adminDb) {
     return NextResponse.json({ error: "Servidor no configurado" }, { status: 500 });
+  }
+
+  const rateLimit = await checkRateLimit(user.uid, "services-submit", RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+  if (!rateLimit.allowed) {
+    const retrySeconds = Math.ceil((rateLimit.retryAfterMs || 0) / 1000);
+    return NextResponse.json(
+      { error: `Demasiadas solicitudes seguidas. Intenta de nuevo en ${retrySeconds} segundos.` },
+      { status: 429 }
+    );
   }
 
   try {
@@ -34,6 +49,13 @@ export async function POST(request: Request) {
     const applicationFile = applicationFileEntry instanceof File && applicationFileEntry.size > 0 ? applicationFileEntry : null;
     const officialFormConfirmed = formData.get("officialFormConfirmed") === "true";
 
+    // Pedido de JP: en Préstamo Hipotecario, si es Hard Money el broker puede
+    // adjuntar el work scope (cotización del negocio) directo al admitir al
+    // cliente, para que no dependa de acordarse de reenviarlo él mismo.
+    const isHardMoney = formData.get("isHardMoney") === "true";
+    const workScopeFileEntry = formData.get("workScopeFile");
+    const workScopeFile = workScopeFileEntry instanceof File && workScopeFileEntry.size > 0 ? workScopeFileEntry : null;
+
     if (!firstName || !email) {
       return NextResponse.json(
         { error: "Nombre y email son requeridos" },
@@ -47,6 +69,15 @@ export async function POST(request: Request) {
       }
       if (applicationFile.size > MAX_APPLICATION_FILE_SIZE) {
         return NextResponse.json({ error: "El PDF de la solicitud no debe superar 8MB" }, { status: 400 });
+      }
+    }
+
+    if (workScopeFile) {
+      if (!ALLOWED_WORK_SCOPE_TYPES.includes(workScopeFile.type)) {
+        return NextResponse.json({ error: "El work scope debe ser una imagen (JPG/PNG/WEBP) o PDF" }, { status: 400 });
+      }
+      if (workScopeFile.size > MAX_APPLICATION_FILE_SIZE) {
+        return NextResponse.json({ error: "El work scope no debe superar 8MB" }, { status: 400 });
       }
     }
 
@@ -76,6 +107,18 @@ export async function POST(request: Request) {
     const amountNum = Number(amount) || 0;
     const fullName = `${firstName} ${lastName || ""}`.trim();
 
+    // Comisión real por servicio (ver ServiceDetail.commissionRate) — antes
+    // esto era un 5% fijo para TODOS los servicios sin importar lo que decía
+    // el catálogo, así que "AdiosDeudas" (2%) o cualquier servicio con una
+    // tasa real distinta nunca se habría reflejado en el monto guardado. Si
+    // el servicio no define una tasa, se mantiene el 5%/$250 histórico.
+    const matchedService = serviceId ? servicesData.find((s) => s.id === serviceId) : undefined;
+    const hasCustomRate = matchedService?.commissionRate !== undefined;
+    const commissionRate = matchedService?.commissionRate ?? 0.05;
+    const estimatedCommission = amountNum > 0
+      ? Math.round(amountNum * commissionRate)
+      : (hasCustomRate ? 0 : 250);
+
     const leadRef = await adminDb.collection("brokers").doc(user.uid).collection("clients").add({
       name: fullName,
       firstName,
@@ -86,7 +129,7 @@ export async function POST(request: Request) {
       serviceName: service || "General",
       service: service || "General",
       amount: amountNum,
-      estimatedCommission: amountNum > 0 ? Math.round(amountNum * 0.05) : 250,
+      estimatedCommission,
       stage: "lead",
       notes: notes || "",
       createdAt: new Date().toISOString(),
@@ -119,6 +162,38 @@ export async function POST(request: Request) {
         });
       } catch (error) {
         console.error("Error subiendo el PDF de la solicitud del broker:", error);
+      }
+    }
+
+    if (isHardMoney && workScopeFile && adminStorage) {
+      try {
+        const buffer = Buffer.from(await workScopeFile.arrayBuffer());
+        const storagePath = `case-documents/${user.uid}/${leadRef.id}/${Date.now()}-${workScopeFile.name}`;
+        await adminStorage.bucket().file(storagePath).save(buffer, { contentType: workScopeFile.type });
+        await addCaseDocument(user.uid, leadRef.id, {
+          fileName: workScopeFile.name,
+          storagePath,
+          contentType: workScopeFile.type,
+          size: workScopeFile.size,
+          uploadedByName: brokerName,
+          uploadedById: user.uid
+        });
+
+        const [fileUrl] = await adminStorage.bucket().file(storagePath).getSignedUrl({
+          action: "read",
+          expires: Date.now() + WORK_SCOPE_SIGNED_URL_EXPIRY_MS
+        });
+
+        after(() =>
+          sendHardMoneyWorkScopeEmail({
+            brokerName,
+            clientName: fullName,
+            fileUrl,
+            fileName: workScopeFile.name
+          })
+        );
+      } catch (error) {
+        console.error("Error subiendo o enviando el work scope de Hard Money:", error);
       }
     }
 
@@ -237,14 +312,14 @@ export async function POST(request: Request) {
       })
     );
 
-    after(async () => {
-      const staffUids = await findStaffUidsForCluster(pipelineCluster);
-      await notifyMany(staffUids, {
-        title: "Nueva solicitud recibida",
-        message: `${fullName} — ${service || "Servicio"} (${brokerName})`,
-        link: "admin"
-      });
-    });
+    after(() =>
+      notifyStaffOfNewCase({
+        cluster: pipelineCluster,
+        clientName: fullName,
+        serviceName: service || "Servicio",
+        brokerName
+      })
+    );
 
     return NextResponse.json({
       success: true,

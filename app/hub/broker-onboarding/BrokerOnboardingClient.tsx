@@ -484,7 +484,7 @@ export default function BrokerOnboardingClient() {
 
               <div className="mt-8 text-center">
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">
-                  Documento de Diseño Web · Confidencial · 2026
+                  E360 Hub · Acceso Exclusivo de Brokers
                 </p>
               </div>
             </div>
@@ -499,7 +499,7 @@ export default function BrokerOnboardingClient() {
             className="flex-grow flex flex-col relative z-10 w-full"
           >
             {/* --- HEADER SUPERIOR --- */}
-            <header className="sticky top-0 w-full z-40 bg-[#05101F]/90 backdrop-blur-md border-b border-gray-800/80 py-4 px-6">
+            <header id="hub-main-header" className="sticky top-0 w-full z-40 bg-[#05101F]/90 backdrop-blur-md border-b border-gray-800/80 py-4 px-6">
               <div className="max-w-7xl mx-auto flex items-center justify-between">
                 
                 {/* Logo E360 */}
@@ -792,10 +792,10 @@ export default function BrokerOnboardingClient() {
               </main>
             )}
 
-            {/* --- PIE DE PÁGINA CONFIDENCIAL --- */}
+            {/* --- PIE DE PÁGINA --- */}
             <footer className="w-full py-8 px-6 mt-auto border-t border-gray-900/80 bg-gray-950/40 text-center">
               <p className="text-xs text-gray-600 font-mono tracking-widest uppercase">
-                Emprende 360 · E360 Hub — Documento de Diseño Web · Confidencial · 2026
+                Emprende 360 · E360 Hub — Uso Exclusivo de Brokers
               </p>
             </footer>
           </motion.div>

@@ -18,7 +18,7 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
     id: "admin",
     name: "SuperAdmin / Director",
     description: "Acceso total: todas las verticales, comisiones, métricas, finanzas y asignación de roles.",
-    allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo"],
+    allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo", "debt_consolidation"],
     permissions: ["all"],
     color: "purple"
   },
@@ -58,7 +58,7 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
     id: "support_agent",
     name: "Agente de Soporte & Operaciones",
     description: "Atención a tickets de brokers, reintento de sincronizaciones GHL y asistencia general.",
-    allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo"],
+    allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo", "debt_consolidation"],
     permissions: ["view_tickets", "reply_tickets", "retry_sync"],
     color: "indigo"
   },
@@ -74,7 +74,7 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
     id: "sales_agent",
     name: "Representante de Ventas / Closer",
     description: "Gestión de prospectos comerciales, intake de clientes y seguimiento de conversiones.",
-    allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo"],
+    allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo", "debt_consolidation"],
     permissions: ["view_cases", "create_leads", "view_commissions"],
     color: "amber"
   },

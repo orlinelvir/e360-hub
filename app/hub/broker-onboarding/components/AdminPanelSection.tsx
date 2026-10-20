@@ -18,6 +18,13 @@ type AdminTab = "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "loc
 export default function AdminPanelSection() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>("cases");
+  // Para saltar de "casos atrasados" en Actividad del Staff directo al caso
+  // en la pestaña de Casos, en vez de solo mostrar el nombre sin acción posible.
+  const [focusCase, setFocusCase] = useState<{ brokerId: string; clientId: string } | null>(null);
+  const handleOpenStaleCase = (brokerId: string, clientId: string) => {
+    setFocusCase({ brokerId, clientId });
+    setActiveTab("cases");
+  };
 
   const [cases, setCases] = useState<CaseItem[]>([]);
   const [loadingCases, setLoadingCases] = useState<boolean>(false);
@@ -385,7 +392,13 @@ export default function AdminPanelSection() {
 
       {/* Vistas por Tab */}
       {activeTab === "cases" && (
-        <AdminCasesTab cases={cases} loading={loadingCases} onRefresh={fetchCases} />
+        <AdminCasesTab
+          cases={cases}
+          loading={loadingCases}
+          onRefresh={fetchCases}
+          focusCase={focusCase}
+          onFocusCaseHandled={() => setFocusCase(null)}
+        />
       )}
       {activeTab === "roles" && (
         <AdminRolesTab
@@ -418,6 +431,7 @@ export default function AdminPanelSection() {
           windowDays={staffActivityWindow}
           loading={loadingStaffActivity}
           onChangeWindow={handleChangeStaffActivityWindow}
+          onOpenCase={handleOpenStaleCase}
         />
       )}
     </div>

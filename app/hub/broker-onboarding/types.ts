@@ -11,6 +11,12 @@ export type PipelineStage =
 
 export interface ClientLead {
   id: string;
+  // Ver nota en lib/services/broker-service.ts ClientLeadData — denormalizado
+  // para que un caso creado por "Referir Cliente" no quede en desventaja
+  // frente a los otros 2 caminos de creación de casos.
+  brokerId?: string;
+  brokerName?: string;
+  brokerEmail?: string;
   name: string;
   email: string;
   phone: string;

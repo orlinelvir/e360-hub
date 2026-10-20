@@ -19,7 +19,8 @@ interface SoporteSectionProps {
 
 export default function SoporteSection({ onNavigateToServices }: SoporteSectionProps) {
   const [activeTab, setActiveTab] = useState<SupportTab>("ai");
-  
+  const [pendingAIQuestion, setPendingAIQuestion] = useState("");
+
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketV2 | null>(null);
 
   // Escalation Modal State
@@ -115,7 +116,11 @@ export default function SoporteSection({ onNavigateToServices }: SoporteSectionP
       <div className="min-h-[500px]">
         {activeTab === "ai" && (
           <div className="max-w-4xl mx-auto">
-            <AIChatWidget onEscalate={handleEscalate} />
+            <AIChatWidget
+              onEscalate={handleEscalate}
+              initialQuestion={pendingAIQuestion}
+              onInitialQuestionHandled={() => setPendingAIQuestion("")}
+            />
           </div>
         )}
 
@@ -141,7 +146,7 @@ export default function SoporteSection({ onNavigateToServices }: SoporteSectionP
 
         {activeTab === "faq" && (
           <div className="max-w-5xl mx-auto">
-            <FAQSection onAskAI={() => setActiveTab("ai")} />
+            <FAQSection onAskAI={(question) => { setPendingAIQuestion(question); setActiveTab("ai"); }} />
           </div>
         )}
 

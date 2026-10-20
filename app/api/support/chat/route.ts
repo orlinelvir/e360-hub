@@ -36,7 +36,16 @@ async function resolveGuideDocuments(slugs: string[]) {
       const guide = getGuideBySlug(slug);
       if (!guide) return null;
       try {
-        const [url] = await bucket.file(guide.storagePath).getSignedUrl({
+        const file = bucket.file(guide.storagePath);
+        // getSignedUrl firma la URL sin verificar que el objeto exista — sin
+        // este chequeo, una guía nunca subida a Storage generaba un enlace
+        // que el broker podía abrir y recibir un 404, en vez de omitirse.
+        const [exists] = await file.exists();
+        if (!exists) {
+          console.error(`Guía "${slug}" referenciada pero ausente en Storage: ${guide.storagePath}`);
+          return null;
+        }
+        const [url] = await file.getSignedUrl({
           action: "read",
           expires: Date.now() + GUIDE_SIGNED_URL_EXPIRY_MS
         });

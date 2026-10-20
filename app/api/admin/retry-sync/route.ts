@@ -63,21 +63,26 @@ export async function POST(request: Request) {
     let brokerContactId: string | null = client.ghlContactId || null;
     let brokerOpportunityId: string | null = client.ghlOpportunityId || null;
 
-    // Sincronizar al CRM del broker si no estaba creado
-    if (brokerLocationId && brokerApiKey && !brokerContactId) {
+    // Contacto y oportunidad se revisan por separado: un reintento anterior
+    // pudo haber creado el contacto pero fallado en la oportunidad (o
+    // viceversa) — antes este bloque se saltaba por completo si ya había
+    // contacto, dejando la oportunidad huérfana sin forma de sanarla.
+    if (brokerLocationId && brokerApiKey) {
       try {
-        const contactData = {
-          firstName,
-          lastName,
-          email,
-          phone,
-          source: "E360 Hub - Broker (Retry)",
-          tags: ["E360 Hub Lead", "Broker Referral"]
-        };
-        const res = await createGHLContact(contactData, brokerLocationId, brokerApiKey);
-        brokerContactId = res.contact?.id || null;
+        if (!brokerContactId) {
+          const contactData = {
+            firstName,
+            lastName,
+            email,
+            phone,
+            source: "E360 Hub - Broker (Retry)",
+            tags: ["E360 Hub Lead", "Broker Referral"]
+          };
+          const res = await createGHLContact(contactData, brokerLocationId, brokerApiKey);
+          brokerContactId = res.contact?.id || null;
+        }
 
-        if (brokerContactId) {
+        if (brokerContactId && !brokerOpportunityId) {
           brokerOpportunityId = await createOpportunityInPipeline({
             locationId: brokerLocationId,
             apiKey: brokerApiKey,
@@ -105,28 +110,34 @@ export async function POST(request: Request) {
     const centralLocationId = CENTRAL_CREDENTIALS[centralDepartment].locationId;
     const centralApiKey = CENTRAL_CREDENTIALS[centralDepartment].apiKey;
 
-    let centralContactId: string | null = null;
-    let centralOpportunityId: string | null = null;
+    // Antes esto nunca leía client.centralContactId y creaba un contacto
+    // nuevo en cada click de "Reintentar" — cada reintento dejaba un
+    // contacto/oportunidad duplicado en el CRM central, con valor monetario
+    // real. Mismo patrón de "crear solo si falta" que el lado del broker arriba.
+    let centralContactId: string | null = client.centralContactId || null;
+    let centralOpportunityId: string | null = client.centralOpportunityId || null;
 
     if (centralLocationId && centralApiKey) {
       try {
-        const contactData = {
-          firstName,
-          lastName,
-          email,
-          phone,
-          source: "E360 Hub - Central (Retry)",
-          tags: ["E360 Hub Lead", "Broker Attribution"],
-          customFields: [
-            { id: "Ro68oxRsiDgWQWJ0c0uO", key: "E360_Broker_ID", value: brokerId },
-            { id: "MgfZiiWQpH60JLH7le9i", key: "E360_Broker_Name", value: brokerName },
-            { id: "RdiSyHKjSCYOsGSfG1vh", key: "E360_Broker_Email", value: brokerEmail }
-          ]
-        };
-        const res = await createGHLContact(contactData, centralLocationId, centralApiKey);
-        centralContactId = res.contact?.id || null;
+        if (!centralContactId) {
+          const contactData = {
+            firstName,
+            lastName,
+            email,
+            phone,
+            source: "E360 Hub - Central (Retry)",
+            tags: ["E360 Hub Lead", "Broker Attribution"],
+            customFields: [
+              { id: "Ro68oxRsiDgWQWJ0c0uO", key: "E360_Broker_ID", value: brokerId },
+              { id: "MgfZiiWQpH60JLH7le9i", key: "E360_Broker_Name", value: brokerName },
+              { id: "RdiSyHKjSCYOsGSfG1vh", key: "E360_Broker_Email", value: brokerEmail }
+            ]
+          };
+          const res = await createGHLContact(contactData, centralLocationId, centralApiKey);
+          centralContactId = res.contact?.id || null;
+        }
 
-        if (centralContactId) {
+        if (centralContactId && !centralOpportunityId) {
           centralOpportunityId = await createOpportunityInPipeline({
             locationId: centralLocationId,
             apiKey: centralApiKey,

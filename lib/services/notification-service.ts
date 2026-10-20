@@ -1,5 +1,7 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { getRoleIdsForCluster } from "@/lib/roles";
+import { sendNewCreditRepairApplicationEmail } from "@/lib/email/send";
+import { resolvePipelineCluster } from "@/lib/service-routing";
 
 // "link" es el id de tab del Hub (ej. "clientes", "admin"), no una URL — el Hub
 // es de una sola página con navegación por tabs, así que basta con saber a qué
@@ -83,4 +85,68 @@ export async function findStaffUidsByRoles(roleIds: string[]): Promise<string[]>
  */
 export async function findStaffUidsForCluster(cluster: string): Promise<string[]> {
   return findStaffUidsByRoles(getRoleIdsForCluster(cluster));
+}
+
+/**
+ * Punto único de "entró un caso nuevo, avisa a quien corresponda" — antes
+ * cada ruta de creación de caso (services/submit, credit-repair-intake)
+ * tenía su propio bloque inline de notifyMany, y "Referir Cliente" no tenía
+ * ninguno; cualquiera podía quedar desalineado del resto sin que nadie lo
+ * notara. Centralizarlo aquí es lo que hace que agregar un canal nuevo (ej.
+ * el correo de Reparación de Crédito) solo requiera tocar un lugar.
+ */
+export async function notifyStaffOfNewCase(opts: {
+  cluster: string;
+  clientName: string;
+  serviceName: string;
+  brokerName: string;
+}): Promise<void> {
+  const staffUids = await findStaffUidsForCluster(opts.cluster);
+  await notifyMany(staffUids, {
+    title: "Nueva solicitud recibida",
+    message: `${opts.clientName} — ${opts.serviceName} (${opts.brokerName})`,
+    link: "admin"
+  });
+
+  // Reparación de Crédito: Fernando pidió explícitamente enterarse también
+  // por su correo personal (no hay todavía un rol dedicado de "operador de
+  // Reparación de Crédito" en el Hub — el restructuring con su hermano/JP
+  // sigue en planeación, así que por ahora el punto de contacto real es él).
+  if (opts.cluster === "credit_repair") {
+    await sendNewCreditRepairApplicationEmail({
+      brokerName: opts.brokerName,
+      clientName: opts.clientName
+    });
+  }
+}
+
+/**
+ * "Referir Cliente" (MisClientesSection) escribe el caso directo por el SDK
+ * de cliente y no pasa por ninguna ruta de servidor, así que —a diferencia
+ * de services/submit y credit-repair-intake— nunca disparaba una
+ * notificación de staff. Esta función es el hook que la ruta
+ * /api/broker/clients/notify-new-case llama justo después de guardar el
+ * caso, leyendo el documento ya escrito para no duplicar datos en el payload.
+ */
+export async function notifyStaffOfNewReferredCase(
+  brokerId: string,
+  clientId: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!adminDb) return { success: false, error: "Servidor no configurado" };
+
+  const clientRef = adminDb.collection("brokers").doc(brokerId).collection("clients").doc(clientId);
+  const clientSnap = await clientRef.get();
+  if (!clientSnap.exists) return { success: false, error: "Caso no encontrado" };
+
+  const client = clientSnap.data()!;
+  const cluster = resolvePipelineCluster(client.serviceId, client.serviceName);
+
+  await notifyStaffOfNewCase({
+    cluster,
+    clientName: client.name || "Cliente",
+    serviceName: client.serviceName || client.serviceId || "Servicio",
+    brokerName: client.brokerName || "Broker"
+  });
+
+  return { success: true };
 }

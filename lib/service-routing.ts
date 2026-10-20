@@ -14,6 +14,7 @@ export function resolvePipelineCluster(serviceId: string | undefined, serviceNam
   const name = (serviceName || "").toLowerCase();
   if (name.includes("real estate") || name.includes("hipotec") || name.includes("mortgage") || name.includes("dscr")) return "real_estate";
   if (name.includes("reparaci") || name.includes("repair")) return "credit_repair";
+  if (name.includes("deuda") || name.includes("debt") || name.includes("adiosdeudas")) return "debt_consolidation";
   if (name.includes("seguro") || name.includes("insurance")) return "seguros";
   if (name.includes("incorporat") || name.includes("llc") || name.includes("tax") || name.includes("impuesto") || name.includes("inmigra") || name.includes("payroll") || name.includes("pos")) return "corporativo";
   return "fondeo_rapido";

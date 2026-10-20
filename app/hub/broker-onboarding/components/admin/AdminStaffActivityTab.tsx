@@ -13,8 +13,15 @@ export interface StaffActivityItem {
   ticketReplies: number;
 }
 
+export interface StaleCase {
+  brokerId: string;
+  clientId: string;
+  name: string;
+  ageDays: number;
+}
+
 export interface BacklogByCluster {
-  [cluster: string]: { pendingDocs: number; inReview: number; staleCases: string[] };
+  [cluster: string]: { pendingDocs: number; inReview: number; staleCases: StaleCase[] };
 }
 
 interface AdminStaffActivityTabProps {
@@ -23,6 +30,7 @@ interface AdminStaffActivityTabProps {
   windowDays: number;
   loading: boolean;
   onChangeWindow: (days: number) => void;
+  onOpenCase: (brokerId: string, clientId: string) => void;
 }
 
 const CLUSTER_LABELS: Record<string, string> = {
@@ -33,7 +41,7 @@ const CLUSTER_LABELS: Record<string, string> = {
   corporativo: "Corporativo (LLC, Taxes)"
 };
 
-export default function AdminStaffActivityTab({ staff, backlogByCluster, windowDays, loading, onChangeWindow }: AdminStaffActivityTabProps) {
+export default function AdminStaffActivityTab({ staff, backlogByCluster, windowDays, loading, onChangeWindow, onOpenCase }: AdminStaffActivityTabProps) {
   const formatLastLogin = (login: StaffActivityItem["lastLogin"]) => {
     if (!login?.at) return "Sin registro";
     const date = new Date(login.at).toLocaleString("es-US", { dateStyle: "medium", timeStyle: "short" });
@@ -127,7 +135,13 @@ export default function AdminStaffActivityTab({ staff, backlogByCluster, windowD
                       <div className="mt-2 pt-2 border-t border-gray-800">
                         <p className="text-[10px] text-amber-400 font-bold uppercase mb-1">Atrasados (&gt;3 días)</p>
                         {data.staleCases.map((c, i) => (
-                          <p key={i} className="text-[11px] text-gray-500">{c}</p>
+                          <button
+                            key={i}
+                            onClick={() => onOpenCase(c.brokerId, c.clientId)}
+                            className="block w-full text-left text-[11px] text-gray-400 hover:text-cyan-400 hover:underline truncate"
+                          >
+                            {c.name} ({c.ageDays}d)
+                          </button>
                         ))}
                       </div>
                     )}

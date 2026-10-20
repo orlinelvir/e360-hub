@@ -33,9 +33,14 @@ const SUGGESTED_QUESTIONS = [
 
 interface AIChatWidgetProps {
   onEscalate: (context: string, conversationId: string | null) => void;
+  // Pregunta que el broker ya escribió en otro lado (ej. la búsqueda de FAQs
+  // sin resultados) — antes se perdía al cambiar de pestaña y el broker
+  // tenía que volver a escribirla desde cero.
+  initialQuestion?: string;
+  onInitialQuestionHandled?: () => void;
 }
 
-export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
+export default function AIChatWidget({ onEscalate, initialQuestion, onInitialQuestionHandled }: AIChatWidgetProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -128,6 +133,19 @@ export default function AIChatWidget({ onEscalate }: AIChatWidgetProps) {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!initialQuestion?.trim()) return;
+    // setTimeout evita el warning de "setState síncrono dentro de un efecto"
+    // (mismo patrón que TicketDetail.tsx) y le da un tick a `user` de useAuth.
+    setTimeout(() => {
+      handleSend(initialQuestion);
+      onInitialQuestionHandled?.();
+    }, 0);
+    // Solo debe dispararse una vez, al montar con la pregunta inicial — no en
+    // cada cambio de `handleSend` (se recrea en cada render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="bg-[#0A182D]/60 border border-gray-800 rounded-3xl flex flex-col h-[600px] overflow-hidden shadow-2xl relative">

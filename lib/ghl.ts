@@ -186,6 +186,7 @@ const CLUSTER_KEYWORDS: Record<string, string[]> = {
   fondeo_rapido: ["fondeo", "funding", "mca", "préstamo", "prestamo", "business loan", "personal loan", "tarjeta", "credit card", "capital"],
   real_estate: ["real estate", "bienes raíces", "bienes raices", "hipotec", "mortgage", "dscr", "inmobiliari"],
   credit_repair: ["credit repair", "reparación", "reparacion", "crédito", "credito", "disputa"],
+  debt_consolidation: ["debt", "deuda", "consolidation", "consolidación", "consolidacion", "settlement", "negociación", "negociacion"],
   seguros: ["seguro", "insurance", "póliza", "poliza", "trucking", "workers comp", "auto insurance"],
   corporativo: ["corporat", "legal", "incorporat", "llc", "empresa", "tax", "impuesto", "inmigra", "immigration", "payroll", "nómina", "nomina", "pos"]
 };

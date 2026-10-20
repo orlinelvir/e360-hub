@@ -110,3 +110,25 @@ export function deriveCaseStatus(raw: RawCaseStatus): { reviewStatus: ReviewStat
 export function justGotVerified(previous: ReviewStatus, next: ReviewStatus): boolean {
   return previous === "pending_docs" && next !== "pending_docs";
 }
+
+// Traduce el nombre de etapa/status que reporta el webhook de GHL
+// (app/api/webhooks/ghl/route.ts) al ReviewStatus autoritativo del Hub. Vive
+// aquí (no en el route handler) para poder probarla sin mockear Next.js/Firebase.
+export function mapGHLStageToHubStatus(stageName: string, ghlStatus: string): ReviewStatus {
+  const name = (stageName || "").toLowerCase();
+  const status = (ghlStatus || "").toLowerCase();
+
+  if (status === "won" || name.includes("fund") || name.includes("fondead") || name.includes("pagado") || name.includes("paid") || name.includes("closed won") || name.includes("emitida")) {
+    return "funded";
+  }
+  if (name.includes("approv") || name.includes("aprob") || name.includes("oferta") || name.includes("offer") || name.includes("firmado") || name.includes("contrato")) {
+    return "approved";
+  }
+  if (status === "lost" || status === "abandoned" || name.includes("lost") || name.includes("declin") || name.includes("reject") || name.includes("cancel") || name.includes("no califica")) {
+    return "rejected";
+  }
+  // Cualquier movimiento real de etapa en el pipeline de GHL (incluida esta
+  // rama por defecto) implica que alguien ya está trabajando el caso — nunca
+  // debe quedar clasificado como "pendiente de documentos".
+  return "in_review";
+}

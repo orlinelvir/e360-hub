@@ -11,10 +11,11 @@ import {
   Heart,
   ShieldCheck,
   Building,
+  HandCoins,
   type LucideIcon
 } from "lucide-react";
 
-export type PipelineCluster = "fondeo_rapido" | "real_estate" | "credit_repair" | "seguros" | "corporativo";
+export type PipelineCluster = "fondeo_rapido" | "real_estate" | "credit_repair" | "seguros" | "corporativo" | "debt_consolidation";
 
 export interface ServiceDetail {
   id: string;
@@ -38,6 +39,11 @@ export interface ServiceDetail {
   supportPhoneFormatted: string;
   // SLA opcional para mostrar compromisos de respuesta (ej. seguros: 24-48h).
   sla?: string;
+  // % de comisión real sobre `amount` que /api/services/submit debe aplicar
+  // (ej. 0.02 = 2%). Si no se define, cae al 5% genérico histórico — ver
+  // services/submit/route.ts. 0 significa "este servicio no maneja comisión
+  // en el Hub" (ej. Reparación de Crédito, donde el broker cobra aparte).
+  commissionRate?: number;
 }
 
 export const servicesData: ServiceDetail[] = [
@@ -213,7 +219,43 @@ export const servicesData: ServiceDetail[] = [
     comission: "100% del pago de inicio y de la cuota mensual de $50 cobrada al cliente.",
     formLink: "https://api.leadconnectorhq.com/widget/form/hXr9MAZMR8AHID3LC5cg",
     supportPhone: "https://wa.me/12013652055?text=Hola,%20necesito%20soporte%20con%20un%20caso%20de%20Reparaci%C3%B3n%20de%20Cr%C3%A9dito",
-    supportPhoneFormatted: "+1 (201) 365-2055 (WhatsApp)"
+    supportPhoneFormatted: "+1 (201) 365-2055 (WhatsApp)",
+    commissionRate: 0
+  },
+  {
+    id: "adios-deudas",
+    title: "AdiosDeudas — Negociación de Deudas",
+    icon: HandCoins,
+    category: "financial",
+    centralDepartment: "financial",
+    pipelineCluster: "debt_consolidation",
+    status: "active",
+    statusLabel: "Activo",
+    // Ojo: esto es "negociación de deudas" (debt settlement), NO lo mismo que
+    // "personal-loan" (préstamo de consolidación, requiere 700+ FICO). Son
+    // productos distintos para perfiles distintos — ver requirements abajo.
+    description: "Programa de negociación de deudas sin garantía (tarjetas de crédito, préstamos personales, biles médicos y cuentas en colección) en alianza con Quantum Debt Solutions (marca AdiosDeudas, presentado por Roberto Saldivar / Mr Finanzas). Es para el cliente que YA NO PUEDE sostener sus pagos — no requiere buen crédito. Se ahorra hasta un 25% del total de la deuda y deja de pagar intereses, agrupando todo en un solo pago mensual más bajo (ej. de $1,500 a $450). Incluye protección legal durante el proceso. Se recomienda combinarlo con Reparación de Crédito una vez haya acuerdo con los acreedores, para limpiar las marcas negativas que deja el programa.",
+    requirements: [
+      "Mínimo $7,000 en una o varias deudas no garantizadas combinadas que el cliente ya no pueda sostener pagando (no es por score — un cliente con 650+ que SÍ puede sostener sus pagos debería ir mejor a Préstamo Personal/consolidación convencional)",
+      "Tipos de deuda que califican: tarjetas de crédito, préstamos personales sin garantía (no aplica si está garantizado por el título de un carro), biles médicos, cuentas en colección, y algunos préstamos estudiantiles privados (no federales)",
+      "Reporte de crédito reciente en PDF (ideal, auto-popula las deudas en la plataforma de Quantum) o una lista manual de cada cuenta con su acreedor y saldo",
+      "Información básica de presupuesto del cliente (ingreso mensual aproximado y gastos) para confirmar que puede sostener el nuevo pago del programa"
+    ],
+    process: [
+      "Revisar el reporte de crédito del cliente (o lista de deudas) para confirmar que suma $7,000+ en cuentas elegibles.",
+      "Entrar a la plataforma de Quantum Debt Solutions (botón de abajo) con el nombre del broker y del cliente.",
+      "El cliente completa un presupuesto simple y sube su reporte de crédito (o se cargan las deudas manualmente).",
+      "El cliente elige qué deudas incluir y un plan de pago (24, 36 o 48 meses) — la plataforma muestra el pago mensual y el ahorro estimado.",
+      "El cliente firma el acuerdo (llega por correo) y agrega su cuenta bancaria para los pagos mensuales a un escrow asegurado por la FDIC.",
+      "El equipo de Roberto llama al cliente para verificar y explicar el programa antes de activarlo.",
+      "Una vez haya acuerdo (sérum) con cada acreedor (3-6 meses después, cuando hay fondos suficientes en el escrow), inicia Reparación de Crédito para limpiar las cuentas negativas."
+    ],
+    timeframe: "Admisión del cliente: 15-20 minutos. Las cuentas se dan de baja (charge-off) a los 90-120 días de dejar de pagarlas. Negociación con cada acreedor: 3 a 6 meses tras acumular fondos suficientes. Duración total del plan: 24, 36 o 48 meses según lo que elija el cliente.",
+    comission: "2% sobre el monto bruto total de la deuda enrolada (ej. $20,000 en deuda = $400 de comisión; $40,000 = $800). Emprende 360 paga directo al broker, una sola vez, después de que el cliente complete su segundo pago mensual (así se evitan contracargos si cancela después del primero). Adicional: el broker puede cobrar su propia tarifa de consulta por la evaluación financiera completa, a su discreción — es un ingreso aparte que el broker cobra directo, no se gestiona en el Hub.",
+    formLink: "https://peace.quantumdebtsolutions.com",
+    supportPhone: "mailto:support@quantumdebtsolutions.com",
+    supportPhoneFormatted: "support@quantumdebtsolutions.com (Quantum Debt Solutions)",
+    commissionRate: 0.02
   },
   {
     id: "incorporation",

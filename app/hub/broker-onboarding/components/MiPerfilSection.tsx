@@ -58,8 +58,14 @@ const createCleanProfile = (name: string): BrokerProfileData => ({
   totalVolumeProcessed: 0,
   totalCommissionsPaid: 0,
   documentsStatus: {
+    // El Acuerdo de Broker sí se firma digitalmente al aceptar el checkbox de
+    // términos en el registro — ese sí es cierto para todo broker con cuenta.
     brokerAgreement: true,
-    w9Form: true,
+    // El W-9 NO tiene ningún flujo real de carga/verificación en el producto
+    // hoy (solo un link para descargar el formulario en blanco) — antes esto
+    // decía "Activo" para todos sin excepción, sin que nadie lo hubiera
+    // enviado nunca. Queda en false hasta que exista un mecanismo real.
+    w9Form: false,
     directDepositAuth: false
   }
 });
@@ -598,8 +604,12 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
                 <FileCheck size={18} className="text-emerald-400" />
                 <span>Documentos & Compliance (W-9)</span>
               </h3>
-              <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-bold">
-                EN REGLA
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                profile.documentsStatus?.brokerAgreement && profile.documentsStatus?.w9Form
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+              }`}>
+                {profile.documentsStatus?.brokerAgreement && profile.documentsStatus?.w9Form ? "EN REGLA" : "PENDIENTE"}
               </span>
             </div>
 
@@ -612,18 +622,24 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
                     <p className="text-[10px] text-gray-400">Firmado digitalmente en el registro</p>
                   </div>
                 </div>
-                <CheckCircle2 size={16} className="text-emerald-400" />
+                {profile.documentsStatus?.brokerAgreement ? (
+                  <CheckCircle2 size={16} className="text-emerald-400" />
+                ) : (
+                  <span className="text-[10px] font-bold text-amber-400 font-mono">Pendiente</span>
+                )}
               </div>
 
               <div className="p-3 bg-[#05101F] border border-gray-800 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Shield size={18} className="text-emerald-400" />
+                  <Shield size={18} className={profile.documentsStatus?.w9Form ? "text-emerald-400" : "text-amber-400"} />
                   <div>
                     <p className="text-xs font-bold text-white">Formulario Fiscal W-9 (IRS)</p>
                     <p className="text-[10px] text-gray-400">Requerido para desembolso de comisiones 1099</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-400 font-mono">Activo</span>
+                <span className={`text-[10px] font-bold font-mono ${profile.documentsStatus?.w9Form ? "text-emerald-400" : "text-amber-400"}`}>
+                  {profile.documentsStatus?.w9Form ? "Activo" : "Pendiente"}
+                </span>
               </div>
             </div>
           </div>

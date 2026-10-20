@@ -15,6 +15,14 @@ export type { BrokerProfileData };
 
 export interface ClientLeadData {
   id?: string;
+  // Denormalizado al crear el caso — "Admitir Cliente" y el intake de
+  // Reparación de Crédito ya lo guardan; "Referir Cliente" no lo hacía,
+  // dejando estos 3 campos vacíos para esos casos específicos (el broker
+  // dueño seguía siendo inferible por la ruta de Firestore, pero cualquier
+  // consulta futura que dependa del campo en vez de la ruta los vería en blanco).
+  brokerId?: string;
+  brokerName?: string;
+  brokerEmail?: string;
   name: string;
   email: string;
   phone?: string;

@@ -26,6 +26,9 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
   // Encuesta de satisfacción (1-5) — solo se responde una vez, al ticket resuelto.
   const [rating, setRating] = useState<number | null>(ticket.rating ?? null);
   const [ratingBusy, setRatingBusy] = useState(false);
+  // Antes responder/reabrir/calificar solo logueaban el error en consola —
+  // el broker nunca se enteraba de que su acción no funcionó.
+  const [actionError, setActionError] = useState("");
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -48,6 +51,7 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
   const handleReopen = async () => {
     if (!user) return;
     setReopening(true);
+    setActionError("");
     try {
       const token = await user.getIdToken();
       const res = await fetch("/api/support/tickets", {
@@ -55,9 +59,15 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ticketId: ticket.id, status: "open" })
       });
-      if (res.ok) setLocalStatus("open");
+      if (res.ok) {
+        setLocalStatus("open");
+      } else {
+        const data = await res.json().catch(() => null);
+        setActionError(data?.error || "No se pudo reabrir el ticket. Intenta de nuevo.");
+      }
     } catch (err) {
       console.error("Error reabriendo ticket:", err);
+      setActionError("No se pudo reabrir el ticket. Revisa tu conexión e intenta de nuevo.");
     } finally {
       setReopening(false);
     }
@@ -66,6 +76,7 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
   const handleRate = async (value: number) => {
     if (!user || rating !== null || ratingBusy) return;
     setRatingBusy(true);
+    setActionError("");
     const optimistic = rating;
     setRating(value); // feedback inmediato de las estrellas
     try {
@@ -75,10 +86,15 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ticketId: ticket.id, rating: value })
       });
-      if (!res.ok) setRating(optimistic); // revierte si el servidor rechazó
+      if (!res.ok) {
+        setRating(optimistic); // revierte si el servidor rechazó
+        const data = await res.json().catch(() => null);
+        setActionError(data?.error || "No se pudo guardar tu calificación. Intenta de nuevo.");
+      }
     } catch (err) {
       console.error("Error calificando ticket:", err);
       setRating(optimistic);
+      setActionError("No se pudo guardar tu calificación. Revisa tu conexión e intenta de nuevo.");
     } finally {
       setRatingBusy(false);
     }
@@ -111,6 +127,7 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
   const handleSendReply = async () => {
     if (!user || !reply.trim()) return;
     setSending(true);
+    setActionError("");
     try {
       const token = await user.getIdToken();
       const res = await fetch("/api/support/tickets/messages", {
@@ -122,9 +139,13 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
         const data = await res.json();
         setMessages((prev) => [...prev, data.message]);
         setReply("");
+      } else {
+        const data = await res.json().catch(() => null);
+        setActionError(data?.error || "No se pudo enviar tu respuesta. Intenta de nuevo.");
       }
     } catch (err) {
       console.error("Error enviando respuesta:", err);
+      setActionError("No se pudo enviar tu respuesta. Revisa tu conexión e intenta de nuevo.");
     } finally {
       setSending(false);
     }
@@ -258,6 +279,14 @@ export default function TicketDetail({ ticket, onBack }: TicketDetailProps) {
           ))
         )}
       </div>
+
+      {actionError && (
+        <div className="px-4 pt-3 bg-[#05101F]/90">
+          <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+            {actionError}
+          </p>
+        </div>
+      )}
 
       {/* Reply Input */}
       {localStatus !== "resolved" ? (

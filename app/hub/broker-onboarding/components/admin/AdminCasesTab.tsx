@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -20,10 +20,17 @@ import {
   FileText,
   Paperclip,
   Download,
-  Send
+  Send,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  Layers
 } from "lucide-react";
 import { CaseNote, CaseNoteCategory, CaseDocument } from "../../types";
 import { ReviewStatus, SyncStatus, REVIEW_STATUS_META, SYNC_STATUS_META, VALID_REVIEW_STATUSES } from "@/lib/services/case-status";
+import { useHubHeaderOffset } from "../../hooks/useHubHeaderOffset";
 
 export interface CaseItem {
   id: string;
@@ -47,20 +54,131 @@ export interface CaseItem {
   adminNotes?: string;
   ghlContactId?: string;
   ghlOpportunityId?: string;
+  // Solo Reparación de Crédito — no tiene Monto/Comisión (no maneja comisión
+  // en el Hub, eso lo decide el broker directamente), en su lugar se muestra
+  // el estado de la ronda de seguimiento de $10/mes.
+  feeRoundNumber?: number;
+  feeRoundStatus?: string;
 }
 
 interface AdminCasesTabProps {
   cases: CaseItem[];
   loading: boolean;
   onRefresh: () => void;
+  // Para saltar directo a un caso desde otra pestaña (ej. "casos atrasados"
+  // en Actividad del Staff) en vez de solo mostrar el nombre sin acción posible.
+  focusCase?: { brokerId: string; clientId: string } | null;
+  onFocusCaseHandled?: () => void;
 }
 
-export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesTabProps) {
+const CLUSTER_META: Record<string, { emoji: string; label: string }> = {
+  fondeo_rapido: { emoji: "💳", label: "Fondeo Rápido (MCA, Loans)" },
+  real_estate: { emoji: "🏠", label: "Real Estate & Hipotecas" },
+  credit_repair: { emoji: "⚖️", label: "Reparación de Crédito" },
+  debt_consolidation: { emoji: "🤝", label: "Negociación de Deudas (AdiosDeudas)" },
+  seguros: { emoji: "🛡️", label: "Seguros & Pólizas" },
+  corporativo: { emoji: "🏢", label: "Corporativo (LLC, Taxes)" }
+};
+
+type SortKey = "name" | "amount" | "estimatedCommission" | "reviewStatus" | "createdAt";
+
+// Definido fuera de AdminCasesTab (no inline) para que no se recree en cada
+// render — ver react-hooks/static-components. El encabezado del grupo es
+// sticky, apilado debajo del thead (que a su vez está debajo de la barra de
+// filtros, que está debajo del header del Hub) — mismo patrón de capas.
+function RowGroup({
+  badge,
+  count,
+  items,
+  collapsed,
+  onToggle,
+  top,
+  renderRow
+}: {
+  badge: React.ReactNode;
+  count: number;
+  items: CaseItem[];
+  collapsed: boolean;
+  onToggle: () => void;
+  top: number;
+  renderRow: (c: CaseItem) => React.ReactNode;
+}) {
+  return (
+    <>
+      <tr style={{ top }} className="sticky z-[15]">
+        <td colSpan={8} className="p-0 border-y border-gray-800">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 bg-[#05101F] hover:bg-[#0A182D] transition-colors text-left"
+          >
+            {collapsed ? <ChevronRight size={14} className="text-gray-500 shrink-0" /> : <ChevronDown size={14} className="text-gray-500 shrink-0" />}
+            {badge}
+            <span className="text-[10px] text-gray-500 font-mono">({count})</span>
+          </button>
+        </td>
+      </tr>
+      {!collapsed && items.map((c) => renderRow(c))}
+    </>
+  );
+}
+
+export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, onFocusCaseHandled }: AdminCasesTabProps) {
   const [search, setSearch] = useState<string>("");
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
   const [selectedServiceId, setSelectedServiceId] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedBroker, setSelectedBroker] = useState<string>("all");
+  // Por defecto el más reciente primero — es el orden que ya tenían los
+  // casos al llegar del backend, así que ordenar no cambia el comportamiento
+  // visible hasta que el admin elige otra columna.
+  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  // "Por Estado" convierte la tabla plana en bloques colapsables (Linear
+  // llama a esto "grouping") — el pedido original era literalmente "veo todo
+  // amontonado", y agrupar por Estado es lo que más lo resuelve de un tiro.
+  const [groupBy, setGroupBy] = useState<"none" | "status">("none");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroupCollapsed = (key: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  // La barra de filtros, el thead de la tabla y (si hay agrupación activa) el
+  // encabezado de cada grupo son sticky, apilados justo debajo del header
+  // principal del Hub (que también es sticky) — se miden en vivo en vez de
+  // usar px fijos para no depender de que nadie recalcule esto a mano si el
+  // header o la barra cambian de alto.
+  const headerOffset = useHubHeaderOffset();
+  const filterBarRef = useRef<HTMLDivElement>(null);
+  const [filterBarHeight, setFilterBarHeight] = useState<number>(0);
+  const theadRef = useRef<HTMLTableSectionElement>(null);
+  const [theadHeight, setTheadHeight] = useState<number>(0);
+
+  useEffect(() => {
+    if (!filterBarRef.current) return;
+    const el = filterBarRef.current;
+    const update = () => setFilterBarHeight(el.offsetHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!theadRef.current) return;
+    const el = theadRef.current;
+    const update = () => setTheadHeight(el.offsetHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Modal de Detalle / Edición
   const [activeCase, setActiveCase] = useState<CaseItem | null>(null);
@@ -86,6 +204,17 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
   };
+
+  // Clusters realmente presentes en `cases` — que ya viene filtrado server-side
+  // por los `allowedClusters` del rol de quien ve la pantalla (igual que
+  // uniqueBrokers/uniqueServiceTypes abajo). Antes el <select> mostraba los 5
+  // clusters fijos sin importar el rol, así que un especialista de un solo
+  // cluster veía 4 opciones que siempre iban a devolver cero resultados.
+  const uniqueClusters = useMemo(() => {
+    const set = new Set<string>();
+    cases.forEach((c) => { if (c.pipelineCluster) set.add(c.pipelineCluster); });
+    return Array.from(set);
+  }, [cases]);
 
   // Lista única de brokers para el dropdown
   const uniqueBrokers = useMemo(() => {
@@ -115,7 +244,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
 
   // Filtrado reactivo
   const filteredCases = useMemo(() => {
-    return cases.filter((c) => {
+    const filtered = cases.filter((c) => {
       // Búsqueda
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -145,7 +274,58 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
       }
       return true;
     });
-  }, [cases, search, selectedCluster, selectedServiceId, selectedStatus, selectedBroker]);
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      switch (sortKey) {
+        case "name":
+          return a.name.localeCompare(b.name) * dir;
+        case "amount":
+          return (a.amount - b.amount) * dir;
+        case "estimatedCommission":
+          return (a.estimatedCommission - b.estimatedCommission) * dir;
+        case "reviewStatus": {
+          const ai = VALID_REVIEW_STATUSES.indexOf(a.reviewStatus as ReviewStatus);
+          const bi = VALID_REVIEW_STATUSES.indexOf(b.reviewStatus as ReviewStatus);
+          return (ai - bi) * dir;
+        }
+        case "createdAt":
+        default:
+          return a.createdAt.localeCompare(b.createdAt) * dir;
+      }
+    });
+  }, [cases, search, selectedCluster, selectedServiceId, selectedStatus, selectedBroker, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      // Monto/Comisión/Fecha tiene más sentido empezar de mayor a menor;
+      // Cliente/Estado de menor a mayor (alfabético / orden del pipeline).
+      setSortDir(key === "amount" || key === "estimatedCommission" || key === "createdAt" ? "desc" : "asc");
+    }
+  };
+
+  const getSortIcon = (column: SortKey) => {
+    if (sortKey !== column) return <ArrowUpDown size={11} className="text-gray-600" />;
+    return sortDir === "asc" ? <ArrowUp size={11} className="text-cyan-400" /> : <ArrowDown size={11} className="text-cyan-400" />;
+  };
+
+  // Grupos por Estado, en el orden lógico del pipeline (no alfabético) — se
+  // respeta el orden/columna elegidos dentro de cada grupo, ya que parten de
+  // filteredCases que ya viene ordenado.
+  const groupedCases = useMemo(() => {
+    if (groupBy !== "status") return null;
+    const groups = new Map<string, CaseItem[]>();
+    VALID_REVIEW_STATUSES.forEach((status) => groups.set(status, []));
+    filteredCases.forEach((c) => {
+      const key = VALID_REVIEW_STATUSES.includes(c.reviewStatus as ReviewStatus) ? c.reviewStatus : "pending_docs";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(c);
+    });
+    return Array.from(groups.entries()).filter(([, items]) => items.length > 0);
+  }, [filteredCases, groupBy]);
 
   // KPIs agregados de la selección actual
   const kpis = useMemo(() => {
@@ -211,6 +391,21 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
     fetchCaseDocuments(c.brokerId, c.id);
   };
 
+  useEffect(() => {
+    if (!focusCase) return;
+    const match = cases.find((c) => c.brokerId === focusCase.brokerId && c.id === focusCase.clientId);
+    if (!match) return;
+    // setTimeout evita el warning de "setState síncrono dentro de un efecto"
+    // (mismo patrón ya usado en TicketDetail.tsx).
+    setTimeout(() => {
+      openDetailModal(match);
+      onFocusCaseHandled?.();
+    }, 0);
+    // openDetailModal se recrea en cada render — solo debe reaccionar a que
+    // cambie el caso objetivo o a que termine de cargar la lista de casos.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusCase, cases]);
+
   const handleSaveCase = async (statusOverride?: string) => {
     if (!activeCase) return;
     setSaving(true);
@@ -223,7 +418,10 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
           brokerId: activeCase.brokerId,
           clientId: activeCase.id,
           reviewStatus: statusOverride || editStatus,
-          estimatedCommission: Number(editCommission) || 0,
+          // Reparación de Crédito no maneja comisión en el Hub — ver
+          // isCreditRepair/getFeeRoundLabel. El backend también lo ignora
+          // aunque se envíe, pero ni lo intentamos desde acá.
+          ...(isCreditRepair(activeCase) ? {} : { estimatedCommission: Number(editCommission) || 0 }),
           statusReason: statusReason.trim() || undefined,
         }),
       });
@@ -369,6 +567,8 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
         return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase">Real Estate</span>;
       case "credit_repair":
         return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/10 text-purple-400 border border-purple-500/30 uppercase">Rep. Crédito</span>;
+      case "debt_consolidation":
+        return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 uppercase">AdiosDeudas</span>;
       case "seguros":
         return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 uppercase">Seguros</span>;
       case "corporativo":
@@ -377,6 +577,81 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
         return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-gray-800 text-gray-400 uppercase">{cluster}</span>;
     }
   };
+
+  const isCreditRepair = (c: CaseItem) => c.pipelineCluster === "credit_repair";
+
+  // Reparación de Crédito no tiene Monto ni Comisión reales — es una cuota
+  // mensual de $10 de seguimiento, no un préstamo con comisión de broker.
+  // Fernando fue explícito: nada de costos/comisión para esta vertical en
+  // el Hub, eso lo decide el broker directamente con su cliente.
+  const getFeeRoundLabel = (c: CaseItem) => {
+    if (!c.feeRoundNumber) return "Sin ronda de seguimiento aún";
+    const paid = c.feeRoundStatus === "paid";
+    return `Ronda ${c.feeRoundNumber} · ${paid ? "Pagada" : "Pendiente de Pago"}`;
+  };
+
+  const renderCaseRow = (c: CaseItem) => (
+    <tr key={`${c.brokerId}-${c.id}`} className="hover:bg-[#05101F]/80 transition-colors">
+      <td className="p-4">
+        <p className="font-bold text-white text-sm">{c.name}</p>
+        <p className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
+          <Mail size={12} /> {c.email || "(sin email)"}
+        </p>
+        {c.phone && (
+          <p className="text-[11px] text-gray-500 flex items-center gap-1">
+            <Phone size={12} /> {c.phone}
+          </p>
+        )}
+      </td>
+      <td className="p-4">
+        <p className="font-semibold text-gray-200">{c.serviceName}</p>
+        <div className="mt-1">{getClusterBadge(c.pipelineCluster)}</div>
+      </td>
+      <td className="p-4">
+        <p className="font-bold text-cyan-400">{c.brokerName}</p>
+        <span className="text-[10px] text-gray-500 font-mono">{c.brokerTier}</span>
+      </td>
+      {isCreditRepair(c) ? (
+        <td colSpan={2} className="p-4 text-center">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/30">
+            {getFeeRoundLabel(c)}
+          </span>
+        </td>
+      ) : (
+        <>
+          <td className="p-4 text-right font-mono font-bold text-emerald-400 text-sm">
+            {formatMoney(c.amount)}
+          </td>
+          <td className="p-4 text-right font-mono font-bold text-cyan-300 text-sm">
+            {formatMoney(c.estimatedCommission)}
+          </td>
+        </>
+      )}
+      <td className="p-4 text-center">
+        <div className="flex flex-col items-center gap-1">
+          {getStatusBadge(c.reviewStatus)}
+          {c.syncStatus === "failed" && getSyncBadge(c.syncStatus)}
+        </div>
+      </td>
+      <td className="p-4 text-center text-gray-500 font-mono text-[11px]">
+        <div>{c.createdAt || "—"}</div>
+        {c.lastActivity && (
+          <div className="text-gray-600 mt-0.5 truncate max-w-[160px]" title={c.lastActivity}>
+            {c.lastActivity}
+          </div>
+        )}
+      </td>
+      <td className="p-4 text-center">
+        <button
+          onClick={() => openDetailModal(c)}
+          className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5"
+        >
+          <Edit3 size={13} />
+          <span>Gestionar</span>
+        </button>
+      </td>
+    </tr>
+  );
 
   return (
     <div className="space-y-6">
@@ -412,8 +687,13 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
         </div>
       </div>
 
-      {/* 2. Barra de Filtros y Búsqueda */}
-      <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4 space-y-3">
+      {/* 2. Barra de Filtros y Búsqueda — sticky justo debajo del header del Hub,
+          para que no se pierda al bajar por un Master Feed largo. */}
+      <div
+        ref={filterBarRef}
+        style={{ top: headerOffset }}
+        className="sticky z-30 bg-[#0B1C33] border border-gray-800 rounded-2xl p-4 space-y-3 shadow-lg shadow-black/20"
+      >
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Buscador */}
           <div className="relative md:col-span-1">
@@ -435,11 +715,14 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
               className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500"
             >
               <option value="all">📁 Todos los Clusters</option>
-              <option value="fondeo_rapido">💳 Fondeo Rápido (MCA, Loans)</option>
-              <option value="real_estate">🏠 Real Estate & Hipotecas</option>
-              <option value="credit_repair">⚖️ Reparación de Crédito</option>
-              <option value="seguros">🛡️ Seguros & Pólizas</option>
-              <option value="corporativo">🏢 Corporativo (LLC, Taxes)</option>
+              {uniqueClusters.map((cluster) => {
+                const meta = CLUSTER_META[cluster];
+                return (
+                  <option key={cluster} value={cluster}>
+                    {meta ? `${meta.emoji} ${meta.label}` : cluster}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -487,6 +770,29 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
             </select>
           </div>
         </div>
+
+        <div className="flex items-center gap-2 pt-1 border-t border-gray-800/60">
+          <Layers size={13} className="text-gray-500" />
+          <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Agrupar por:</span>
+          <button
+            type="button"
+            onClick={() => setGroupBy("none")}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-colors ${
+              groupBy === "none" ? "bg-cyan-500 text-black" : "bg-[#05101F] text-gray-400 hover:text-white border border-gray-800"
+            }`}
+          >
+            Sin agrupar
+          </button>
+          <button
+            type="button"
+            onClick={() => setGroupBy("status")}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-colors ${
+              groupBy === "status" ? "bg-cyan-500 text-black" : "bg-[#05101F] text-gray-400 hover:text-white border border-gray-800"
+            }`}
+          >
+            Estado
+          </button>
+        </div>
       </div>
 
       {/* 3. Tabla Principal de Casos */}
@@ -503,66 +809,57 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
         <div className="bg-[#0A182D]/50 border border-gray-800 rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-gray-300">
-              <thead className="sticky top-0 z-10 bg-[#05101F] text-gray-400 uppercase font-mono text-[10px] tracking-wider border-b border-gray-800">
+              <thead
+                ref={theadRef}
+                style={{ top: headerOffset + filterBarHeight }}
+                className="sticky z-20 bg-[#05101F] text-gray-400 uppercase font-mono text-[10px] tracking-wider border-b border-gray-800"
+              >
                 <tr>
-                  <th className="p-4">Cliente / Solicitante</th>
+                  <th className="p-4">
+                    <button type="button" onClick={() => toggleSort("name")} className="flex items-center gap-1 hover:text-white transition-colors">
+                      Cliente / Solicitante {getSortIcon("name")}
+                    </button>
+                  </th>
                   <th className="p-4">Servicio & Cluster</th>
                   <th className="p-4">Broker Atribuido</th>
-                  <th className="p-4 text-right">Monto</th>
-                  <th className="p-4 text-right">Comisión</th>
-                  <th className="p-4 text-center">Estado</th>
-                  <th className="p-4 text-center">Fecha</th>
+                  <th className="p-4 text-right">
+                    <button type="button" onClick={() => toggleSort("amount")} className="flex items-center gap-1 ml-auto hover:text-white transition-colors">
+                      Monto {getSortIcon("amount")}
+                    </button>
+                  </th>
+                  <th className="p-4 text-right">
+                    <button type="button" onClick={() => toggleSort("estimatedCommission")} className="flex items-center gap-1 ml-auto hover:text-white transition-colors">
+                      Comisión {getSortIcon("estimatedCommission")}
+                    </button>
+                  </th>
+                  <th className="p-4 text-center">
+                    <button type="button" onClick={() => toggleSort("reviewStatus")} className="flex items-center gap-1 mx-auto hover:text-white transition-colors">
+                      Estado {getSortIcon("reviewStatus")}
+                    </button>
+                  </th>
+                  <th className="p-4 text-center">
+                    <button type="button" onClick={() => toggleSort("createdAt")} className="flex items-center gap-1 mx-auto hover:text-white transition-colors">
+                      Fecha / Última Actividad {getSortIcon("createdAt")}
+                    </button>
+                  </th>
                   <th className="p-4 text-center">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800/60">
-                {filteredCases.map((c) => (
-                  <tr key={`${c.brokerId}-${c.id}`} className="hover:bg-[#05101F]/80 transition-colors">
-                    <td className="p-4">
-                      <p className="font-bold text-white text-sm">{c.name}</p>
-                      <p className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
-                        <Mail size={12} /> {c.email || "(sin email)"}
-                      </p>
-                      {c.phone && (
-                        <p className="text-[11px] text-gray-500 flex items-center gap-1">
-                          <Phone size={12} /> {c.phone}
-                        </p>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      <p className="font-semibold text-gray-200">{c.serviceName}</p>
-                      <div className="mt-1">{getClusterBadge(c.pipelineCluster)}</div>
-                    </td>
-                    <td className="p-4">
-                      <p className="font-bold text-cyan-400">{c.brokerName}</p>
-                      <span className="text-[10px] text-gray-500 font-mono">{c.brokerTier}</span>
-                    </td>
-                    <td className="p-4 text-right font-mono font-bold text-emerald-400 text-sm">
-                      {formatMoney(c.amount)}
-                    </td>
-                    <td className="p-4 text-right font-mono font-bold text-cyan-300 text-sm">
-                      {formatMoney(c.estimatedCommission)}
-                    </td>
-                    <td className="p-4 text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        {getStatusBadge(c.reviewStatus)}
-                        {c.syncStatus === "failed" && getSyncBadge(c.syncStatus)}
-                      </div>
-                    </td>
-                    <td className="p-4 text-center text-gray-500 font-mono text-[11px]">
-                      {c.createdAt || "—"}
-                    </td>
-                    <td className="p-4 text-center">
-                      <button
-                        onClick={() => openDetailModal(c)}
-                        className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5"
-                      >
-                        <Edit3 size={13} />
-                        <span>Gestionar</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {groupedCases
+                  ? groupedCases.map(([status, items]) => (
+                      <RowGroup
+                        key={status}
+                        badge={getStatusBadge(status)}
+                        count={items.length}
+                        items={items}
+                        collapsed={collapsedGroups.has(status)}
+                        onToggle={() => toggleGroupCollapsed(status)}
+                        top={headerOffset + filterBarHeight + theadHeight}
+                        renderRow={renderCaseRow}
+                      />
+                    ))
+                  : filteredCases.map((c) => renderCaseRow(c))}
               </tbody>
             </table>
           </div>
@@ -606,7 +903,11 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
                   <p className="text-[10px] text-gray-500 uppercase font-mono font-bold">Datos del Solicitante</p>
                   <p className="text-gray-300"><strong>Email:</strong> {activeCase.email || "—"}</p>
                   <p className="text-gray-300"><strong>Teléfono:</strong> {activeCase.phone || "—"}</p>
-                  <p className="text-gray-300"><strong>Monto Solicitado:</strong> {formatMoney(activeCase.amount)}</p>
+                  {isCreditRepair(activeCase) ? (
+                    <p className="text-gray-300"><strong>Seguimiento:</strong> {getFeeRoundLabel(activeCase)}</p>
+                  ) : (
+                    <p className="text-gray-300"><strong>Monto Solicitado:</strong> {formatMoney(activeCase.amount)}</p>
+                  )}
                 </div>
 
                 <div className="bg-[#05101F] p-4 rounded-xl border border-gray-800 space-y-2">
@@ -688,17 +989,31 @@ export default function AdminCasesTab({ cases, loading, onRefresh }: AdminCasesT
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-300 uppercase mb-1.5">
-                    Comisión Broker ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={editCommission}
-                    onChange={(e) => setEditCommission(e.target.value)}
-                    className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
+                {isCreditRepair(activeCase) ? (
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-300 uppercase mb-1.5">
+                      Seguimiento de $10/mes
+                    </label>
+                    <div className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs text-gray-300">
+                      {getFeeRoundLabel(activeCase)}
+                      <p className="text-[10px] text-gray-500 mt-1 normal-case font-normal">
+                        Reparación de Crédito no maneja comisión en el Hub — eso lo define el broker directamente con su cliente.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-300 uppercase mb-1.5">
+                      Comisión Broker ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={editCommission}
+                      onChange={(e) => setEditCommission(e.target.value)}
+                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                )}
               </div>
 
               {editStatus === "rejected" && (

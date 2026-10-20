@@ -4,6 +4,9 @@ import { resolveBrokerCredentials } from "@/lib/resolve-broker-credentials";
 import { createGHLContact, createOpportunityInPipeline } from "@/lib/ghl";
 import { encrypt } from "@/lib/crypto";
 import { sendWelcomeApplicationEmail } from "@/lib/email/send";
+import { checkRateLimit } from "@/lib/services/rate-limit-service";
+import { notifyStaffOfNewCase } from "@/lib/services/notification-service";
+import { createCRCLead } from "@/lib/credit-repair-cloud";
 
 // Vercel limita el tamaño del body de las funciones serverless (4.5MB en la mayoría
 // de los planes) — nos quedamos debajo de eso para no depender de configuración extra.
@@ -11,6 +14,8 @@ const MAX_PROOF_SIZE = 4 * 1024 * 1024;
 const ALLOWED_PROOF_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 const CREDIT_REPAIR_FEE_AMOUNT = 10;
+const RATE_LIMIT_MAX = 15;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 export async function POST(request: Request) {
   const user = await verifyAuthToken(request);
@@ -20,6 +25,15 @@ export async function POST(request: Request) {
 
   if (!adminDb || !adminStorage) {
     return NextResponse.json({ error: "Servidor no configurado" }, { status: 500 });
+  }
+
+  const rateLimit = await checkRateLimit(user.uid, "credit-repair-intake", RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+  if (!rateLimit.allowed) {
+    const retrySeconds = Math.ceil((rateLimit.retryAfterMs || 0) / 1000);
+    return NextResponse.json(
+      { error: `Demasiadas solicitudes seguidas. Intenta de nuevo en ${retrySeconds} segundos.` },
+      { status: 429 }
+    );
   }
 
   try {
@@ -205,7 +219,13 @@ export async function POST(request: Request) {
     const synced = Boolean(brokerContactId || centralContactId);
 
     await leadRef.update({
-      status: synced ? "synced" : "failed_sync",
+      // Antes esto mezclaba revisión y sincronización en un solo campo
+      // ("synced"/"failed_sync") — deriveCaseStatus() ya los interpretaba
+      // igual (reviewStatus siempre "pending_docs" hasta que staff revise),
+      // pero separarlos explícitamente evita que el próximo lector asuma que
+      // "synced" significa que alguien ya revisó el caso.
+      status: "pending_docs",
+      syncStatus: synced ? "synced" : "failed",
       ghlContactId: brokerContactId || "",
       syncedAt: new Date().toISOString(),
       // Visible directamente en la tarjeta del cliente en "Mis Clientes" sin lecturas extra.
@@ -221,6 +241,54 @@ export async function POST(request: Request) {
         serviceName: "Reparación de Crédito",
       })
     );
+
+    // Este intake no notificaba a staff como sí hace services/submit — el
+    // equipo de Reparación de Crédito nunca se enteraba de una solicitud
+    // nueva salvo que alguien revisara el Master Feed por su cuenta.
+    after(() =>
+      notifyStaffOfNewCase({
+        cluster: "credit_repair",
+        clientName: fullName,
+        serviceName: "Reparación de Crédito",
+        brokerName
+      })
+    );
+
+    // Push automático a Credit Repair Cloud (CRC) — crea el Lead/Client allá
+    // mismo al admitir en el Hub, sin que nadie tenga que volver a capturar
+    // el contacto a mano. Nunca bloquea ni tumba la admisión si falla o si
+    // las credenciales no están configuradas (ver CRC_API_AUTH_KEY/CRC_SECRET_KEY
+    // en .env.example). El Hub nunca recolecta el SSN completo (solo últimos
+    // 4, cifrados) así que el registro en CRC nace con los datos de contacto
+    // básicos — el equipo de CRC completa el resto al hacer el pull de crédito.
+    const crcApiAuthKey = process.env.CRC_API_AUTH_KEY;
+    const crcSecretKey = process.env.CRC_SECRET_KEY;
+    if (crcApiAuthKey && crcSecretKey) {
+      after(async () => {
+        try {
+          const result = await createCRCLead(
+            {
+              firstname: firstName,
+              lastname: lastName,
+              email,
+              phone_mobile: phone,
+              memo: `Admitido vía E360 Hub por ${brokerName} — Caso ${leadRef.id}.${notes ? ` Notas: ${notes}` : ""}`
+            },
+            { apiAuthKey: crcApiAuthKey, secretKey: crcSecretKey }
+          );
+          await leadRef.update({
+            crcSynced: result.success,
+            crcSyncedAt: new Date().toISOString(),
+            ...(result.success ? {} : { crcSyncError: result.errorMessage || "Error desconocido" })
+          });
+          if (!result.success) {
+            console.error("Error sincronizando lead con Credit Repair Cloud:", result.errorCode, result.errorMessage, result.raw);
+          }
+        } catch (error) {
+          console.error("Error llamando a la API de Credit Repair Cloud:", error);
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,

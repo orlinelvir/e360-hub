@@ -1,10 +1,12 @@
-import { getResendClient, EMAIL_FROM } from "./client";
+import { getResendClient, EMAIL_FROM, HARD_MONEY_WORK_SCOPE_EMAIL, CREDIT_REPAIR_NEW_APPLICATION_EMAIL } from "./client";
 import CaseStatusEmail, { CaseEmailStatus } from "./templates/CaseStatusEmail";
 import BrokerNoteEmail from "./templates/BrokerNoteEmail";
 import WelcomeApplicationEmail from "./templates/WelcomeApplicationEmail";
 import BrokerOnboardingEmail from "./templates/BrokerOnboardingEmail";
 import PasswordResetEmail from "./templates/PasswordResetEmail";
 import MissingApplicationEmail from "./templates/MissingApplicationEmail";
+import HardMoneyWorkScopeEmail from "./templates/HardMoneyWorkScopeEmail";
+import NewCreditRepairApplicationEmail from "./templates/NewCreditRepairApplicationEmail";
 import TicketUpdateEmail, { TicketUpdateKind } from "./templates/TicketUpdateEmail";
 
 /**
@@ -168,10 +170,14 @@ interface MissingApplicationEmailParams {
 }
 
 // Le llega al broker, nunca directo al cliente final — ver nota en
-// notifyBrokerOfMissingApplication sobre por qué cambió.
-export async function sendMissingApplicationEmail(params: MissingApplicationEmailParams): Promise<void> {
+// notifyBrokerOfMissingApplication sobre por qué cambió. Reporta el
+// resultado real (como sendBrokerNoteEmail) porque la UI le dice al broker
+// "te enviamos el enlace" — antes eso se afirmaba aunque el correo nunca
+// saliera (Resend sin configurar, o el send fallando en silencio).
+export async function sendMissingApplicationEmail(params: MissingApplicationEmailParams): Promise<{ sent: boolean; error?: string }> {
   const resend = getResendClient();
-  if (!resend || !params.brokerEmail) return;
+  if (!resend) return { sent: false, error: "Resend no está configurado en el servidor (falta RESEND_API_KEY)." };
+  if (!params.brokerEmail) return { sent: false, error: "El broker no tiene email registrado." };
 
   try {
     await resend.emails.send({
@@ -187,8 +193,11 @@ export async function sendMissingApplicationEmail(params: MissingApplicationEmai
         />
       ),
     });
+    return { sent: true };
   } catch (err) {
     console.error("Error enviando email de formulario faltante al broker:", err);
+    const message = err instanceof Error ? err.message : "Error desconocido al enviar el correo.";
+    return { sent: false, error: message };
   }
 }
 
@@ -214,6 +223,62 @@ export async function sendWelcomeApplicationEmail(params: WelcomeApplicationEmai
     });
   } catch (err) {
     console.error("Error enviando email de bienvenida al broker:", err);
+  }
+}
+
+interface HardMoneyWorkScopeEmailParams {
+  brokerName: string;
+  clientName: string;
+  fileUrl: string;
+  fileName: string;
+}
+
+// Pedido de JP por nota de voz: que el work scope de un Hard Money le llegue
+// directo a underwriting al momento de admitir al cliente, en vez de
+// depender de que el broker se acuerde de reenviarlo por su cuenta.
+export async function sendHardMoneyWorkScopeEmail(params: HardMoneyWorkScopeEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend) return;
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: HARD_MONEY_WORK_SCOPE_EMAIL,
+      subject: `Work scope Hard Money — ${params.clientName} (${params.brokerName})`,
+      react: (
+        <HardMoneyWorkScopeEmail
+          brokerName={params.brokerName}
+          clientName={params.clientName}
+          fileUrl={params.fileUrl}
+          fileName={params.fileName}
+        />
+      ),
+    });
+  } catch (err) {
+    console.error("Error enviando email de work scope Hard Money:", err);
+  }
+}
+
+interface NewCreditRepairApplicationEmailParams {
+  brokerName: string;
+  clientName: string;
+}
+
+// Pedido explícito de Fernando: además del aviso en el Hub, quiere enterarse
+// por su correo personal de cada solicitud nueva de Reparación de Crédito.
+export async function sendNewCreditRepairApplicationEmail(params: NewCreditRepairApplicationEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend) return;
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: CREDIT_REPAIR_NEW_APPLICATION_EMAIL,
+      subject: `Nueva solicitud de Reparación de Crédito — ${params.clientName}`,
+      react: <NewCreditRepairApplicationEmail brokerName={params.brokerName} clientName={params.clientName} />,
+    });
+  } catch (err) {
+    console.error("Error enviando email de nueva solicitud de Reparación de Crédito:", err);
   }
 }
 

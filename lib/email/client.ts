@@ -22,3 +22,15 @@ export function getResendClient(): Resend | null {
 export const EMAIL_FROM = process.env.RESEND_FROM_EMAIL || "E360 Hub <onboarding@resend.dev>";
 
 export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://emprende360.biz";
+
+// Bandeja interna de underwriting para préstamos Hard Money — pedido de JP
+// por nota de voz para que el work scope (cotización del negocio) le llegue
+// directo cuando el broker lo adjunta al admitir al cliente.
+export const HARD_MONEY_WORK_SCOPE_EMAIL = process.env.HARD_MONEY_WORK_SCOPE_EMAIL || "info@emprende360.biz";
+
+// Fernando pidió recibir en su correo personal, además del aviso en el Hub,
+// cada solicitud nueva de Reparación de Crédito — todavía no existe un rol
+// dedicado de "operador de Reparación de Crédito" en el Hub (el restructuring
+// con su hermano/JP sigue en planeación), así que por ahora el punto de
+// contacto real para esta vertical es él mismo.
+export const CREDIT_REPAIR_NEW_APPLICATION_EMAIL = process.env.CREDIT_REPAIR_NEW_APPLICATION_EMAIL || "fernando.elvire360@gmail.com";

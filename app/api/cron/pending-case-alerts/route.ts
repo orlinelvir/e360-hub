@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { deriveCaseStatus } from "@/lib/services/case-status";
 import { createNotification } from "@/lib/services/notification-service";
+import { businessHoursElapsed, highestThresholdReached } from "@/lib/services/business-hours";
 
 // Los 3 nombres que Fernando pidió explícitamente que reciban estas alertas
 // (reunión del 21 de septiembre 2026) — no es un rol genérico, son estas
@@ -11,32 +12,6 @@ const ALERT_RECIPIENT_UIDS: { uid: string; name: string }[] = [
   { uid: "8xcFRaAleNUWe7B3d9Wt577pAtZ2", name: "Elian Mena Santana" },
   { uid: "VMh1anllGxNlyMLh9Y19QODGB1h2", name: "Mario Chavez" }
 ];
-
-const THRESHOLDS_HOURS = [24, 48, 72] as const;
-
-// Cuenta solo horas de lunes a viernes entre `fromISO` y `to` — un caso
-// creado el viernes en la tarde no debe "cumplir 24 horas" el sábado en la
-// mañana, tal como se pidió explícitamente excluir fines de semana.
-function businessHoursElapsed(fromISO: string, to: Date): number {
-  const from = new Date(fromISO);
-  if (Number.isNaN(from.getTime())) return 0;
-  let hours = 0;
-  const cursor = new Date(from);
-  while (cursor < to) {
-    const day = cursor.getDay();
-    if (day !== 0 && day !== 6) hours += 1;
-    cursor.setTime(cursor.getTime() + 60 * 60 * 1000);
-  }
-  return hours;
-}
-
-function highestThresholdReached(hours: number): number {
-  let reached = 0;
-  for (const t of THRESHOLDS_HOURS) {
-    if (hours >= t) reached = t;
-  }
-  return reached;
-}
 
 /**
  * Cron diario (ver vercel.json) que alerta a Anthony, Elian y Mario cuando un

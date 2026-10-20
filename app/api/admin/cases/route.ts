@@ -1,5 +1,5 @@
 import { NextResponse, after } from "next/server";
-import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
+import { verifyAuthToken, adminDb, adminAuth } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
 import { sendCaseStatusEmail, sendWelcomeApplicationEmail } from "@/lib/email/send";
@@ -64,13 +64,28 @@ export async function GET(request: Request) {
       adminNotes?: string;
       ghlContactId?: string;
       ghlOpportunityId?: string;
+      feeRoundNumber?: number;
+      feeRoundStatus?: string;
     }> = [];
 
     await Promise.all(
       brokersSnap.docs.map(async (bDoc) => {
         const bData = bDoc.data();
-        const brokerName = bData.displayName || bData.name || bDoc.id;
-        const brokerEmail = bData.email || "";
+        let brokerName = bData.displayName || bData.name;
+        let brokerEmail = bData.email || "";
+        // Si el doc de Firestore quedó incompleto (ej. auto-provisioning viejo
+        // que no guardó displayName/email), cae al perfil real de Firebase
+        // Auth antes de mostrar el UID crudo como "nombre" del broker.
+        if ((!brokerName || !brokerEmail) && adminAuth) {
+          try {
+            const authUser = await adminAuth.getUser(bDoc.id);
+            if (!brokerName) brokerName = authUser.displayName || authUser.email || undefined;
+            if (!brokerEmail) brokerEmail = authUser.email || "";
+          } catch {
+            // El usuario tampoco existe en Auth — no queda más que el UID.
+          }
+        }
+        brokerName = brokerName || bDoc.id;
         const brokerTier = bData.tier || "Junior Broker";
 
         const clientsSnap = await bDoc.ref.collection("clients").get();
@@ -78,7 +93,14 @@ export async function GET(request: Request) {
         clientsSnap.docs.forEach((cDoc) => {
           const c = cDoc.data();
           const amt = Number(c.amount) || 0;
-          const comm = Number(c.estimatedCommission) || (amt > 0 ? Math.round(amt * 0.05) : 250);
+          // Antes "0 || fallback" trataba un estimatedCommission real de 0
+          // (ej. todo caso de Reparación de Crédito, que no maneja comisión)
+          // como si no existiera, e inventaba $250 — Fernando fue explícito:
+          // nada de costos/comisión inventados en el Hub. El fallback de
+          // adivinar por % solo aplica cuando el campo de verdad no existe.
+          const comm = c.estimatedCommission !== undefined && c.estimatedCommission !== null
+            ? Number(c.estimatedCommission)
+            : (amt > 0 ? Math.round(amt * 0.05) : 0);
           const cluster = resolvePipelineCluster(c.serviceId, c.serviceName);
 
           // Filtrar por permisos de vertical si corresponde
@@ -110,6 +132,8 @@ export async function GET(request: Request) {
             adminNotes: c.adminNotes,
             ghlContactId: c.ghlContactId,
             ghlOpportunityId: c.ghlOpportunityId,
+            feeRoundNumber: c.feeRoundNumber,
+            feeRoundStatus: c.feeRoundStatus,
           });
         });
       })
@@ -171,12 +195,12 @@ export async function PATCH(request: Request) {
     }
 
     const client = clientSnap.data()!;
+    const clientCluster = resolvePipelineCluster(client.serviceId, client.serviceName);
 
     // Un especialista solo puede editar casos de su propio cluster (admin no tiene restricción).
     if (role !== "admin") {
-      const cluster = resolvePipelineCluster(client.serviceId, client.serviceName);
       const allowedClusters = getRoleDefinition(role)?.allowedClusters ?? [];
-      if (!allowedClusters.includes(cluster)) {
+      if (!allowedClusters.includes(clientCluster)) {
         return NextResponse.json(
           { error: "Acceso restringido. Este caso no pertenece a tu vertical asignada." },
           { status: 403 }
@@ -199,7 +223,13 @@ export async function PATCH(request: Request) {
 
     if (reviewStatus !== undefined) updatePayload.status = reviewStatus;
     if (adminNotes !== undefined) updatePayload.adminNotes = adminNotes;
-    if (estimatedCommission !== undefined) updatePayload.estimatedCommission = Number(estimatedCommission);
+    // Reparación de Crédito no maneja comisión en el Hub — es algo que el
+    // broker decide directamente, no algo que el staff fije desde acá. Se
+    // ignora server-side (no solo se oculta en la UI) para que ningún
+    // cliente de la API pueda colarla igual.
+    if (estimatedCommission !== undefined && clientCluster !== "credit_repair") {
+      updatePayload.estimatedCommission = Number(estimatedCommission);
+    }
 
     await clientRef.update(updatePayload);
 

@@ -37,13 +37,17 @@ export async function notifyBrokerOfMissingApplication(
   const service = catalog.find((s) => s.id === client.serviceId);
   const formLink = service?.formLink && service.formLink.startsWith("http") ? service.formLink : undefined;
 
-  await sendMissingApplicationEmail({
+  const emailResult = await sendMissingApplicationEmail({
     brokerEmail,
     brokerName,
     clientName: client.name || "Cliente",
     serviceName: client.serviceName || client.serviceId || "tu solicitud",
     formLink
   });
+
+  if (!emailResult.sent) {
+    return { success: false, error: emailResult.error || "No se pudo enviar el correo." };
+  }
 
   await clientRef.update({ pendingReminderSentAt: new Date().toISOString() });
 

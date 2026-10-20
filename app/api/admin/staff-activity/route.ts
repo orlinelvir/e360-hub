@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     // iterar los clientes de cada broker, ya que no hay índice global por updatedByUid.
     // De paso se arma el backlog actual por cluster (no por persona — los casos no
     // tienen un "dueño" asignado individualmente, solo una vertical).
-    const backlogByCluster: Record<string, { pendingDocs: number; inReview: number; staleCases: string[] }> = {};
+    const backlogByCluster: Record<string, { pendingDocs: number; inReview: number; staleCases: { brokerId: string; clientId: string; name: string; ageDays: number }[] }> = {};
     const now = Date.now();
 
     await Promise.all(
@@ -91,7 +91,14 @@ export async function GET(request: Request) {
             backlogByCluster[cluster].inReview++;
             const ageDays = c.createdAt ? (now - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24) : 0;
             if (ageDays > STALE_DAYS_THRESHOLD) {
-              backlogByCluster[cluster].staleCases.push(`${c.name || "Cliente"} (${Math.round(ageDays)}d)`);
+              // brokerId/clientId van aparte (no solo texto formateado) para que
+              // la UI pueda saltar directo al caso en vez de solo mostrarlo.
+              backlogByCluster[cluster].staleCases.push({
+                brokerId: bDoc.id,
+                clientId: cDoc.id,
+                name: c.name || "Cliente",
+                ageDays: Math.round(ageDays)
+              });
             }
           }
         });

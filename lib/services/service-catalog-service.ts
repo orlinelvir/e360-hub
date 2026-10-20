@@ -42,7 +42,7 @@ export async function clearServiceOverride(serviceId: string): Promise<void> {
 }
 
 /**
- * Catálogo completo (18 servicios estáticos) con los overrides de Firestore
+ * Catálogo completo (19 servicios estáticos) con los overrides de Firestore
  * ya aplicados — la fuente única de verdad para cualquier consumidor
  * server-side que necesite el contenido "efectivo" (Chat IA, formLink real, etc).
  */

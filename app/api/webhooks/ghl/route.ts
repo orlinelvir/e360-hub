@@ -1,8 +1,9 @@
 import { NextResponse, after } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { adminDb } from "@/lib/firebase-admin";
 import { createGHLLocationFromSnapshot } from "@/lib/ghl";
 import { findStaffUidsByRoles, notifyMany, createNotification } from "@/lib/services/notification-service";
-import { ReviewStatus, mapReviewStatusToPipelineStage } from "@/lib/services/case-status";
+import { mapReviewStatusToPipelineStage, mapGHLStageToHubStatus } from "@/lib/services/case-status";
 import { sendCaseStatusEmail } from "@/lib/email/send";
 import { CaseEmailStatus } from "@/lib/email/templates/CaseStatusEmail";
 
@@ -22,28 +23,19 @@ const STATUS_LABELS: Record<CaseEmailStatus, string> = {
 // necesita verlo, su cuenta del Hub debe tener este rol asignado.
 const ONBOARDING_NOTIFICATION_ROLES = ["onboarding_member", "admin"];
 
-function mapGHLStageToHubStatus(stageName: string, ghlStatus: string): ReviewStatus {
-  const name = (stageName || "").toLowerCase();
-  const status = (ghlStatus || "").toLowerCase();
-
-  if (status === "won" || name.includes("fund") || name.includes("fondead") || name.includes("pagado") || name.includes("paid") || name.includes("closed won") || name.includes("emitida")) {
-    return "funded";
-  }
-  if (name.includes("approv") || name.includes("aprob") || name.includes("oferta") || name.includes("offer") || name.includes("firmado") || name.includes("contrato")) {
-    return "approved";
-  }
-  if (status === "lost" || status === "abandoned" || name.includes("lost") || name.includes("declin") || name.includes("reject") || name.includes("cancel") || name.includes("no califica")) {
-    return "rejected";
-  }
-  // Cualquier movimiento real de etapa en el pipeline de GHL (incluida esta
-  // rama por defecto) implica que alguien ya está trabajando el caso — nunca
-  // debe quedar clasificado como "pendiente de documentos".
-  return "in_review";
+// Comparación en tiempo constante — una comparación normal (!==) revela por
+// cuántos caracteres coincide el secreto vía el tiempo de respuesta.
+function secretsMatch(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
 }
 
 /**
  * Receptor universal de webhooks salientes de GHL (Workflows → acción "Webhook").
- * Soporta autenticación por cabecera x-webhook-secret o parámetro ?token=
+ * Autenticación exclusivamente por cabecera x-webhook-secret — nunca por query
+ * string, que queda expuesta en logs de acceso e historial del navegador.
  *
  * Eventos soportados:
  * - "opportunity_stage_updated" / "opportunity_status_updated" / "pipeline_update": Sincronización bidireccional en tiempo real del pipeline de GHL hacia E360 Hub.
@@ -51,12 +43,15 @@ function mapGHLStageToHubStatus(stageName: string, ghlStatus: string): ReviewSta
  * - "broker_onboarding_form_submitted": Auto-aprovisiona la subcuenta GHL del broker clonando el Snapshot.
  */
 export async function POST(request: Request) {
-  const url = new URL(request.url);
-  const secretHeader = request.headers.get("x-webhook-secret");
-  const secretQuery = url.searchParams.get("token") || url.searchParams.get("secret");
-  const providedSecret = secretHeader || secretQuery;
+  // Solo por header — un secreto en la URL (?token=) queda expuesto en logs
+  // de acceso, historial del navegador y el header Referer.
+  const providedSecret = request.headers.get("x-webhook-secret") || "";
+  const expectedSecret = process.env.GHL_WEBHOOK_SECRET || "";
 
-  if (process.env.GHL_WEBHOOK_SECRET && providedSecret !== process.env.GHL_WEBHOOK_SECRET) {
+  // Falla CERRADO: antes, si GHL_WEBHOOK_SECRET no estaba configurado, la
+  // condición completa se saltaba y CUALQUIER POST sin autenticar era
+  // aceptado — al revés que los crons (CRON_SECRET), que sí fallan cerrado.
+  if (!expectedSecret || !secretsMatch(providedSecret, expectedSecret)) {
     // Antes esto se rechazaba sin dejar ningún rastro (por eso ghlWebhookLogs
     // quedó vacío durante semanas mientras el secreto real del problema era un
     // simple desajuste de secretos entre GHL y Vercel) — ahora sí queda logueado,
@@ -160,25 +155,36 @@ export async function POST(request: Request) {
       }
 
       if (matchedClientDoc) {
-        // Se lee el estado previo para distinguir un cambio real de estado de
-        // un webhook repetido — solo se notifica cuando algo cambió.
-        const prevSnap = await matchedClientDoc.get();
-        const prevData = prevSnap.data() || {};
-        const previousStatus = String(prevData.status || "");
+        const clientDocRef = matchedClientDoc;
 
-        const updateData: Record<string, unknown> = {
-          status: mappedStatus,
-          stage: mapReviewStatusToPipelineStage(mappedStatus),
-          ghlStageName: stageName || undefined,
-          lastActivity: `GHL Pipeline: ${stageName || ghlStatus} (${new Date().toLocaleDateString()})`,
-          updatedAt: new Date().toISOString()
-        };
+        // Se lee el estado previo DENTRO de una transacción para distinguir un
+        // cambio real de estado de un webhook repetido — GHL puede disparar el
+        // mismo evento 2 veces, y sin transacción ambas lecturas podían ver el
+        // mismo previousStatus y notificar al broker por duplicado. La
+        // transacción hace que la segunda entrega, al reintentar, ya vea el
+        // status que acaba de escribir la primera.
+        let previousStatus = "";
+        let prevData: FirebaseFirestore.DocumentData = {};
 
-        if (monetaryValue > 0) {
-          updateData.amount = monetaryValue;
-        }
+        await adminDb.runTransaction(async (tx) => {
+          const prevSnap = await tx.get(clientDocRef);
+          prevData = prevSnap.data() || {};
+          previousStatus = String(prevData.status || "");
 
-        await matchedClientDoc.update(updateData);
+          const updateData: Record<string, unknown> = {
+            status: mappedStatus,
+            stage: mapReviewStatusToPipelineStage(mappedStatus),
+            ghlStageName: stageName || undefined,
+            lastActivity: `GHL Pipeline: ${stageName || ghlStatus} (${new Date().toLocaleDateString()})`,
+            updatedAt: new Date().toISOString()
+          };
+
+          if (monetaryValue > 0) {
+            updateData.amount = monetaryValue;
+          }
+
+          tx.update(clientDocRef, updateData);
+        });
 
         // Notificación al broker: aprobado / declinado / fondeado que llega
         // desde GHL debe avisar al broker igual que si lo marcó el admin.

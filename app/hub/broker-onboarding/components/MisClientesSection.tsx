@@ -21,10 +21,12 @@ import {
   Building,
   Copy,
   Check,
-  Construction,
   User,
   FileText,
-  Upload
+  Upload,
+  Edit3,
+  Save,
+  Loader2
 } from "lucide-react";
 import { ClientLead, PipelineStage, CaseNote, CaseDocument } from "../types";
 import { useAuth } from "@/components/AuthProvider";
@@ -32,6 +34,7 @@ import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/servic
 import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
 import { resolvePipelineCluster } from "@/lib/service-routing";
 import { deriveCaseStatus, REVIEW_STATUS_META } from "@/lib/services/case-status";
+import { servicesData } from "@/app/hub/broker-onboarding/data/services";
 
 interface MisClientesSectionProps {
   brokerName: string;
@@ -86,6 +89,15 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   const [isSyncingGHL, setIsSyncingGHL] = useState<boolean>(false);
   const [isNotifyingPending, setIsNotifyingPending] = useState<boolean>(false);
   const [notifyPendingMsg, setNotifyPendingMsg] = useState<string>("");
+
+  // Corrección de aplicación por el broker — solo mientras el caso siga
+  // pending_docs/in_review (ver /api/broker/clients/edit). Se repuebla cada
+  // vez que se abre un cliente distinto, igual que brokerNotes/caseDocuments.
+  const [isEditingApplication, setIsEditingApplication] = useState<boolean>(false);
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", amount: "", notes: "" });
+  const [editSaving, setEditSaving] = useState<boolean>(false);
+  const [editError, setEditError] = useState<string>("");
+
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -204,6 +216,23 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     return () => clearTimeout(timer);
   }, [user, selectedClient]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsEditingApplication(false);
+      setEditError("");
+      if (selectedClient) {
+        setEditForm({
+          name: selectedClient.name || "",
+          email: selectedClient.email || "",
+          phone: selectedClient.phone || "",
+          amount: selectedClient.amount ? String(selectedClient.amount) : "",
+          notes: selectedClient.notes || ""
+        });
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [selectedClient]);
+
   const fetchCaseDocuments = useCallback(async (clientId: string) => {
     if (!user) return;
     setLoadingCaseDocuments(true);
@@ -277,12 +306,72 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
     }
   };
 
+  const handleSaveCorrection = async () => {
+    if (!user || !selectedClient) return;
+    setEditSaving(true);
+    setEditError("");
+    try {
+      const token = await user.getIdToken();
+      const payload: Record<string, unknown> = {
+        clientId: selectedClient.id,
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim(),
+        notes: editForm.notes.trim()
+      };
+      // Reparación de Crédito no maneja monto en el Hub — ver isCreditRepair
+      // más abajo en este mismo archivo (vista de solo lectura análoga).
+      if (selectedClient.serviceId !== "credit-repair") {
+        payload.amount = editForm.amount ? parseFloat(editForm.amount) || 0 : 0;
+      }
+
+      const res = await fetch("/api/broker/clients/edit", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al guardar la corrección");
+
+      const updatedFields: Partial<ClientLead> = {
+        name: payload.name as string,
+        email: payload.email as string,
+        phone: payload.phone as string,
+        notes: payload.notes as string,
+        ...(payload.amount !== undefined ? { amount: payload.amount as number } : {})
+      };
+      const updatedClients = clients.map((c) => (c.id === selectedClient.id ? { ...c, ...updatedFields } : c));
+      setClients(updatedClients);
+      clientsRef.current = updatedClients;
+      setSelectedClient({ ...selectedClient, ...updatedFields });
+      setIsEditingApplication(false);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClientName.trim() || !newClientPhone.trim()) return;
 
-    const amountNum = parseFloat(newClientAmount) || 0;
-    const estCommission = amountNum > 0 ? amountNum * 0.05 : 250;
+    // Reparación de Crédito no maneja comisión ni monto de préstamo en el
+    // Hub — Fernando fue explícito: eso lo decide el broker directamente,
+    // nunca se inventa un estimado. La tasa real por servicio viene del
+    // catálogo (ver ServiceDetail.commissionRate en data/services.ts) — así
+    // "AdiosDeudas" (2%) o cualquier otro servicio con tasa propia calculan
+    // bien en vez de caer siempre al 5% genérico.
+    const isCreditRepairReferral = newClientService === "credit-repair";
+    const matchedService = servicesData.find((s) => s.id === newClientService);
+    const hasCustomRate = matchedService?.commissionRate !== undefined;
+    const commissionRate = matchedService?.commissionRate ?? 0.05;
+    const amountNum = isCreditRepairReferral ? 0 : parseFloat(newClientAmount) || 0;
+    const estCommission = isCreditRepairReferral
+      ? 0
+      : amountNum > 0
+        ? amountNum * commissionRate
+        : (hasCustomRate ? 0 : 250);
     const nameParts = newClientName.trim().split(" ");
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(" ");
@@ -315,6 +404,9 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
     const newLead: ClientLead = {
       id: `CLI-${crypto.randomUUID()}`,
+      brokerId: user?.uid || "",
+      brokerName,
+      brokerEmail: user?.email || "",
       name: newClientName.trim(),
       email: newClientEmail.trim() || "contacto@cliente.com",
       phone: newClientPhone.trim(),
@@ -354,6 +446,15 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ clientId: newLead.id })
         }).catch((err) => console.warn("No se pudo enviar el recordatorio del formulario faltante:", err));
+
+        // A diferencia de "Admitir Cliente" (services/submit), este flujo
+        // escribe el caso directo desde el cliente y no pasaba por ningún
+        // lado que avisara al staff de la vertical correspondiente.
+        fetch("/api/broker/clients/notify-new-case", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ clientId: newLead.id })
+        }).catch((err) => console.warn("No se pudo notificar al equipo del caso nuevo:", err));
       });
     }
 
@@ -372,6 +473,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
       case "business-credit-cards": return "Tarjetas de Crédito de Negocio";
       case "mortgage-loan": return "Préstamo Hipotecario DSCR / FHA";
       case "credit-repair": return "Reparación de Crédito";
+      case "adios-deudas": return "AdiosDeudas — Negociación de Deudas";
       case "incorporation": return "Registro de Compañía & EIN";
       case "auto-insurance": return "Seguro de Auto Personal";
       case "commercial-auto-insurance": return "Seguro Comercial de Auto & Trucking";
@@ -465,22 +567,6 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   return (
     <div className="space-y-8">
       
-      {/* AVISO DE SECCIÓN EN DESARROLLO / PRUEBAS BETA */}
-      <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-2xl p-4 flex items-center gap-3.5 shadow-inner">
-        <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-400 border border-amber-500/30 shrink-0">
-          <Construction size={20} />
-        </div>
-        <div>
-          <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
-            <span>Módulo en Desarrollo / Versión Beta</span>
-            <span className="bg-amber-500/20 text-amber-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-500/40">BETA PRUEBAS</span>
-          </h4>
-          <p className="text-xs text-amber-200/80 mt-1 leading-relaxed">
-            Esta sección se encuentra en fase de pruebas activas y optimización continua. Puedes probar y registrar clientes libremente para evaluar el flujo de datos.
-          </p>
-        </div>
-      </div>
-
       {/* BANNER INTEGRADOR GHL SUBCUENTA */}
       <div className="bg-gradient-to-r from-[#0A182D] via-[#0D213F] to-[#0A182D] border border-cyan-500/30 rounded-3xl p-6 relative overflow-hidden shadow-xl">
         <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-[90px] rounded-full pointer-events-none" />
@@ -492,16 +578,18 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-mono font-semibold text-emerald-400 uppercase tracking-widest">
-                  Subcuenta CRM Conectada
+                <span className={`inline-block w-2.5 h-2.5 rounded-full ${crmLocationId ? "bg-emerald-400 animate-pulse" : "bg-gray-600"}`} />
+                <span className={`text-xs font-mono font-semibold uppercase tracking-widest ${crmLocationId ? "text-emerald-400" : "text-gray-500"}`}>
+                  {crmLocationId ? "Subcuenta CRM Conectada" : "Subcuenta CRM No Configurada"}
                 </span>
               </div>
               <h2 className="text-xl md:text-2xl font-extrabold text-white mt-1">
                 CRM & Pipeline de Leads
               </h2>
               <p className="text-xs text-gray-400 mt-1">
-                Sincronización en tiempo real con tu ubicación CRM: <span className="font-mono text-cyan-400 font-semibold">#LOC-E360-BRK99</span>
+                {crmLocationId
+                  ? <>Sincronización en tiempo real con tu ubicación CRM: <span className="font-mono text-cyan-400 font-semibold">{crmLocationId}</span></>
+                  : "Configura tus credenciales CRM en tu Perfil para activar la sincronización."}
               </p>
             </div>
           </div>
@@ -586,9 +674,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
             </div>
           </div>
           <p className="text-2xl font-extrabold text-white mt-3">{clients.length}</p>
-          <p className="text-[10px] text-gray-500 mt-1 flex items-center gap-1">
-            <span className="text-emerald-400 font-semibold">+23%</span> respecto al mes pasado
-          </p>
+          <p className="text-[10px] text-gray-500 mt-1">Total en tu pipeline</p>
         </div>
 
         <div className="bg-[#0A182D]/60 border border-gray-800/80 p-5 rounded-2xl">
@@ -728,16 +814,18 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                       <Building size={14} className="shrink-0" />
                       <span className="truncate">{client.serviceName}</span>
                     </p>
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-800/60">
-                      <div>
-                        <p className="text-[9px] text-gray-500 uppercase font-semibold">Monto</p>
-                        <p className="font-bold text-white">${safeAmount.toLocaleString()}</p>
+                    {client.serviceId !== "credit-repair" && (
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-800/60">
+                        <div>
+                          <p className="text-[9px] text-gray-500 uppercase font-semibold">Monto</p>
+                          <p className="font-bold text-white">${safeAmount.toLocaleString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-gray-500 uppercase font-semibold">Comisión Est.</p>
+                          <p className="font-bold text-emerald-400">${safeCommission.toLocaleString()}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[9px] text-gray-500 uppercase font-semibold">Comisión Est.</p>
-                        <p className="font-bold text-emerald-400">${safeCommission.toLocaleString()}</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Estado real de la solicitud, actualizado manualmente por E360 (Financiamiento/Seguros) */}
@@ -992,7 +1080,10 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                   <label className="block text-xs font-semibold text-gray-400 uppercase">Cambiar Etapa en Pipeline:</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {Object.entries(stageLabels)
-                      .filter(([stKey]) => stKey !== "rejected")
+                      // "Aprobado"/"Pagado" y "Declinado" son resultados oficiales que
+                      // solo staff puede determinar (vía /api/admin/cases) — el broker
+                      // ya no puede empujarlos directo a GHL (ver /api/ghl/opportunities).
+                      .filter(([stKey]) => !["rejected", "approved", "paid"].includes(stKey))
                       .map(([stKey, stInfo]) => (
                         <button
                           key={stKey}
@@ -1011,24 +1102,135 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
                 {/* Detalles del Caso */}
                 <div className="space-y-4 text-xs">
-                  <div className="bg-[#05101F]/50 border border-gray-800 p-4 rounded-2xl space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Servicio:</span>
-                      <span className="font-bold text-white">{selectedClient.serviceName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Monto Solicitado:</span>
-                      <span className="font-bold text-white">${(Number(selectedClient.amount) || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Comisión Estimada Broker:</span>
-                      <span className="font-bold text-emerald-400">${(Number(selectedClient.estimatedCommission) || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Fecha de Ingreso:</span>
-                      <span className="text-gray-300 font-mono">{selectedClient.createdAt}</span>
-                    </div>
-                  </div>
+                  {(() => {
+                    const canEditApplication = ["pending_docs", "in_review"].includes(deriveCaseStatus(selectedClient).reviewStatus);
+                    const isCreditRepair = selectedClient.serviceId === "credit-repair";
+
+                    if (!isEditingApplication) {
+                      return (
+                        <div className="bg-[#05101F]/50 border border-gray-800 p-4 rounded-2xl space-y-2">
+                          <div className="flex items-center justify-between pb-1">
+                            <span className="text-[10px] font-bold text-gray-500 uppercase">Datos de la Aplicación</span>
+                            {canEditApplication && (
+                              <button
+                                type="button"
+                                onClick={() => setIsEditingApplication(true)}
+                                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 hover:text-cyan-300"
+                              >
+                                <Edit3 size={12} /> Corregir Aplicación
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Servicio:</span>
+                            <span className="font-bold text-white">{selectedClient.serviceName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Email:</span>
+                            <span className="font-bold text-white">{selectedClient.email || "—"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Teléfono:</span>
+                            <span className="font-bold text-white">{selectedClient.phone || "—"}</span>
+                          </div>
+                          {!isCreditRepair && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Monto Solicitado:</span>
+                                <span className="font-bold text-white">${(Number(selectedClient.amount) || 0).toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Comisión Estimada Broker:</span>
+                                <span className="font-bold text-emerald-400">${(Number(selectedClient.estimatedCommission) || 0).toLocaleString()}</span>
+                              </div>
+                            </>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Fecha de Ingreso:</span>
+                            <span className="text-gray-300 font-mono">{selectedClient.createdAt}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-[#05101F]/50 border border-cyan-500/30 p-4 rounded-2xl space-y-3">
+                        <span className="text-[10px] font-bold text-cyan-400 uppercase">Corrigiendo Aplicación</span>
+
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Nombre</label>
+                          <input
+                            type="text"
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            className="w-full bg-[#0A182D] border border-gray-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Email</label>
+                            <input
+                              type="email"
+                              value={editForm.email}
+                              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                              className="w-full bg-[#0A182D] border border-gray-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Teléfono</label>
+                            <input
+                              type="tel"
+                              value={editForm.phone}
+                              onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                              className="w-full bg-[#0A182D] border border-gray-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                            />
+                          </div>
+                        </div>
+                        {!isCreditRepair && (
+                          <div>
+                            <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Monto Solicitado ($)</label>
+                            <input
+                              type="number"
+                              value={editForm.amount}
+                              onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                              className="w-full bg-[#0A182D] border border-gray-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Notas</label>
+                          <textarea
+                            rows={3}
+                            value={editForm.notes}
+                            onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                            className="w-full bg-[#0A182D] border border-gray-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500 resize-none"
+                          />
+                        </div>
+
+                        {editError && <p className="text-[11px] text-red-400">{editError}</p>}
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={handleSaveCorrection}
+                            disabled={editSaving}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 bg-cyan-500 hover:bg-cyan-400 text-black rounded-lg text-xs font-extrabold transition-colors disabled:opacity-50"
+                          >
+                            {editSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                            Guardar Corrección
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setIsEditingApplication(false); setEditError(""); }}
+                            disabled={editSaving}
+                            className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div>
                     <h4 className="font-bold text-gray-300 mb-1">Notas y Seguimiento:</h4>
@@ -1134,6 +1336,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                       <option value="business-credit-cards">Tarjetas de Crédito de Negocio</option>
                       <option value="mortgage-loan">Préstamo Hipotecario DSCR/FHA</option>
                       <option value="credit-repair">Reparación de Crédito</option>
+                      <option value="adios-deudas">AdiosDeudas — Negociación de Deudas</option>
                       <option value="incorporation">Registro de Compañía & EIN</option>
                       <option value="auto-insurance">Seguro de Auto Personal</option>
                       <option value="commercial-auto-insurance">Seguro Comercial & Trucking</option>
@@ -1143,16 +1346,27 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                       <option value="pos-services">Terminales de POS Merchant</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block font-semibold text-gray-300 uppercase mb-1">Monto Estimado ($)</label>
-                    <input
-                      type="number"
-                      value={newClientAmount}
-                      onChange={(e) => setNewClientAmount(e.target.value)}
-                      placeholder="50000"
-                      className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
+                  {newClientService === "credit-repair" ? (
+                    <div>
+                      <label className="block font-semibold text-gray-300 uppercase mb-1">Monto Estimado ($)</label>
+                      <div className="w-full bg-[#05101F]/60 border border-gray-800 rounded-xl p-3 text-gray-500 text-[11px] normal-case font-normal">
+                        No aplica — Reparación de Crédito no maneja monto ni comisión en el Hub.
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block font-semibold text-gray-300 uppercase mb-1">
+                        {newClientService === "adios-deudas" ? "Monto Total de Deuda ($)" : "Monto Estimado ($)"}
+                      </label>
+                      <input
+                        type="number"
+                        value={newClientAmount}
+                        onChange={(e) => setNewClientAmount(e.target.value)}
+                        placeholder={newClientService === "adios-deudas" ? "20000" : "50000"}
+                        className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>

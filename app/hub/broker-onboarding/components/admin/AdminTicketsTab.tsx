@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Search,
   Ticket,
@@ -12,15 +12,19 @@ import {
   User,
   Headset,
   Paperclip,
-  Star
+  Star,
+  ChevronDown,
+  ChevronRight,
+  Layers
 } from "lucide-react";
-import { getTicketCategoryLabel, getTicketCategoryDef } from "@/lib/support/ticket-categories";
+import { getTicketCategoryLabel, getTicketCategoryDef, TICKET_CATEGORIES } from "@/lib/support/ticket-categories";
 import {
   isResponseSlaBreached,
   wasResolvedWithinSla,
   formatDurationMs
 } from "@/lib/support/ticket-sla";
 import { TicketCategory } from "../../types";
+import { useHubHeaderOffset } from "../../hooks/useHubHeaderOffset";
 
 export interface AdminTicketItem {
   id: string;
@@ -64,9 +68,86 @@ interface AdminTicketsTabProps {
   onRefresh: () => void;
 }
 
+type SortOption = "newest" | "oldest" | "sla_first" | "priority_first";
+type GroupOption = "none" | "priority" | "category";
+
+const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+// Definido fuera de AdminTicketsTab para que no se recree en cada render
+// (react-hooks/static-components) — mismo patrón que RowGroup en
+// AdminCasesTab.tsx: encabezado de grupo sticky, apilado justo debajo de la
+// barra de filtros (que a su vez está debajo del header del Hub).
+function TicketGroup({
+  label,
+  count,
+  items,
+  collapsed,
+  onToggle,
+  top,
+  renderCard
+}: {
+  label: string;
+  count: number;
+  items: AdminTicketItem[];
+  collapsed: boolean;
+  onToggle: () => void;
+  top: number;
+  renderCard: (t: AdminTicketItem) => React.ReactNode;
+}) {
+  return (
+    <div className="space-y-3">
+      <div style={{ top }} className="sticky z-[15] -mx-1 px-1">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="w-full flex items-center gap-2.5 px-4 py-2.5 bg-[#05101F] border border-gray-800 rounded-xl hover:bg-[#0A182D] transition-colors text-left"
+        >
+          {collapsed ? <ChevronRight size={14} className="text-gray-500 shrink-0" /> : <ChevronDown size={14} className="text-gray-500 shrink-0" />}
+          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-300">{label}</span>
+          <span className="text-[10px] text-gray-500 font-mono">({count})</span>
+        </button>
+      </div>
+      {!collapsed && <div className="space-y-3">{items.map((t) => renderCard(t))}</div>}
+    </div>
+  );
+}
+
 export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTicketsTabProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [sortOption, setSortOption] = useState<SortOption>("newest");
+  // "Por Prioridad"/"Por Categoría" — mismo patrón de agrupación colapsable
+  // que "Agrupar por Estado" en AdminCasesTab.tsx.
+  const [groupBy, setGroupBy] = useState<GroupOption>("none");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroupCollapsed = (key: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  // La barra de filtros (y, si hay agrupación activa, el encabezado de cada
+  // grupo) son sticky, apilados justo debajo del header del Hub (igual que
+  // en AdminCasesTab) — se miden en vivo en vez de usar px fijos.
+  const headerOffset = useHubHeaderOffset();
+  const filterBarRef = useRef<HTMLDivElement>(null);
+  const [filterBarHeight, setFilterBarHeight] = useState<number>(0);
+
+  useEffect(() => {
+    if (!filterBarRef.current) return;
+    const el = filterBarRef.current;
+    const update = () => setFilterBarHeight(el.offsetHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const [activeTicket, setActiveTicket] = useState<AdminTicketItem | null>(null);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
@@ -94,8 +175,10 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
   };
 
   const filteredTickets = useMemo(() => {
-    return tickets.filter((t) => {
+    const filtered = tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
+      if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
+      if (categoryFilter !== "all" && t.category !== categoryFilter) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         return (
@@ -106,7 +189,56 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
       }
       return true;
     });
-  }, [tickets, search, statusFilter]);
+
+    return [...filtered].sort((a, b) => {
+      switch (sortOption) {
+        case "oldest":
+          return a.createdAt.localeCompare(b.createdAt);
+        case "priority_first":
+          return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
+        case "sla_first": {
+          const aOverdue = a.status !== "resolved" && isResponseSlaBreached(a);
+          const bOverdue = b.status !== "resolved" && isResponseSlaBreached(b);
+          if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+          return a.createdAt.localeCompare(b.createdAt);
+        }
+        case "newest":
+        default:
+          return b.createdAt.localeCompare(a.createdAt);
+      }
+    });
+  }, [tickets, search, statusFilter, priorityFilter, categoryFilter, sortOption]);
+
+  // Grupos por Prioridad o Categoría — se respeta el orden ya aplicado por
+  // sortOption dentro de cada grupo, ya que parten de filteredTickets.
+  const groupedTickets = useMemo(() => {
+    if (groupBy === "none") return null;
+    if (groupBy === "priority") {
+      const order = ["high", "medium", "low"] as const;
+      const groups = new Map<string, AdminTicketItem[]>();
+      order.forEach((p) => groups.set(p, []));
+      filteredTickets.forEach((t) => {
+        if (!groups.has(t.priority)) groups.set(t.priority, []);
+        groups.get(t.priority)!.push(t);
+      });
+      return Array.from(groups.entries()).filter(([, items]) => items.length > 0);
+    }
+    // category
+    const groups = new Map<string, AdminTicketItem[]>();
+    TICKET_CATEGORIES.forEach((c) => groups.set(c.id, []));
+    filteredTickets.forEach((t) => {
+      if (!groups.has(t.category)) groups.set(t.category, []);
+      groups.get(t.category)!.push(t);
+    });
+    return Array.from(groups.entries()).filter(([, items]) => items.length > 0);
+  }, [filteredTickets, groupBy]);
+
+  const getGroupLabel = (key: string) => {
+    if (groupBy === "priority") {
+      return key === "high" ? "Prioridad Alta" : key === "medium" ? "Prioridad Media" : "Prioridad Baja";
+    }
+    return getTicketCategoryLabel(key);
+  };
 
   // Métricas de soporte: SLA de respuesta, tiempos y satisfacción — la prueba
   // numérica de que el compromiso anunciado a la comunidad se está cumpliendo.
@@ -217,6 +349,40 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
     }
   };
 
+  const renderTicketCard = (t: AdminTicketItem) => (
+    <div
+      key={`${t.brokerId}-${t.id}`}
+      onClick={() => openTicket(t)}
+      className="bg-[#05101F] hover:bg-[#0A182D] border border-gray-800/80 hover:border-cyan-500/40 rounded-2xl p-4 cursor-pointer transition-all"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] font-mono text-cyan-400 font-bold">{t.id}</span>
+        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${getStatusBadge(t.status)}`}>
+          {getStatusLabel(t.status)}
+        </span>
+      </div>
+      <h4 className="text-sm font-bold text-white mb-1">{t.subject}</h4>
+      <p className="text-xs text-gray-400 line-clamp-1 mb-3">{t.description}</p>
+      <div className="flex items-center justify-between text-[10px] text-gray-500 pt-3 border-t border-gray-900">
+        <span className="bg-gray-900 px-2 py-0.5 rounded-md text-gray-400">{getTicketCategoryLabel(t.category)}</span>
+        <div className="flex items-center gap-3">
+          {typeof t.rating === "number" && (
+            <span className="flex items-center gap-0.5 text-amber-400 font-bold" title={`Calificación del broker: ${t.rating}/5`}>
+              <Star size={10} className="fill-amber-400" /> {t.rating}
+            </span>
+          )}
+          {t.escalated && <span className="text-purple-400 font-bold">Escalado</span>}
+          {t.status !== "resolved" && isResponseSlaBreached(t) && (
+            <span className="text-red-400 font-bold">SLA vencido</span>
+          )}
+          {t.relatedClientName && <span className="text-cyan-400 font-bold">{t.relatedClientName}</span>}
+          <span className="text-gray-400 font-bold">{t.brokerName}</span>
+          <span className="flex items-center gap-1"><Clock size={10} /> {new Date(t.createdAt).toLocaleDateString()}</span>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Métricas de soporte (SLA, tiempos, satisfacción) */}
@@ -269,9 +435,15 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-grow">
+      {/* Filtros — sticky justo debajo del header del Hub, igual que en el
+          Master Feed de Casos, para que no se pierdan al bajar por la lista. */}
+      <div
+        ref={filterBarRef}
+        style={{ top: headerOffset }}
+        className="sticky z-30 bg-[#0B1C33] border border-gray-800 rounded-2xl p-4 space-y-3 shadow-lg shadow-black/20"
+      >
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+        <div className="relative flex-grow min-w-[180px]">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             type="text"
@@ -291,6 +463,69 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
           <option value="in_progress">En Proceso</option>
           <option value="resolved">Resueltos</option>
         </select>
+        <select
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(e.target.value)}
+          className="bg-[#05101F] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500"
+        >
+          <option value="all">Toda prioridad</option>
+          <option value="high">Alta</option>
+          <option value="medium">Media</option>
+          <option value="low">Baja</option>
+        </select>
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="bg-[#05101F] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500"
+        >
+          <option value="all">Toda categoría</option>
+          {TICKET_CATEGORIES.map((c) => (
+            <option key={c.id} value={c.id}>{c.label}</option>
+          ))}
+        </select>
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value as SortOption)}
+          className="bg-[#05101F] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500"
+        >
+          <option value="newest">Más recientes primero</option>
+          <option value="oldest">Más antiguos primero</option>
+          <option value="sla_first">SLA vencido primero</option>
+          <option value="priority_first">Prioridad alta primero</option>
+        </select>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1 border-t border-gray-800/60">
+          <Layers size={13} className="text-gray-500" />
+          <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Agrupar por:</span>
+          <button
+            type="button"
+            onClick={() => setGroupBy("none")}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-colors ${
+              groupBy === "none" ? "bg-cyan-500 text-black" : "bg-[#05101F] text-gray-400 hover:text-white border border-gray-800"
+            }`}
+          >
+            Sin agrupar
+          </button>
+          <button
+            type="button"
+            onClick={() => setGroupBy("priority")}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-colors ${
+              groupBy === "priority" ? "bg-cyan-500 text-black" : "bg-[#05101F] text-gray-400 hover:text-white border border-gray-800"
+            }`}
+          >
+            Prioridad
+          </button>
+          <button
+            type="button"
+            onClick={() => setGroupBy("category")}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-colors ${
+              groupBy === "category" ? "bg-cyan-500 text-black" : "bg-[#05101F] text-gray-400 hover:text-white border border-gray-800"
+            }`}
+          >
+            Categoría
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -303,41 +538,24 @@ export default function AdminTicketsTab({ tickets, loading, onRefresh }: AdminTi
           <Ticket size={32} className="mx-auto text-gray-600 mb-3" />
           No hay tickets con los filtros seleccionados.
         </div>
+      ) : groupedTickets ? (
+        <div className="space-y-5">
+          {groupedTickets.map(([key, items]) => (
+            <TicketGroup
+              key={key}
+              label={getGroupLabel(key)}
+              count={items.length}
+              items={items}
+              collapsed={collapsedGroups.has(key)}
+              onToggle={() => toggleGroupCollapsed(key)}
+              top={headerOffset + filterBarHeight}
+              renderCard={renderTicketCard}
+            />
+          ))}
+        </div>
       ) : (
         <div className="space-y-3">
-          {filteredTickets.map((t) => (
-            <div
-              key={`${t.brokerId}-${t.id}`}
-              onClick={() => openTicket(t)}
-              className="bg-[#05101F] hover:bg-[#0A182D] border border-gray-800/80 hover:border-cyan-500/40 rounded-2xl p-4 cursor-pointer transition-all"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-mono text-cyan-400 font-bold">{t.id}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${getStatusBadge(t.status)}`}>
-                  {getStatusLabel(t.status)}
-                </span>
-              </div>
-              <h4 className="text-sm font-bold text-white mb-1">{t.subject}</h4>
-              <p className="text-xs text-gray-400 line-clamp-1 mb-3">{t.description}</p>
-              <div className="flex items-center justify-between text-[10px] text-gray-500 pt-3 border-t border-gray-900">
-                <span className="bg-gray-900 px-2 py-0.5 rounded-md text-gray-400">{getTicketCategoryLabel(t.category)}</span>
-                <div className="flex items-center gap-3">
-                  {typeof t.rating === "number" && (
-                    <span className="flex items-center gap-0.5 text-amber-400 font-bold" title={`Calificación del broker: ${t.rating}/5`}>
-                      <Star size={10} className="fill-amber-400" /> {t.rating}
-                    </span>
-                  )}
-                  {t.escalated && <span className="text-purple-400 font-bold">Escalado</span>}
-                  {t.status !== "resolved" && isResponseSlaBreached(t) && (
-                    <span className="text-red-400 font-bold">SLA vencido</span>
-                  )}
-                  {t.relatedClientName && <span className="text-cyan-400 font-bold">{t.relatedClientName}</span>}
-                  <span className="text-gray-400 font-bold">{t.brokerName}</span>
-                  <span className="flex items-center gap-1"><Clock size={10} /> {new Date(t.createdAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+          {filteredTickets.map((t) => renderTicketCard(t))}
         </div>
       )}
 
