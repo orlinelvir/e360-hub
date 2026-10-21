@@ -242,8 +242,9 @@ export const servicesData: ServiceDetail[] = [
       "Información básica de presupuesto del cliente (ingreso mensual aproximado y gastos) para confirmar que puede sostener el nuevo pago del programa"
     ],
     process: [
-      "Revisar el reporte de crédito del cliente (o lista de deudas) para confirmar que suma $7,000+ en cuentas elegibles.",
-      "Entrar a la plataforma de Quantum Debt Solutions (botón de abajo) con el nombre del broker y del cliente.",
+      "Paso 1: el cliente saca su reporte de crédito por $1 (enlace de MyFreeScoreNow dentro del botón de abajo, con el código de afiliado oficial de Quantum) y lo guarda en PDF.",
+      "Revisar ese reporte (o una lista manual de deudas) para confirmar que suma $7,000+ en cuentas elegibles.",
+      "Paso 2: entrar a la plataforma de Quantum Debt Solutions (mismo botón de abajo) con el nombre del broker y del cliente.",
       "El cliente completa un presupuesto simple y sube su reporte de crédito (o se cargan las deudas manualmente).",
       "El cliente elige qué deudas incluir y un plan de pago (24, 36 o 48 meses) — la plataforma muestra el pago mensual y el ahorro estimado.",
       "El cliente firma el acuerdo (llega por correo) y agrega su cuenta bancaria para los pagos mensuales a un escrow asegurado por la FDIC.",
@@ -252,7 +253,12 @@ export const servicesData: ServiceDetail[] = [
     ],
     timeframe: "Admisión del cliente: 15-20 minutos. Las cuentas se dan de baja (charge-off) a los 90-120 días de dejar de pagarlas. Negociación con cada acreedor: 3 a 6 meses tras acumular fondos suficientes. Duración total del plan: 24, 36 o 48 meses según lo que elija el cliente.",
     comission: "2% sobre el monto bruto total de la deuda enrolada (ej. $20,000 en deuda = $400 de comisión; $40,000 = $800). Emprende 360 paga directo al broker, una sola vez, después de que el cliente complete su segundo pago mensual (así se evitan contracargos si cancela después del primero). Adicional: el broker puede cobrar su propia tarifa de consulta por la evaluación financiera completa, a su discreción — es un ingreso aparte que el broker cobra directo, no se gestiona en el Hub.",
-    formLink: "https://peace.quantumdebtsolutions.com",
+    // Flyer oficial de 2 pasos compartido directo por Quantum Debt Solutions:
+    // paso 1 saca el reporte de crédito vía MyFreeScoreNow (con el código de
+    // afiliado correcto de la empresa), paso 2 lleva al mismo
+    // peace.quantumdebtsolutions.com que antes era el link directo — ahora
+    // no se salta ese primer paso.
+    formLink: "https://mrfinanzas.my.canva.site/emprende360-negociacion-de-deudas",
     supportPhone: "mailto:support@quantumdebtsolutions.com",
     supportPhoneFormatted: "support@quantumdebtsolutions.com (Quantum Debt Solutions)",
     commissionRate: 0.02
