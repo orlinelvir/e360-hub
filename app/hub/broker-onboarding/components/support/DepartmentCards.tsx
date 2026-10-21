@@ -211,6 +211,13 @@ const resources: Resource[] = [
     icon: Calculator,
     action: { type: "external", href: "/calculadora-hipotecaria.html" }
   },
+  {
+    id: "centro-de-marketing",
+    label: "Centro de Marketing",
+    desc: "Contenido educativo, anuncios y scripts de ventas por servicio y plataforma",
+    icon: Megaphone,
+    action: { type: "external", href: "/centro-de-marketing.html" }
+  },
   { id: "e360-library", label: "E360 Library", desc: "Acceso al curso", icon: GraduationCap, action: { type: "external", href: "https://e360library.com" } },
   {
     id: "zoom-taxes",

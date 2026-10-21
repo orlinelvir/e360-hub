@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Centro de Marketing — Emprende 360</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d2d5e;--navy2:#0a1f45;--gold:#d4a017;--gold2:#f5c842;
+  --blue:#1a4a8a;--blue-bg:#eef3fb;--green:#1a7a3a;--green-bg:#edfaf2;
+  --red:#c0392b;--red-bg:#fff0ee;--purple:#4a1a7a;--purple-bg:#f5eeff;
+  --teal:#0a5a5a;--teal-bg:#eafaf8;--orange:#c45000;--orange-bg:#fff4ee;
+  --gray:#6a7a8a;--light:#f4f6f9;--border:#d0dae6;--dark:#1a2a3a;
+  --white:#ffffff;--text:#1a2a3a;--surface:#ffffff;--surface2:#f4f6f9;--card:#ffffff;
+  color-scheme:light dark;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --light:#1a1f28;--border:#2a3a50;--dark:#e0e8f0;--text:#d0dae8;
+  --surface:#111827;--surface2:#1a2030;--card:#1a2235;--gray:#8899aa;
+  --blue-bg:#1a2a40;--green-bg:#0a2010;--red-bg:#2a1010;--purple-bg:#1a0a30;
+  --teal-bg:#0a1a1a;--orange-bg:#2a1a0a;
+}}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--surface2);color:var(--text);min-height:100vh;padding:0 0 48px;}
+
+/* HEADER */
+.hdr{background:var(--navy);padding:16px 24px 12px;border-bottom:4px solid var(--gold);}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.hdr-brand{color:#fff;font-size:15px;font-weight:800;letter-spacing:.5px;}
+.hdr-sub{color:rgba(255,255,255,.45);font-size:10.5px;margin-top:2px;}
+.hdr-badge{background:rgba(212,160,23,.2);border:1px solid rgba(212,160,23,.5);color:var(--gold2);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;}
+
+/* MAIN TABS */
+.main-tabs{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.1);}
+.main-tabs-inner{display:flex;overflow-x:auto;scrollbar-width:none;padding:0 16px;}
+.main-tabs-inner::-webkit-scrollbar{display:none;}
+.mtab{padding:11px 18px;color:rgba(255,255,255,.5);font-size:12px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;letter-spacing:.4px;}
+.mtab:hover{color:rgba(255,255,255,.8);}
+.mtab.active{color:var(--gold2);border-bottom-color:var(--gold);}
+
+/* CONTENT AREA */
+.content{max-width:1100px;margin:0 auto;padding:20px 16px 0;}
+
+/* SERVICE + PLATFORM FILTERS */
+.filters{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:18px;}
+.filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.filter-label{font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{padding:5px 13px;border:1.5px solid var(--border);border-radius:20px;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--surface2);color:var(--text);}
+.chip:hover{border-color:var(--gold);color:var(--gold);}
+.chip.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+.chip.svc-active{background:var(--gold);border-color:var(--gold);color:var(--navy);}
+
+/* CARDS GRID */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .2s;}
+.card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1);}
+.card-header{padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:flex-start;}
+.card-badges{display:flex;gap:5px;flex-wrap:wrap;}
+.badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.3px;text-transform:uppercase;}
+.badge-svc{background:var(--navy);color:#fff;}
+.badge-plat{background:var(--blue-bg);color:var(--blue);}
+.badge-type{background:var(--gold-bg,#fffbee);color:var(--orange);}
+.badge-edu{background:var(--green-bg);color:var(--green);}
+.badge-ad{background:var(--red-bg);color:var(--red);}
+.card-body{padding:0 16px 16px;}
+.card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.3;}
+.card-copy{font-size:12px;color:var(--gray);line-height:1.55;margin-bottom:10px;}
+.card-caption{background:var(--surface2);border-left:3px solid var(--gold);padding:8px 10px;font-size:11.5px;color:var(--text);line-height:1.5;border-radius:0 6px 6px 0;font-style:italic;}
+.copy-btn{display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:5px 12px;background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;border-radius:6px;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:background .2s;}
+.copy-btn:hover{background:var(--blue);}
+.copy-btn.copied{background:var(--green);}
+
+/* SCRIPTS */
+.script-card{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;}
+.script-header{padding:14px 18px;background:var(--navy);display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.script-title{color:#fff;font-size:13px;font-weight:700;}
+.script-meta{display:flex;gap:8px;align-items:center;}
+.script-badge{background:rgba(212,160,23,.25);color:var(--gold2);font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.script-arrow{color:rgba(255,255,255,.5);font-size:12px;transition:transform .2s;}
+.script-arrow.open{transform:rotate(180deg);}
+.script-body{display:none;padding:18px 20px;}
+.script-body.open{display:block;}
+.script-section{margin-bottom:16px;}
+.script-section-title{font-size:10px;font-weight:800;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.script-section-title::before{content:'';display:block;width:3px;height:12px;background:var(--gold);border-radius:2px;}
+.script-line{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--text);margin-bottom:6px;position:relative;}
+.script-line.rep{border-left:3px solid var(--blue);}
+.script-line.obj{border-left:3px solid var(--red);background:var(--red-bg);}
+.script-line.close{border-left:3px solid var(--green);background:var(--green-bg);}
+.script-who{font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.script-who.rep-lbl{color:var(--blue);}
+.script-who.obj-lbl{color:var(--red);}
+.script-who.close-lbl{color:var(--green);}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px;color:var(--gray);font-size:13px;}
+
+/* PANEL visibility */
+.panel{display:none;}
+.panel.active{display:block;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div>
+      <div class="hdr-brand">EMPRENDE 360 — Centro de Marketing</div>
+      <div class="hdr-sub">Contenido, anuncios y scripts para todos tus servicios</div>
+    </div>
+    <div class="hdr-badge">Solo para brokers E360</div>
+  </div>
+</div>
+
+<div class="main-tabs">
+  <div class="main-tabs-inner">
+    <div class="mtab active" onclick="showPanel('edu')">Contenido Educativo</div>
+    <div class="mtab" onclick="showPanel('ads')">Contenido para Anuncios</div>
+    <div class="mtab" onclick="showPanel('scripts')">Scripts de Ventas</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- PANEL 1: CONTENIDO EDUCATIVO -->
+  <div id="panel-edu" class="panel active">
+    <div class="filters">
+      <div class="filter-row" style="margin-bottom:10px;">
+        <div class="filter-label">Servicio:</div>
+        <div class="filter-chips" id="svc-chips-edu">
+          <div class="chip svc-active" onclick="filterEdu('svc','todos')">Todos</div>
+          <div class="chip" onclick="filterEdu('svc','mca')">Financiamiento MCA</div>
+          <div class="chip" onclick="filterEdu('svc','credito')">Reparación de Crédito</div>
+          <div class="chip" onclick="filterEdu('svc','tarjetas')">Tarjetas 0%</div>
+          <div class="chip" onclick="filterEdu('svc','hipoteca')">Primera Vivienda</div>
+          <div class="chip" onclick="filterEdu('svc','seguros')">Seguros de Vida</div>
+          <div class="chip" onclick="filterEdu('svc','llc')">Formación de LLC</div>
+          <div class="chip" onclick="filterEdu('svc','taxes')">Impuestos</div>
+          <div class="chip" onclick="filterEdu('svc','migracion')">Migración</div>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-label">Plataforma:</div>
+        <div class="filter-chips" id="plat-chips-edu">
+          <div class="chip active" onclick="filterEdu('plat','todas')">Todas</div>
+          <div class="chip" onclick="filterEdu('plat','facebook')">Facebook</div>
+          <div class="chip" onclick="filterEdu('plat','instagram')">Instagram</div>
+          <div class="chip" onclick="filterEdu('plat','tiktok')">TikTok</div>
+          <div class="chip" onclick="filterEdu('plat','whatsapp')">WhatsApp</div>
+          <div class="chip" onclick="filterEdu('plat','reels')">Reels/Video</div>
+        </div>
+      </div>
+    </div>
+    <div class="cards-grid" id="edu-grid"></div>
+  </div>
+
+  <!-- PANEL 2: ANUNCIOS -->
+  <div id="panel-ads" class="panel">
+    <div class="filters">
+      <div class="filter-row" style="margin-bottom:10px;">
+        <div class="filter-label">Servicio:</div>
+        <div class="filter-chips" id="svc-chips-ads">
+          <div class="chip svc-active" onclick="filterAds('svc','todos')">Todos</div>
+          <div class="chip" onclick="filterAds('svc','mca')">Financiamiento MCA</div>
+          <div class="chip" onclick="filterAds('svc','credito')">Reparación de Crédito</div>
+          <div class="chip" onclick="filterAds('svc','tarjetas')">Tarjetas 0%</div>
+          <div class="chip" onclick="filterAds('svc','hipoteca')">Primera Vivienda</div>
+          <div class="chip" onclick="filterAds('svc','seguros')">Seguros de Vida</div>
+          <div class="chip" onclick="filterAds('svc','llc')">Formación de LLC</div>
+          <div class="chip" onclick="filterAds('svc','taxes')">Impuestos</div>
+          <div class="chip" onclick="filterAds('svc','migracion')">Migración</div>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-label">Plataforma:</div>
+        <div class="filter-chips" id="plat-chips-ads">
+          <div class="chip active" onclick="filterAds('plat','todas')">Todas</div>
+          <div class="chip" onclick="filterAds('plat','facebook')">Facebook</div>
+          <div class="chip" onclick="filterAds('plat','instagram')">Instagram</div>
+          <div class="chip" onclick="filterAds('plat','tiktok')">TikTok</div>
+          <div class="chip" onclick="filterAds('plat','whatsapp')">WhatsApp</div>
+          <div class="chip" onclick="filterAds('plat','reels')">Reels/Video</div>
+        </div>
+      </div>
+    </div>
+    <div class="cards-grid" id="ads-grid"></div>
+  </div>
+
+  <!-- PANEL 3: SCRIPTS -->
+  <div id="panel-scripts" class="panel">
+    <div class="filters">
+      <div class="filter-row">
+        <div class="filter-label">Servicio:</div>
+        <div class="filter-chips" id="svc-chips-scripts">
+          <div class="chip svc-active" onclick="filterScripts('todos')">Todos</div>
+          <div class="chip" onclick="filterScripts('mca')">MCA</div>
+          <div class="chip" onclick="filterScripts('credito')">Crédito</div>
+          <div class="chip" onclick="filterScripts('tarjetas')">Tarjetas 0%</div>
+          <div class="chip" onclick="filterScripts('hipoteca')">Hipoteca</div>
+          <div class="chip" onclick="filterScripts('seguros')">Seguros</div>
+          <div class="chip" onclick="filterScripts('llc')">LLC</div>
+          <div class="chip" onclick="filterScripts('taxes')">Impuestos</div>
+          <div class="chip" onclick="filterScripts('migracion')">Migración</div>
+        </div>
+      </div>
+    </div>
+    <div id="scripts-container"></div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+
+const SVC_NAMES = {
+  mca:'Financiamiento MCA', credito:'Reparación de Crédito',
+  tarjetas:'Tarjetas 0%', hipoteca:'Primera Vivienda',
+  seguros:'Seguros de Vida', llc:'Formación de LLC',
+  taxes:'Preparación de Impuestos', migracion:'Servicios de Migración'
+};
+const PLAT_COLORS = {
+  facebook:'#1877F2',instagram:'#E1306C',tiktok:'#000',
+  whatsapp:'#25D366',reels:'#FF4500'
+};
+
+// ── EDUCATIONAL CONTENT ─────────────────────────────
+const eduContent = [
+  // MCA
+  {svc:'mca',plat:'facebook',title:'¿Qué es un MCA y cómo puede ayudar a tu negocio?',
+   copy:'Publicación educativa larga para Facebook — explica el producto, el proceso y quién califica.',
+   caption:`¿Sabías que tu negocio puede tener acceso a capital en menos de 72 horas?\n\nUn Merchant Cash Advance (MCA) no es un préstamo tradicional. Es un adelanto basado en los ingresos que ya genera tu negocio.\n\n✅ No necesitas crédito perfecto\n✅ Desde $10,000 hasta $500,000+\n✅ Sin colateral requerido\n✅ Aprobación en 24-72 horas\n\nSi tu negocio genera depósitos de $10,000 o más al mes, probablemente calificas.\n\n💬 Comenta "INFO" o envíame un mensaje directo y te explico cómo funciona paso a paso.`},
+  {svc:'mca',plat:'instagram',title:'Carrusel: 5 cosas que no sabías sobre el financiamiento empresarial',
+   copy:'Serie de slides para Instagram educando al emprendedor sobre MCA.',
+   caption:`SLIDE 1: ¿Tu negocio necesita capital? Hay opciones que el banco no te dice.\nSLIDE 2: El MCA no revisa tus impuestos — revisa tus depósitos bancarios.\nSLIDE 3: Puedes calificar aunque tengas mal crédito personal.\nSLIDE 4: El dinero llega a tu cuenta en 24-48 horas tras la aprobación.\nSLIDE 5: Se paga automáticamente como % de tus ventas — no hay cuota fija.\n\n📩 ¿Quieres saber cuánto puede recibir tu negocio? Escríbeme.`},
+  {svc:'mca',plat:'reels',title:'Video: "3 razones por las que el banco te rechazó (y qué hacer ahora)"',
+   copy:'Guión para Reel/TikTok de 45-60 segundos estilo educativo directo a cámara.',
+   caption:`INTRO (0-5s): "Si el banco te dijo no, este video es para ti."\nPUNTO 1 (5-15s): "El banco rechaza porque mira tu crédito. El financiamiento alternativo mira tus ventas."\nPUNTO 2 (15-25s): "El banco quiere 2 años de historial. El MCA requiere solo 6 meses."\nPUNTO 3 (25-35s): "El banco tarda semanas. El MCA aprueba en horas."\nCIERRE (35-45s): "Si tu negocio tiene ingresos reales, tienes opciones. Escríbeme 'CAPITAL' y te explico cómo."`},
+  {svc:'mca',plat:'whatsapp',title:'Mensaje de valor: ¿Cuánto puede recibir tu negocio?',
+   copy:'Mensaje corto para enviar en grupos de WhatsApp o a un prospecto directo.',
+   caption:`Hola [Nombre], ¿sabías que si tu negocio genera $10,000 o más al mes, puedes acceder a capital de trabajo en menos de 72 horas?\n\nNo requiere colateral, no revisa crédito personal, y el proceso es completamente en línea.\n\nEjemplo real: negocio con $25,000/mes en depósitos → recibió $30,000 en 48 horas.\n\n¿Te interesa saber cuánto calificas? Responde aquí y te hago el cálculo sin compromiso. 🚀`},
+  // CREDITO
+  {svc:'credito',plat:'facebook',title:'¿Tu crédito te está cerrando puertas? Aquí está la solución.',
+   copy:'Post educativo para Facebook — qué es la reparación de crédito, cuánto tarda, qué resultado se puede esperar.',
+   caption:`Un puntaje de crédito bajo no es permanente — es un problema con solución.\n\nLo que muchos no saben:\n❌ Un pago tardío puede costar hasta 110 puntos\n❌ Una colección puede durar 7 años en tu reporte\n✅ Pero con el proceso correcto, se puede mejorar en 3-6 meses\n\nEn Emprende 360 trabajamos tu reporte directamente con las 3 bureaus (TransUnion, Experian y Equifax) para eliminar lo que no pertenece.\n\n¿Quieres ver tu reporte y saber qué se puede mejorar? Escríbeme "CREDITO" y comenzamos. 📊`},
+  {svc:'credito',plat:'instagram',title:'Carrusel: Los 5 factores que componen tu crédito (y cómo mejorarlos)',
+   copy:'Carrusel educativo de 6 slides — los 5 factores del FICO más un slide de llamado a la acción.',
+   caption:`SLIDE 1: Tu crédito no es un número al azar — tiene 5 partes.\nSLIDE 2: 35% — Historial de pagos. ¿Pagas a tiempo?\nSLIDE 3: 30% — Utilización. ¿Usas menos del 30% de tu límite?\nSLIDE 4: 15% — Antigüedad. ¿Tienes cuentas viejas abiertas?\nSLIDE 5: 10% + 10% — Mezcla de crédito e Indagaciones.\nSLIDE 6: ¿Quieres saber exactamente qué está bajando tu score? Escríbeme "SCORE" 📩`},
+  {svc:'credito',plat:'reels',title:'Video: "Lo que descubrí en mi reporte de crédito que nadie me había dicho"',
+   copy:'Guión para Reel educativo de 60 segundos desde la perspectiva del cliente.',
+   caption:`INTRO: "¿Cuándo fue la última vez que revisaste tu reporte de crédito?"\nDESARROLLO: "La mayoría de las personas tienen errores en su reporte y no lo saben. Cuentas que no son suyas, fechas incorrectas, colecciones ya pagadas que siguen apareciendo."\nEJEMPLO: "Un cliente llegó a nosotros con 580 puntos. En 4 meses subió a 680. ¿Cómo? Eliminamos 3 colecciones que ya habían vencido."\nCIERRE: "¿Quieres saber qué tiene tu reporte? Comenta 'REPORTE' y te ayudo a revisarlo."`},
+  {svc:'credito',plat:'tiktok',title:'TikTok: "El error #1 que destruye tu crédito sin que te des cuenta"',
+   copy:'Video corto de 30 segundos estilo dato rápido.',
+   caption:`HOOK (0-3s): "El error número 1 que destruye tu crédito... y la mayoría lo comete sin saberlo."\nDESARROLLO (3-20s): "Cerrar una tarjeta de crédito antigua. Cuando cierras una tarjeta vieja, reduces tu crédito disponible y baja el promedio de edad de tus cuentas — dos golpes al mismo tiempo."\nCIERRE (20-30s): "¿Quieres saber qué más está bajando tu score? Sígueme para más tips de crédito." #credito #finanzas #emprende360`},
+  // TARJETAS 0%
+  {svc:'tarjetas',plat:'facebook',title:'Cómo acceder a $50,000 en tarjetas de crédito empresariales al 0% de interés',
+   copy:'Post educativo explicando el proceso de credit card stacking.',
+   caption:`¿Sabías que hay una estrategia legal para acceder a $50,000 o más en tarjetas de crédito empresariales con 0% de interés por 12-18 meses?\n\nSe llama Business Credit Card Stacking y así funciona:\n\n1️⃣ Aplicamos a múltiples tarjetas empresariales simultáneamente\n2️⃣ Usas el dinero para lo que necesites en tu negocio\n3️⃣ Pagas 0% de interés durante el período introductorio\n\n¿Qué necesitas?\n✅ Crédito personal 680+\n✅ Historial de crédito de 2+ años\n✅ Sin bancarrotas recientes\n\n¿Calificas? Escríbeme "TARJETAS" y hacemos el análisis. 💳`},
+  {svc:'tarjetas',plat:'reels',title:'Video: "Accedí a $75,000 sin intereses para mi negocio — así lo hice"',
+   copy:'Guión para Reel testimonial-educativo de 60 segundos.',
+   caption:`HOOK: "¿Y si te dijera que puedes tener $75,000 disponibles para tu negocio y no pagar intereses por 15 meses?"\nEXPLICACIÓN: "Las tarjetas de crédito empresariales ofrecen períodos de 0% de interés cuando las abres. La clave es saber cuántas abrir, en qué orden, y cómo maximizar los límites."\nREQUISITOS: "Solo necesitas crédito personal de 680 o más y un buen historial.\"\nCIERRE: "Comenta '0%' y te explico cómo funciona el proceso completo."`},
+  // HIPOTECA
+  {svc:'hipoteca',plat:'facebook',title:'Todo lo que necesitas saber para comprar tu primera casa en 2025',
+   copy:'Post educativo completo sobre el proceso de compra de vivienda para compradores primerizos.',
+   caption:`Comprar tu primera casa no tiene que ser complicado. Lo que nadie te explica:\n\n🏠 Puedes comprar con solo 3.5% de enganche (FHA)\n🏠 Tu crédito no tiene que ser perfecto — desde 580 calificas\n🏠 Hay programas de asistencia que te dan dinero para el enganche\n🏠 El proceso completo toma entre 30 y 45 días\n\n5 pasos para tu primera casa:\n1. Revisa tu crédito (mínimo 580)\n2. Calcula tu DTI (deudas vs. ingresos)\n3. Obtén tu pre-aprobación\n4. Busca con un agente de confianza\n5. Cierra y recibe las llaves 🗝️\n\n¿Listo para empezar? Escríbeme "CASA" y hacemos tu pre-calificación gratis.`},
+  {svc:'hipoteca',plat:'instagram',title:'Carrusel: ¿Puedo comprar casa? Responde estas 5 preguntas',
+   copy:'Carrusel interactivo de preguntas para que el prospecto se evalúe a sí mismo.',
+   caption:`SLIDE 1: ¿Estás listo para comprar tu primera casa? Responde estas 5 preguntas.\nSLIDE 2: ¿Tu crédito es 580 o más? → Sí: continúa. No: podemos trabajarlo.\nSLIDE 3: ¿Tienes 3.5% del precio de la casa ahorrado? → Sí: listo. No: hay programas de ayuda.\nSLIDE 4: ¿Tus deudas son menos del 43% de tu ingreso? → Importante para calificar.\nSLIDE 5: ¿Llevas 2+ años en el mismo trabajo o campo? → Muy importante para el lender.\nSLIDE 6: Si respondiste sí a la mayoría — ¡estás más cerca de lo que crees! Escríbeme 🏠`},
+  {svc:'hipoteca',plat:'tiktok',title:'TikTok: "El enganche no tiene que salir de tu bolsillo — te explico cómo"',
+   copy:'Video de 45 segundos sobre programas de asistencia de enganche.',
+   caption:`HOOK: "¿Sabías que en muchos estados el gobierno te da dinero para el enganche de tu primera casa?"\nDESARROLLO: "Se llaman Down Payment Assistance Programs. Pueden darte desde $5,000 hasta $35,000 dependiendo del estado donde vives — y en muchos casos no hay que devolverlo."\nEJEMPLO: "En Texas puedes recibir hasta 5% del precio de la casa gratis si es tu primera vivienda."\nCIERRE: "Comenta tu estado y te digo qué programas están disponibles para ti. 🏡" #primeracasa #enganche`},
+  // SEGUROS
+  {svc:'seguros',plat:'facebook',title:'El seguro de vida no es para cuando te mueres — es para cuando vives',
+   copy:'Post educativo reencuadrando el seguro de vida como herramienta financiera.',
+   caption:`La mayoría piensa que el seguro de vida es solo "por si algo pasa." Pero hay un tipo de seguro que también trabaja para ti mientras vives.\n\nEl seguro de vida permanente (whole life / IUL) te permite:\n💰 Acumular valor en efectivo con el tiempo\n💰 Pedir prestado contra tu póliza sin afectar tu crédito\n💰 Dejar un legado libre de impuestos a tu familia\n💰 Usarlo como estrategia de ahorro forzoso\n\n¿Tienes familia? ¿Un negocio? ¿Deudas?\nTu familia merece estar protegida sin importar lo que pase.\n\n📞 Escríbeme "SEGURO" y te hago una cotización gratis sin compromiso.`},
+  {svc:'seguros',plat:'reels',title:'Video: "¿Cuánto cuesta un seguro de vida? Menos de lo que crees"',
+   copy:'Guión para Reel desmitificando el costo del seguro de vida.',
+   caption:`HOOK: "¿Cuánto crees que cuesta un seguro de vida de $500,000?"\nRESPUESTA: "Para una persona sana de 35 años... puede ser menos de $30 al mes."\nEXPLICACIÓN: "El seguro de vida es más accesible de lo que la gente cree. Y esperar más solo hace que sea más caro."\nCIERRE: "Si tienes entre 20 y 55 años y quieres proteger a tu familia, comenta 'COTIZACIÓN' y te doy un número real en minutos." #segurodevida #familia`},
+  // LLC
+  {svc:'llc',plat:'facebook',title:'¿Por qué registrar tu negocio como LLC? Los 5 beneficios que nadie te dice',
+   copy:'Post educativo sobre los beneficios de formalizar el negocio.',
+   caption:`Si tienes un negocio y no lo has registrado como LLC, estás dejando dinero sobre la mesa y tu patrimonio en riesgo.\n\n5 razones para registrar tu LLC hoy:\n\n1️⃣ PROTECCIÓN LEGAL — separa tus activos personales de los del negocio\n2️⃣ CRÉDITO EMPRESARIAL — construye historial de crédito para el negocio\n3️⃣ PROFESIONALISMO — inspira más confianza a clientes y proveedores\n4️⃣ BENEFICIOS FISCALES — accede a deducciones que un trabajador independiente no tiene\n5️⃣ ACCESO A FINANCIAMIENTO — los lenders prefieren negocios registrados\n\n¿Cuánto cuesta? Menos de lo que crees.\n💬 Escríbeme "LLC" y te explico el proceso en tu estado.`},
+  {svc:'llc',plat:'tiktok',title:'TikTok: "Registré mi negocio en 7 días — así lo hice"',
+   copy:'Video corto mostrando lo fácil que es el proceso.',
+   caption:`HOOK: "¿Tienes un negocio que no está registrado? Esto te puede costar caro."\nDESARROLLO: "Sin LLC, si alguien te demanda — van contra tus cuentas personales, tu casa, tu carro. Con una LLC, hay una pared legal entre tú y el negocio."\nPROCESO: "El proceso toma entre 7 y 14 días y nosotros lo hacemos por ti — solo nos das el nombre y los datos.\"\nCIERRE: "Comenta 'LLC' y te digo cuánto cuesta en tu estado. #llc #negocio #emprendedor"`},
+  // TAXES
+  {svc:'taxes',plat:'facebook',title:'¿Ya preparaste tus impuestos? 5 deducciones que los emprendedores pierden cada año',
+   copy:'Post educativo sobre deducciones de impuestos para negocios.',
+   caption:`Si tienes un negocio y preparas tus impuestos sin ayuda profesional, probablemente estás pagando más de lo que debes.\n\n5 deducciones que los emprendedores pierden:\n\n🏠 Oficina en casa (home office deduction)\n🚗 Uso del vehículo para el negocio\n📱 Celular, internet y equipos de tecnología\n🎓 Capacitaciones y cursos relacionados al negocio\n💳 Intereses de préstamos empresariales\n\nCada dólar de deducción = menos impuestos. Y nuestro software está incluido en tu membresía.\n\n📅 Escríbeme "TAXES" y te agendamos tu cita de preparación. ✅`},
+  {svc:'taxes',plat:'reels',title:'Video: "El IRS no te va a avisar que pagaste de más — por eso necesitas un profesional"',
+   copy:'Guión para Reel urgente sobre preparación de impuestos.',
+   caption:`HOOK: "¿Sabías que el IRS nunca te va a llamar para decirte que pagaste de más?"\nDESARROLLO: "La mayoría de los emprendedores dejan miles de dólares en la mesa cada año porque no declaran todas sus deducciones. El IRS no te las va a recordar."\nSOLUCIÓN: "Un preparador de impuestos profesional puede identificar deducciones que tú no conoces y reducir lo que pagas significativamente."\nCIERRE: "Comenta 'DEDUCCIÓN' y te digo si estás dejando dinero sobre la mesa. #impuestos #taxes #emprendedor"`},
+  // MIGRACION
+  {svc:'migracion',plat:'facebook',title:'¿Tienes preguntas sobre tu proceso migratorio? Esto es lo que debes saber',
+   copy:'Post educativo sobre servicios de migración — con cuidado legal apropiado.',
+   caption:`El proceso migratorio puede ser complicado, pero no tienes que navegarlo solo.\n\nNuestro equipo puede ayudarte a:\n📄 Organizar y preparar la documentación para tus formularios\n📄 Entender qué formularios del USCIS aplican a tu caso\n📄 Traducciones certificadas de documentos\n📄 Seguimiento al estado de tu caso\n\n⚠️ Nota importante: Nuestros servicios son de asistencia y preparación de documentos. Para representación legal, referimos a abogados de inmigración certificados.\n\n¿Tienes preguntas sobre tu proceso? Escríbeme "MIGRACIÓN" y te orientamos. 🇺🇸`},
+];
+
+// ── ADS CONTENT ─────────────────────────────
+const adsContent = [
+  // MCA ADS
+  {svc:'mca',plat:'facebook',title:'Anuncio: "¿Tu negocio necesita capital HOY?"',
+   copy:'Anuncio agresivo para Facebook Ads — alta urgencia, CTA directo.',
+   caption:`¿Tu negocio necesita capital AHORA?\n\n⚡ $10,000 a $500,000\n⚡ Aprobación en 24 horas\n⚡ Sin crédito perfecto\n⚡ Sin colateral\n\n👉 Haz clic en "Más información" y descubre cuánto calificas en 2 minutos.\n\nLimitado a negocios con $10,000+ en ventas mensuales.`},
+  {svc:'mca',plat:'instagram',title:'Anuncio Story: Capital para tu negocio — desliza arriba',
+   copy:'Copy para Instagram Story Ad — formato breve y directo.',
+   caption:`LÍNEA 1: ¿Necesitas capital para tu negocio?\nLÍNEA 2: Hasta $500,000 en 24-72 horas.\nLÍNEA 3: Sin banco. Sin colateral. Sin espera.\nCTA: Desliza arriba → Califica ahora`},
+  {svc:'mca',plat:'reels',title:'Video Ad: Hook de 3 segundos — "El banco te dijo no"',
+   copy:'Guión para video ad agresivo de 15-30 segundos.',
+   caption:`0-3s HOOK: "¿El banco te dijo NO?"\n3-10s: "Tu negocio merece capital sin importar tu crédito. Con un MCA puedes recibir hasta $500,000 en menos de 72 horas."\n10-20s: "Solo necesitas 6 meses de negocio y depósitos bancarios. Eso es todo."\n20-30s CTA: "Haz clic ahora y descubre cuánto calificas — gratis, sin compromiso." [Texto en pantalla: "Aplica en 2 minutos →"]`},
+  {svc:'mca',plat:'tiktok',title:'TikTok Ad: "POV: Tu negocio recibió $50,000 en 48 horas"',
+   copy:'Video ad estilo TikTok nativo — relatable y directo.',
+   caption:`HOOK VISUAL: Mostrar depósito bancario en pantalla\nVOZ: "48 horas. $50,000. Sin banco. Sin colateral. Así es el financiamiento que los bancos no quieren que sepas."\nCTA: "¿Quieres saber cuánto puede recibir tu negocio? Comenta 'CAPITAL' ahora." #business #capital #emprendedor`},
+  // CREDITO ADS
+  {svc:'credito',plat:'facebook',title:'Anuncio: "¿Tu crédito bajo 600? Podemos subirlo"',
+   copy:'Anuncio directo orientado a la solución.',
+   caption:`Crédito bajo 600 = puertas cerradas.\nCrédito sobre 700 = oportunidades abiertas.\n\n¿Dónde estás tú ahora?\n\nEn Emprende 360 hemos ayudado a cientos de personas a subir su puntaje 50, 100, hasta 150 puntos en meses.\n\nPrimer paso: revisa tu reporte GRATIS.\n👉 Haz clic y agenda tu consulta de crédito sin costo.`},
+  {svc:'credito',plat:'instagram',title:'Anuncio Story: Antes y después del crédito',
+   copy:'Story Ad visual con transformación de score.',
+   caption:`ANTES: 540 → DESPUÉS: 695 ✅\n\n¿Qué cambió? Eliminamos 4 colecciones y bajamos la utilización al 12%.\n\nTu transformación puede empezar hoy.\nDesliza arriba → Consulta gratis 📊`},
+  {svc:'credito',plat:'reels',title:'Video Ad: "En 90 días subiste 80 puntos — así es posible"',
+   copy:'Guión para video ad testimonial de crédito.',
+   caption:`HOOK: "¿Qué pasaría si en 90 días tu crédito subiera 80 puntos?"\nEJEMPLO: "Eso fue exactamente lo que le pasó a uno de nuestros clientes. Empezó con 560 y terminó con 640. Eso significó pre-aprobación para su primera casa."\nSOCIAL PROOF: "Llevamos más de 3 años haciendo esto y cientos de casos exitosos.\"\nCTA: "Haz clic → Consulta de crédito gratis hoy." #credito #score #emprende360`},
+  // TARJETAS ADS
+  {svc:'tarjetas',plat:'facebook',title:'Anuncio: "$50,000 para tu negocio — 0% de interés por 15 meses"',
+   copy:'Anuncio de alto impacto para credit card stacking.',
+   caption:`¿Imagínate tener $50,000 disponibles para tu negocio pagando 0% de interés?\n\nNo es un cuento — es una estrategia que usamos con cientos de emprendedores.\n\n✅ Crédito 680+ requerido\n✅ Sin colateral\n✅ Fondos disponibles en 2-4 semanas\n✅ 0% de interés por hasta 18 meses\n\n👉 Haz clic → Califica en 60 segundos`},
+  {svc:'tarjetas',plat:'reels',title:'Video Ad: "Así es como accedes a capital sin pagar intereses"',
+   copy:'Guión de 30 segundos para video ad de tarjetas empresariales.',
+   caption:`HOOK: "¿Qué harías con $50,000 en tu negocio y cero intereses?"\nEXPLICACIÓN: "Con crédito de 680 o más, podemos abrirte múltiples tarjetas empresariales simultáneamente con períodos de 0% de interés de 12 a 18 meses."\nCTA: "Haz clic y aplica ahora — sin costo, sin compromiso." #credito #capital #negocio`},
+  // HIPOTECA ADS
+  {svc:'hipoteca',plat:'facebook',title:'Anuncio: "Tu primera casa está más cerca de lo que crees"',
+   copy:'Anuncio emocional orientado al sueño de la primera casa.',
+   caption:`¿Sigues pagando renta mientras el dueño construye su patrimonio?\n\nLa diferencia entre seguir rentando y ser dueño puede ser solo un paso.\n\n🏠 Enganche desde 3.5%\n🏠 Crédito desde 580\n🏠 Programas de asistencia disponibles\n🏠 Pre-aprobación en 24 horas\n\n👉 Haz clic → Pre-calificación gratis — sin afectar tu crédito`},
+  {svc:'hipoteca',plat:'reels',title:'Video Ad: "De pagar renta a tener las llaves de tu casa"',
+   copy:'Video ad emocional de 30-45 segundos.',
+   caption:`HOOK: "Hace 8 meses este cliente me dijo que nunca iba a poder comprarse una casa."\nHISTORIA: "Crédito 610, sin enganche ahorrado. Hoy tiene las llaves de su primera casa en Texas."\nCOMO: "Trabajamos su crédito 4 meses, lo conectamos con un programa de asistencia de enganche, y cerramos en 35 días."\nCTA: "¿Quieres saber si puedes comprar casa este año? Haz clic → consulta gratis." #casa #hipoteca #sueño`},
+  // SEGUROS ADS
+  {svc:'seguros',plat:'facebook',title:'Anuncio: "¿Qué le pasa a tu familia si no estás?"',
+   copy:'Anuncio emocional de alta conversión para seguros de vida.',
+   caption:`Es una pregunta incómoda. Pero alguien tiene que hacerla.\n\n¿Qué le pasa a tu familia si mañana no estás?\n\n¿Pueden pagar la renta? ¿La hipoteca? ¿La escuela de los niños?\n\nUn seguro de vida puede garantizar que ellos estén protegidos — por menos de lo que gastas en café al mes.\n\n📞 Cotización gratis en 5 minutos → Haz clic ahora\n\nNo lo dejes para después. Después puede ser demasiado tarde.`},
+  {svc:'seguros',plat:'reels',title:'Video Ad: "¿Cuánto cuesta proteger a tu familia?"',
+   copy:'Video ad de 20 segundos — dato impactante + CTA.',
+   caption:`HOOK: "¿Cuánto cuesta un seguro de vida de $500,000?"\nDATO: "Para una persona de 35 años sin problemas de salud... menos de $30 al mes."\nEMOCIÓN: "¿Vale la paz de saber que tu familia siempre estará protegida? Yo creo que sí."\nCTA: "Haz clic → cotización gratis en 5 minutos." #familia #seguro #proteccion`},
+  // LLC ADS
+  {svc:'llc',plat:'facebook',title:'Anuncio: "Registra tu negocio hoy — desde $99"',
+   copy:'Anuncio directo con precio para formación de LLC.',
+   caption:`¿Tienes un negocio sin registrar?\n\nSin LLC:\n❌ Tu casa y ahorros están en riesgo\n❌ No puedes construir crédito empresarial\n❌ Los clientes no te ven como una empresa seria\n\nCon LLC:\n✅ Protección legal total\n✅ Crédito empresarial separado\n✅ Acceso a financiamiento\n\nLo hacemos por ti en 7-14 días.\n👉 Haz clic → Empieza hoy`},
+  // TAXES ADS
+  {svc:'taxes',plat:'facebook',title:'Anuncio: "¿Ya tienes fecha para tus impuestos?"',
+   copy:'Anuncio de urgencia estacional para preparación de impuestos.',
+   caption:`El tiempo se acaba y el IRS no espera.\n\n⏰ Evita multas y recargos\n💰 Maximiza tus deducciones\n📄 Software incluido — sin costo extra\n\nPreparamos impuestos para individuos y negocios. Rápido, seguro y en español.\n\n👉 Agenda tu cita ahora → Cupos limitados esta semana`},
+  // MIGRACION ADS
+  {svc:'migracion',plat:'facebook',title:'Anuncio: "Organiza tus documentos migratorios — te ayudamos"',
+   copy:'Anuncio cálido y de confianza para servicios de migración.',
+   caption:`El proceso migratorio es complicado. Nosotros lo hacemos más fácil.\n\n📄 Preparación de formularios USCIS\n📄 Traducciones certificadas\n📄 Organización de documentos\n📄 Seguimiento a tu caso\n\nHablamos tu idioma y entendemos tu proceso.\n\n💬 Escríbenos → Primera consulta gratis\n\n⚠️ Servicios de preparación de documentos. Para representación legal recomendamos un abogado de inmigración.`},
+];
+
+// ── SCRIPTS ─────────────────────────────────
+const scripts = [
+  {svc:'mca', title:'Script: Llamada en frío — Financiamiento MCA',
+   channel:'📞 Llamada telefónica', duration:'5-8 minutos',
+   sections:[
+     {title:'APERTURA',lines:[
+       {type:'rep',who:'Rep:',text:'"Buenas tardes, ¿me comunico con [Nombre]? Perfecto. Mi nombre es [Tu nombre] y te llamo de parte de Emprende 360. La razón de mi llamada es que hemos estado trabajando con dueños de negocios como tú para conectarlos con opciones de capital de trabajo. Tengo solo 2-3 minutos — ¿es un buen momento para hablar?"'},
+     ]},
+     {title:'CALIFICACIÓN',lines:[
+       {type:'rep',who:'Rep:',text:'"¿Tu negocio lleva más de 6 meses operando?" → "¿Tienes cuenta bancaria empresarial?" → "¿Manejas más de $10,000 al mes en depósitos?"'},
+       {type:'rep',who:'Rep:',text:'"Perfecto. Basado en lo que me dices, muy probablemente calificas para un adelanto de entre $20,000 y $100,000. ¿Estarías interesado en ver las opciones?"'},
+     ]},
+     {title:'OBJECIONES COMUNES',lines:[
+       {type:'obj',who:'Cliente:',text:'"¿Cuánto me cobran de interés?"'},
+       {type:'rep',who:'Rep:',text:'"Excelente pregunta. El MCA no funciona como un préstamo de banco — no tiene una tasa de interés fija. En cambio tiene un factor rate. Te lo explico mejor en nuestra consulta de 15 minutos. ¿Cuándo tienes disponibilidad?"'},
+       {type:'obj',who:'Cliente:',text:'"No creo que califique, mi crédito no es bueno."'},
+       {type:'rep',who:'Rep:',text:'"Entiendo tu preocupación, pero aquí está la buena noticia: el MCA no se basa principalmente en tu crédito personal — se basa en los depósitos de tu negocio. Si tienes ventas, probablemente calificas."'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"Perfecto, [Nombre]. Lo que quiero hacer es agendar una llamada de 15 minutos esta semana para revisar los números y decirte exactamente cuánto puede recibir tu negocio. ¿Tienes disponibilidad el martes o el miércoles por la tarde?"'},
+     ]},
+   ]},
+  {svc:'mca', title:'Script: Consulta por Zoom — Presentación MCA',
+   channel:'💻 Zoom / Video', duration:'15-20 minutos',
+   sections:[
+     {title:'BIENVENIDA',lines:[
+       {type:'rep',who:'Rep:',text:'"[Nombre], gracias por tu tiempo. El objetivo de esta llamada es simple: entender qué necesita tu negocio y mostrarte exactamente qué opciones existen. Son 15 minutos — empecemos. ¿Me puedes contar un poco sobre tu negocio?"'},
+     ]},
+     {title:'DIAGNÓSTICO',lines:[
+       {type:'rep',who:'Rep:',text:'"¿Cuánto tiempo llevas operando?" → "¿Qué tipo de negocio tienes?" → "¿Cuánto generas en ventas mensualmente?" → "¿Tienes financiamiento activo actualmente?" → "¿Para qué usarías el capital si lo recibieras?"'},
+     ]},
+     {title:'PRESENTACIÓN',lines:[
+       {type:'rep',who:'Rep:',text:'"Basado en lo que me dices, puedo ver dos o tres opciones para ti. La primera es un MCA — te explico exactamente cómo funciona y qué te costaría realmente..."'},
+       {type:'rep',who:'Rep:',text:'"El factor rate en tu caso estaría entre 1.25 y 1.35. Eso significa que si recibes $50,000, pagarías entre $62,500 y $67,500 en total — descontado automáticamente de tus ventas diarias. ¿Tiene sentido?"'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"¿Hay algo que te impida avanzar hoy? Si estás listo, los próximos pasos son simples: 4-6 meses de estados de cuenta bancarios y una solicitud en línea que toma 10 minutos. ¿Empezamos?"'},
+     ]},
+   ]},
+  {svc:'credito', title:'Script: Consulta de crédito — Llamada inicial',
+   channel:'📞 Llamada telefónica', duration:'8-10 minutos',
+   sections:[
+     {title:'APERTURA',lines:[
+       {type:'rep',who:'Rep:',text:'"Hola [Nombre], te llamo de Emprende 360. Vi que estás interesado en mejorar tu crédito. Tengo unos minutos — ¿me puedes contar cuál es tu situación actual?"'},
+     ]},
+     {title:'DIAGNÓSTICO',lines:[
+       {type:'rep',who:'Rep:',text:'"¿Sabes aproximadamente cuál es tu puntaje?" → "¿Tienes cuentas en colecciones?" → "¿Has tenido pagos tardíos?" → "¿Cuál es tu meta? ¿Comprar casa, auto, o simplemente mejorar el crédito?"'},
+     ]},
+     {title:'PROPUESTA',lines:[
+       {type:'rep',who:'Rep:',text:'"Basado en lo que me dices, podemos ayudarte. El proceso funciona así: revisamos tu reporte de las 3 bureaus, identificamos todo lo que se puede disputar, y enviamos cartas formales. La mayoría de nuestros clientes ven mejoras en 60-90 días."'},
+       {type:'rep',who:'Rep:',text:'"La inversión para tu perfil es de [monto] de inicio y $50 al mes. En promedio, los clientes con tu situación ven resultados en 3-4 meses. ¿Tiene sentido para ti?"'},
+     ]},
+     {title:'OBJECIONES',lines:[
+       {type:'obj',who:'Cliente:',text:'"¿Esto realmente funciona?"'},
+       {type:'rep',who:'Rep:',text:'"Entiendo la duda — hay muchas empresas que prometen y no cumplen. Lo que te puedo decir es que nuestro proceso está basado en la Ley FCRA, que le da al consumidor el derecho legal a disputar información incorrecta. No prometemos resultados mágicos, pero sí prometemos un proceso correcto y constante."'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"El siguiente paso es que obtengas tu reporte de IdentityIQ o CreditKarma y me lo compartas para que podamos darte un diagnóstico preciso y gratuito. ¿Puedes hacer eso hoy?"'},
+     ]},
+   ]},
+  {svc:'credito', title:'Script: Reunión presencial — Revisión de reporte',
+   channel:'🤝 Cara a cara', duration:'20-30 minutos',
+   sections:[
+     {title:'APERTURA',lines:[
+       {type:'rep',who:'Rep:',text:'"[Nombre], gracias por venir. Hoy vamos a revisar tu reporte juntos, identificar qué está afectando tu puntaje, y darte un plan concreto. ¿Tienes el reporte aquí?"'},
+     ]},
+     {title:'DIAGNÓSTICO',lines:[
+       {type:'rep',who:'Rep:',text:'"Veo aquí [número] de cuentas negativas. Las más importantes son [mencionar colecciones, tardanzas]. Esta colección de [nombre] — ¿la reconoces? ¿La deuda está pagada o no?"'},
+       {type:'rep',who:'Rep:',text:'"Tu utilización está al [X]%. Si la bajamos al 30%, podrías subir entre 20 y 40 puntos solo con ese cambio."'},
+     ]},
+     {title:'PRESENTACIÓN DEL SERVICIO',lines:[
+       {type:'rep',who:'Rep:',text:'"El proceso que usamos tiene 3 fases: Primera, enviamos cartas de disputa a las 3 bureaus por todos los items que vemos aquí. Segunda, hacemos seguimiento en 30 días. Tercera, si los items no son eliminados en la primera ronda, enviamos una segunda ronda con más detalle."'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"Basado en tu reporte, recomiendo el plan [Básico/Intermedio/Avanzado] que es [monto]. ¿Tienes tu tarjeta o preferencia de pago aquí? Podemos comenzar hoy mismo y el primer reporte actualizado lo verás en 30-45 días."'},
+     ]},
+   ]},
+  {svc:'tarjetas', title:'Script: Presentación de Credit Card Stacking',
+   channel:'💻 Zoom / Video', duration:'15-20 minutos',
+   sections:[
+     {title:'APERTURA',lines:[
+       {type:'rep',who:'Rep:',text:'"[Nombre], el objetivo de hoy es mostrarte una estrategia que muy pocos conocen para acceder a capital significativo para tu negocio sin pagar intereses. ¿Listo?"'},
+     ]},
+     {title:'CALIFICACIÓN',lines:[
+       {type:'rep',who:'Rep:',text:'"Primero necesito hacerte 3 preguntas rápidas. ¿Tu crédito personal es de 680 o más?" → "¿Tienes más de 2 años de historial de crédito?" → "¿Has tenido bancarrota en los últimos 5 años?"'},
+       {type:'rep',who:'Rep:',text:'"Perfecto. Basado en lo que me dices, calificas para el proceso. Déjame explicarte cómo funciona."'},
+     ]},
+     {title:'EXPLICACIÓN',lines:[
+       {type:'rep',who:'Rep:',text:'"Lo que hacemos se llama business credit card stacking. En lugar de aplicar a una tarjeta, aplicamos a múltiples tarjetas empresariales al mismo tiempo, cada una con un período de 0% de interés de 12 a 18 meses. El resultado: entre $30,000 y $100,000+ disponibles sin intereses."'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"El proceso toma entre 2 y 4 semanas. La inversión es [monto]. ¿Quieres que empecemos con el análisis de tu crédito para ver exactamente a cuánto puedes acceder?"'},
+     ]},
+   ]},
+  {svc:'hipoteca', title:'Script: Consulta de primera vivienda — Llamada',
+   channel:'📞 Llamada telefónica', duration:'10-12 minutos',
+   sections:[
+     {title:'APERTURA',lines:[
+       {type:'rep',who:'Rep:',text:'"Hola [Nombre], soy [Tu nombre] de Emprende 360. Me comunicaste que estás interesado en comprar tu primera casa. Tengo unos minutos — ¿me puedes contar un poco sobre tu situación?"'},
+     ]},
+     {title:'DIAGNÓSTICO',lines:[
+       {type:'rep',who:'Rep:',text:'"¿Sabes cuál es tu puntaje de crédito aproximado?" → "¿Tienes ahorros para el enganche?" → "¿Tienes empleo estable hace más de 2 años?" → "¿En qué área estás pensando comprar?" → "¿Cuál es tu presupuesto aproximado?"'},
+     ]},
+     {title:'EDUCACIÓN',lines:[
+       {type:'rep',who:'Rep:',text:'"Con un crédito de [score], calificas para un préstamo FHA con solo 3.5% de enganche. En tu caso, para una casa de $300,000, eso sería $10,500 de enganche. Más costos de cierre de aproximadamente 2-3%, estaríamos hablando de tener $15,000-$18,000 listos."'},
+       {type:'rep',who:'Rep:',text:'"Y dependiendo del estado donde compras, puede haber programas de asistencia que te dan dinero para el enganche — a veces hasta $15,000 que no tienes que devolver."'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"El primer paso es tu pre-aprobación. Eso no cuesta nada, no afecta tu crédito, y te dice exactamente cuánto puedes gastar. ¿Quieres que te ayude a hacer eso esta semana?"'},
+     ]},
+   ]},
+  {svc:'seguros', title:'Script: Consulta de seguro de vida — Cara a cara',
+   channel:'🤝 Cara a cara', duration:'20-30 minutos',
+   sections:[
+     {title:'APERTURA',lines:[
+       {type:'rep',who:'Rep:',text:'"[Nombre], antes de mostrarte cualquier producto, quiero entender tu situación. ¿Me puedes contar un poco sobre tu familia? ¿Tienes hijos?" → "¿Tienes hipoteca o deudas que alguien tendría que pagar si no estuvieras?"'},
+     ]},
+     {title:'CREANDO NECESIDAD',lines:[
+       {type:'rep',who:'Rep:',text:'"Te voy a hacer una pregunta que puede ser incómoda pero es importante. Si mañana no estuvieras, ¿qué pasaría con [mencionar lo que tienen: familia, negocio, hipoteca]? ¿Estarían protegidos?"'},
+       {type:'rep',who:'Rep:',text:'"Eso es exactamente lo que un seguro de vida resuelve. No es un gasto — es una garantía de que lo que construiste no desaparece."'},
+     ]},
+     {title:'PRESENTACIÓN',lines:[
+       {type:'rep',who:'Rep:',text:'"Para alguien como tú, con [familia / negocio / hipoteca], recomendaría una póliza de vida permanente de $[monto]. El costo mensual sería aproximadamente $[monto]. Eso protege a tu familia y también acumula valor en efectivo que puedes usar en vida."'},
+     ]},
+     {title:'OBJECIONES',lines:[
+       {type:'obj',who:'Cliente:',text:'"Quiero pensarlo más."'},
+       {type:'rep',who:'Rep:',text:'"Entiendo completamente. Solo quiero que sepas que el precio del seguro aumenta con la edad y cualquier cambio de salud. Hoy eres joven y saludable — hoy es el mejor momento para asegurarte. ¿Qué necesitas para tomar la decisión hoy?"'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"Solo necesito hacerte unas preguntas básicas de salud y podemos activar la póliza hoy mismo. ¿Empezamos la solicitud?"'},
+     ]},
+   ]},
+  {svc:'llc', title:'Script: Consulta de formación de LLC',
+   channel:'📞 Llamada / 💻 Zoom', duration:'10-15 minutos',
+   sections:[
+     {title:'APERTURA',lines:[
+       {type:'rep',who:'Rep:',text:'"Hola [Nombre], me comunicaste que tienes un negocio que aún no está registrado. ¿Me puedes contar un poco sobre lo que haces?"'},
+     ]},
+     {title:'DIAGNÓSTICO',lines:[
+       {type:'rep',who:'Rep:',text:'"¿Cuánto tiempo llevas operando?" → "¿Tienes empleados o solo eres tú?" → "¿En qué estado estás?" → "¿Tienes EIN federal?" → "¿Has intentado abrir crédito empresarial?"'},
+     ]},
+     {title:'EDUCACIÓN',lines:[
+       {type:'rep',who:'Rep:',text:'"Lo que me preocupa de tu situación es que sin LLC, si alguien te demanda o el negocio tiene deudas, van contra tus activos personales. Con una LLC, hay una pared legal entre tú y el negocio."'},
+       {type:'rep',who:'Rep:',text:'"Además, con tu LLC activa, puedes empezar a construir crédito empresarial separado del personal. Eso abre puertas a financiamiento que hoy no tienes disponible."'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"El proceso es simple: nos das el nombre que quieres para tu empresa, la dirección, y los dueños con sus porcentajes. Nosotros hacemos todo lo demás en 7-14 días. ¿Empezamos?"'},
+     ]},
+   ]},
+  {svc:'taxes', title:'Script: Consulta de impuestos — Llamada',
+   channel:'📞 Llamada telefónica', duration:'8-10 minutos',
+   sections:[
+     {title:'APERTURA',lines:[
+       {type:'rep',who:'Rep:',text:'"Hola [Nombre], te llamo de Emprende 360. ¿Ya tienes a alguien para preparar tus impuestos este año o todavía estás buscando opciones?"'},
+     ]},
+     {title:'DIAGNÓSTICO',lines:[
+       {type:'rep',who:'Rep:',text:'"¿Tienes negocio propio o eres empleado? ¿O ambos?" → "¿Tienes LLC formada?" → "¿Preparaste tus propios impuestos el año pasado o usaste a alguien?"'},
+     ]},
+     {title:'VALOR',lines:[
+       {type:'rep',who:'Rep:',text:'"Lo que notamos es que muchos emprendedores dejan dinero sobre la mesa porque no conocen todas las deducciones disponibles. Un buen preparador puede reducir lo que pagas significativamente — a veces cientos o miles de dólares."'},
+       {type:'rep',who:'Rep:',text:'"Y la buena noticia es que nuestro software de taxes está incluido en tu membresía, así que no hay costo adicional de software."'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"¿Qué te parece si agendamos tu cita esta semana? Solo necesitas traer tus W-2 o 1099, y si tienes negocio, tus estados de cuenta del año. ¿Cuándo tienes disponibilidad?"'},
+     ]},
+   ]},
+  {svc:'migracion', title:'Script: Consulta de servicios migratorios',
+   channel:'📞 / 🤝 / 💻', duration:'10-15 minutos',
+   sections:[
+     {title:'APERTURA',lines:[
+       {type:'rep',who:'Rep:',text:'"Hola [Nombre], ¿cómo estás? Me dijeron que tienes algunas preguntas sobre tu proceso migratorio. Cuéntame, ¿qué está pasando con tu caso?"'},
+     ]},
+     {title:'DIAGNÓSTICO',lines:[
+       {type:'rep',who:'Rep:',text:'"¿Qué tipo de petición tienes? ¿Familiar, laboral, o asilo?" → "¿Ya tienes abogado o asesor?" → "¿Cuál es la etapa en la que estás?" → "¿Qué documentos necesitas organizar o traducir?"'},
+     ]},
+     {title:'EXPLICACIÓN DEL SERVICIO',lines:[
+       {type:'rep',who:'Rep:',text:'"Lo que nuestro equipo puede hacer es ayudarte a organizar y preparar la documentación para los formularios del USCIS, hacer traducciones certificadas, y darte seguimiento al estado de tu caso. Lo que no podemos hacer es representarte legalmente — para eso te conectamos con abogados de inmigración de confianza."'},
+     ]},
+     {title:'CIERRE',lines:[
+       {type:'close',who:'Cierre:',text:'"¿Tienes los documentos que necesitas organizar? ¿Qué te parece si nos reunimos esta semana para ver exactamente qué necesitas y te damos una propuesta?"'},
+     ]},
+   ]},
+];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let eduSvcFilter = 'todos', eduPlatFilter = 'todas';
+let adsSvcFilter = 'todos', adsPlatFilter = 'todas';
+let scriptSvcFilter = 'todos';
+
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+function renderCard(item, isAd) {
+  return `<div class="card" data-svc="${item.svc}" data-plat="${item.plat}">
+    <div class="card-header">
+      <div class="card-badges">
+        <span class="badge badge-svc">${SVC_NAMES[item.svc]||item.svc}</span>
+        <span class="badge badge-plat">${item.plat}</span>
+        <span class="badge ${isAd?'badge-ad':'badge-edu'}">${isAd?'Anuncio':'Educativo'}</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${item.title}</div>
+      <div class="card-copy">${item.copy}</div>
+      <div class="card-caption">${item.caption.replace(/\n/g,'<br>')}</div>
+      <button class="copy-btn" onclick="copyText(this, \`${item.caption.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`)">
+        📋 Copiar contenido
+      </button>
+    </div>
+  </div>`;
+}
+
+function renderEdu() {
+  const filtered = eduContent.filter(i =>
+    (eduSvcFilter==='todos'||i.svc===eduSvcFilter) &&
+    (eduPlatFilter==='todas'||i.plat===eduPlatFilter));
+  const g = document.getElementById('edu-grid');
+  g.innerHTML = filtered.length ? filtered.map(i=>renderCard(i,false)).join('') :
+    '<div class="empty">No hay contenido para los filtros seleccionados.</div>';
+}
+
+function renderAds() {
+  const filtered = adsContent.filter(i =>
+    (adsSvcFilter==='todos'||i.svc===adsSvcFilter) &&
+    (adsPlatFilter==='todas'||i.plat===adsPlatFilter));
+  const g = document.getElementById('ads-grid');
+  g.innerHTML = filtered.length ? filtered.map(i=>renderCard(i,true)).join('') :
+    '<div class="empty">No hay anuncios para los filtros seleccionados.</div>';
+}
+
+function renderScripts() {
+  const filtered = scripts.filter(s => scriptSvcFilter==='todos'||s.svc===scriptSvcFilter);
+  const c = document.getElementById('scripts-container');
+  if(!filtered.length){c.innerHTML='<div class="empty">No hay scripts para este servicio.</div>';return;}
+  c.innerHTML = filtered.map((s,idx)=>`
+    <div class="script-card">
+      <div class="script-header" onclick="toggleScript(${idx})">
+        <div class="script-title">${s.title}</div>
+        <div class="script-meta">
+          <span class="script-badge">${s.channel}</span>
+          <span class="script-badge">${s.duration}</span>
+          <span class="script-arrow" id="sarrow-${idx}">▼</span>
+        </div>
+      </div>
+      <div class="script-body" id="sbody-${idx}">
+        ${s.sections.map(sec=>`
+          <div class="script-section">
+            <div class="script-section-title">${sec.title}</div>
+            ${sec.lines.map(line=>`
+              <div class="script-line ${line.type}">
+                <div class="script-who ${line.type}-lbl">${line.who}</div>
+                ${line.text}
+              </div>`).join('')}
+          </div>`).join('')}
+        <button class="copy-btn" onclick="copyScript(this, ${idx})">📋 Copiar script completo</button>
+      </div>
+    </div>`).join('');
+  window._filteredScripts = filtered;
+}
+
+function toggleScript(idx) {
+  const b = document.getElementById('sbody-'+idx);
+  const a = document.getElementById('sarrow-'+idx);
+  const open = b.classList.contains('open');
+  b.classList.toggle('open',!open);
+  a.classList.toggle('open',!open);
+}
+
+function copyScript(btn, idx) {
+  const s = window._filteredScripts[idx];
+  const text = s.title + '\n' + s.channel + ' | ' + s.duration + '\n\n' +
+    s.sections.map(sec =>
+      sec.title + '\n' + sec.lines.map(l=>l.who+' '+l.text).join('\n')
+    ).join('\n\n');
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='✅ Copiado';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='📋 Copiar script completo';btn.classList.remove('copied');},2000);
+  });
+}
+
+// ══════════════════════════════════════════════
+// FILTERS
+// ══════════════════════════════════════════════
+function filterEdu(type, val) {
+  if(type==='svc'){eduSvcFilter=val;updateChips('svc-chips-edu','svc-active',val);}
+  else{eduPlatFilter=val;updateChips('plat-chips-edu','active',val);}
+  renderEdu();
+}
+function filterAds(type, val) {
+  if(type==='svc'){adsSvcFilter=val;updateChips('svc-chips-ads','svc-active',val);}
+  else{adsPlatFilter=val;updateChips('plat-chips-ads','active',val);}
+  renderAds();
+}
+function filterScripts(val) {
+  scriptSvcFilter=val;updateChips('svc-chips-scripts','svc-active',val);renderScripts();
+}
+function updateChips(containerId, cls, val) {
+  const c = document.getElementById(containerId);
+  if(!c) return;
+  c.querySelectorAll('.chip').forEach(ch => {
+    const chipVal = ch.getAttribute('onclick').match(/'([^']+)'\)$/)?.[1];
+    ch.classList.toggle(cls, chipVal===val);
+  });
+}
+
+// ══════════════════════════════════════════════
+// PANELS
+// ══════════════════════════════════════════════
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.mtab').forEach((t,i)=>{
+    t.classList.toggle('active',['edu','ads','scripts'][i]===id);
+  });
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='✅ Copiado';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='📋 Copiar contenido';btn.classList.remove('copied');},2000);
+  });
+}
+
+// INIT
+renderEdu(); renderAds(); renderScripts();
+</script>
+</body>
+</html>
