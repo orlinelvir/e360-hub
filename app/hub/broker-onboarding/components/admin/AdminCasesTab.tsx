@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import { CaseNote, CaseNoteCategory, CaseDocument } from "../../types";
 import { ReviewStatus, SyncStatus, REVIEW_STATUS_META, SYNC_STATUS_META, VALID_REVIEW_STATUSES } from "@/lib/services/case-status";
-import { useHubHeaderOffset } from "../../hooks/useHubHeaderOffset";
 
 export interface CaseItem {
   id: string;
@@ -83,16 +82,13 @@ const CLUSTER_META: Record<string, { emoji: string; label: string }> = {
 type SortKey = "name" | "amount" | "estimatedCommission" | "reviewStatus" | "createdAt";
 
 // Definido fuera de AdminCasesTab (no inline) para que no se recree en cada
-// render — ver react-hooks/static-components. El encabezado del grupo es
-// sticky, apilado debajo del thead (que a su vez está debajo de la barra de
-// filtros, que está debajo del header del Hub) — mismo patrón de capas.
+// render — ver react-hooks/static-components.
 function RowGroup({
   badge,
   count,
   items,
   collapsed,
   onToggle,
-  top,
   renderRow
 }: {
   badge: React.ReactNode;
@@ -100,12 +96,11 @@ function RowGroup({
   items: CaseItem[];
   collapsed: boolean;
   onToggle: () => void;
-  top: number;
   renderRow: (c: CaseItem) => React.ReactNode;
 }) {
   return (
     <>
-      <tr style={{ top }} className="sticky z-[15]">
+      <tr>
         <td colSpan={8} className="p-0 border-y border-gray-800">
           <button
             type="button"
@@ -122,13 +117,6 @@ function RowGroup({
     </>
   );
 }
-
-// El contenedor raíz del componente usa `space-y-6` (24px de margin-top entre
-// hermanos) entre la barra de filtros y el wrapper de la tabla — ese espacio
-// no queda incluido en `filterBarHeight` (offsetHeight no cuenta márgenes),
-// así que hay que sumarlo aparte o el thead queda pegado 24px más arriba de
-// donde termina visualmente la barra de filtros.
-const SECTION_GAP = 24;
 
 export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, onFocusCaseHandled }: AdminCasesTabProps) {
   const [search, setSearch] = useState<string>("");
@@ -155,46 +143,6 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
       return next;
     });
   };
-
-  // La barra de filtros, el thead de la tabla y (si hay agrupación activa) el
-  // encabezado de cada grupo son sticky, apilados justo debajo del header
-  // principal del Hub (que también es sticky) — se miden en vivo en vez de
-  // usar px fijos para no depender de que nadie recalcule esto a mano si el
-  // header o la barra cambian de alto.
-  const headerOffset = useHubHeaderOffset();
-  const [filterBarHeight, setFilterBarHeight] = useState<number>(0);
-  const [theadHeight, setTheadHeight] = useState<number>(0);
-  // El thead (y antes de que llegue el primer `fetch`, también la barra de
-  // filtros) no existen todavía en el primer render mientras loading=true, así
-  // que un useEffect(..., []) de una sola vez nunca llega a enganchar el
-  // ResizeObserver — se queda en 0 para siempre y el thead/los encabezados de
-  // grupo terminan pegados más arriba de lo que deberían, tapando filas. Un
-  // ref-callback sí se vuelve a disparar cada vez que el nodo real aparece o
-  // desaparece del DOM, así que engancha el observer en el momento correcto
-  // sin importar en qué render se monte la tabla.
-  const filterBarObserver = useRef<ResizeObserver | null>(null);
-  const setFilterBarRef = useCallback((el: HTMLDivElement | null) => {
-    filterBarObserver.current?.disconnect();
-    filterBarObserver.current = null;
-    if (!el) return;
-    const update = () => setFilterBarHeight(el.offsetHeight);
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    filterBarObserver.current = observer;
-  }, []);
-
-  const theadObserver = useRef<ResizeObserver | null>(null);
-  const setTheadRef = useCallback((el: HTMLTableSectionElement | null) => {
-    theadObserver.current?.disconnect();
-    theadObserver.current = null;
-    if (!el) return;
-    const update = () => setTheadHeight(el.offsetHeight);
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    theadObserver.current = observer;
-  }, []);
 
   // Modal de Detalle / Edición
   const [activeCase, setActiveCase] = useState<CaseItem | null>(null);
@@ -703,12 +651,9 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
         </div>
       </div>
 
-      {/* 2. Barra de Filtros y Búsqueda — sticky justo debajo del header del Hub,
-          para que no se pierda al bajar por un Master Feed largo. */}
+      {/* 2. Barra de Filtros y Búsqueda */}
       <div
-        ref={setFilterBarRef}
-        style={{ top: headerOffset }}
-        className="sticky z-30 bg-[#0B1C33] border border-gray-800 rounded-2xl p-4 space-y-3 shadow-lg shadow-black/20"
+        className="bg-[#0B1C33] border border-gray-800 rounded-2xl p-4 space-y-3 shadow-lg shadow-black/20"
       >
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Buscador */}
@@ -825,11 +770,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
         <div className="bg-[#0A182D]/50 border border-gray-800 rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-gray-300">
-              <thead
-                ref={setTheadRef}
-                style={{ top: headerOffset + filterBarHeight + SECTION_GAP }}
-                className="sticky z-20 bg-[#05101F] text-gray-400 uppercase font-mono text-[10px] tracking-wider border-b border-gray-800"
-              >
+              <thead className="bg-[#05101F] text-gray-400 uppercase font-mono text-[10px] tracking-wider border-b border-gray-800">
                 <tr>
                   <th className="p-4">
                     <button type="button" onClick={() => toggleSort("name")} className="flex items-center gap-1 hover:text-white transition-colors">
@@ -871,7 +812,6 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
                         items={items}
                         collapsed={collapsedGroups.has(status)}
                         onToggle={() => toggleGroupCollapsed(status)}
-                        top={headerOffset + filterBarHeight + SECTION_GAP + theadHeight}
                         renderRow={renderCaseRow}
                       />
                     ))
