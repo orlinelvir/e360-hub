@@ -13,11 +13,13 @@ import AdminTicketsTab, { AdminTicketItem } from "./admin/AdminTicketsTab";
 import AdminServicesTab from "./admin/AdminServicesTab";
 import AdminStaffActivityTab, { StaffActivityItem, BacklogByCluster } from "./admin/AdminStaffActivityTab";
 import AdminOverviewTab from "./admin/AdminOverviewTab";
+import { useHubHeaderOffset } from "../hooks/useHubHeaderOffset";
 
 type AdminTab = "overview" | "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets" | "services" | "staff_activity";
 
 export default function AdminPanelSection() {
   const { user } = useAuth();
+  const headerOffset = useHubHeaderOffset();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   // Para saltar de "casos atrasados" en Actividad del Staff directo al caso
   // en la pestaña de Casos, en vez de solo mostrar el nombre sin acción posible.
@@ -401,7 +403,10 @@ export default function AdminPanelSection() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Sidebar de navegación, agrupada por categoría */}
-        <nav className="lg:w-64 xl:w-72 shrink-0 space-y-5">
+        <nav
+          className="lg:w-64 xl:w-72 shrink-0 space-y-5 lg:sticky lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
+          style={{ top: headerOffset + 16 }}
+        >
           {navGroups.map((group) => (
             <div key={group.id}>
               <p className="px-3 mb-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">{group.label}</p>
