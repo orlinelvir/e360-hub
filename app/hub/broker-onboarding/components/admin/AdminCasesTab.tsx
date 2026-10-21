@@ -123,6 +123,13 @@ function RowGroup({
   );
 }
 
+// El contenedor raíz del componente usa `space-y-6` (24px de margin-top entre
+// hermanos) entre la barra de filtros y el wrapper de la tabla — ese espacio
+// no queda incluido en `filterBarHeight` (offsetHeight no cuenta márgenes),
+// así que hay que sumarlo aparte o el thead queda pegado 24px más arriba de
+// donde termina visualmente la barra de filtros.
+const SECTION_GAP = 24;
+
 export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, onFocusCaseHandled }: AdminCasesTabProps) {
   const [search, setSearch] = useState<string>("");
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
@@ -155,29 +162,38 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
   // usar px fijos para no depender de que nadie recalcule esto a mano si el
   // header o la barra cambian de alto.
   const headerOffset = useHubHeaderOffset();
-  const filterBarRef = useRef<HTMLDivElement>(null);
   const [filterBarHeight, setFilterBarHeight] = useState<number>(0);
-  const theadRef = useRef<HTMLTableSectionElement>(null);
   const [theadHeight, setTheadHeight] = useState<number>(0);
-
-  useEffect(() => {
-    if (!filterBarRef.current) return;
-    const el = filterBarRef.current;
+  // El thead (y antes de que llegue el primer `fetch`, también la barra de
+  // filtros) no existen todavía en el primer render mientras loading=true, así
+  // que un useEffect(..., []) de una sola vez nunca llega a enganchar el
+  // ResizeObserver — se queda en 0 para siempre y el thead/los encabezados de
+  // grupo terminan pegados más arriba de lo que deberían, tapando filas. Un
+  // ref-callback sí se vuelve a disparar cada vez que el nodo real aparece o
+  // desaparece del DOM, así que engancha el observer en el momento correcto
+  // sin importar en qué render se monte la tabla.
+  const filterBarObserver = useRef<ResizeObserver | null>(null);
+  const setFilterBarRef = useCallback((el: HTMLDivElement | null) => {
+    filterBarObserver.current?.disconnect();
+    filterBarObserver.current = null;
+    if (!el) return;
     const update = () => setFilterBarHeight(el.offsetHeight);
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
-    return () => observer.disconnect();
+    filterBarObserver.current = observer;
   }, []);
 
-  useEffect(() => {
-    if (!theadRef.current) return;
-    const el = theadRef.current;
+  const theadObserver = useRef<ResizeObserver | null>(null);
+  const setTheadRef = useCallback((el: HTMLTableSectionElement | null) => {
+    theadObserver.current?.disconnect();
+    theadObserver.current = null;
+    if (!el) return;
     const update = () => setTheadHeight(el.offsetHeight);
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
-    return () => observer.disconnect();
+    theadObserver.current = observer;
   }, []);
 
   // Modal de Detalle / Edición
@@ -690,7 +706,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
       {/* 2. Barra de Filtros y Búsqueda — sticky justo debajo del header del Hub,
           para que no se pierda al bajar por un Master Feed largo. */}
       <div
-        ref={filterBarRef}
+        ref={setFilterBarRef}
         style={{ top: headerOffset }}
         className="sticky z-30 bg-[#0B1C33] border border-gray-800 rounded-2xl p-4 space-y-3 shadow-lg shadow-black/20"
       >
@@ -810,8 +826,8 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-gray-300">
               <thead
-                ref={theadRef}
-                style={{ top: headerOffset + filterBarHeight }}
+                ref={setTheadRef}
+                style={{ top: headerOffset + filterBarHeight + SECTION_GAP }}
                 className="sticky z-20 bg-[#05101F] text-gray-400 uppercase font-mono text-[10px] tracking-wider border-b border-gray-800"
               >
                 <tr>
@@ -855,7 +871,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
                         items={items}
                         collapsed={collapsedGroups.has(status)}
                         onToggle={() => toggleGroupCollapsed(status)}
-                        top={headerOffset + filterBarHeight + theadHeight}
+                        top={headerOffset + filterBarHeight + SECTION_GAP + theadHeight}
                         renderRow={renderCaseRow}
                       />
                     ))
