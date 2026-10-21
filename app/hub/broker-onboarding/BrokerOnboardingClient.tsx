@@ -787,7 +787,7 @@ export default function BrokerOnboardingClient() {
             )}
 
             {activeTab === "admin" && canAccessAdmin && (
-              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+              <main className="flex-grow max-w-[1800px] mx-auto w-full px-6 py-8">
                 <AdminPanelSection />
               </main>
             )}

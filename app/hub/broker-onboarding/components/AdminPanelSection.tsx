@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket, Tag, UserCheck } from "lucide-react";
+import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket, Tag, UserCheck, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import AdminCasesTab, { CaseItem } from "./admin/AdminCasesTab";
 import AdminMetricsTab, { MetricsData } from "./admin/AdminMetricsTab";
@@ -12,12 +12,13 @@ import AdminLocationsTab, { AdminLocation } from "./admin/AdminLocationsTab";
 import AdminTicketsTab, { AdminTicketItem } from "./admin/AdminTicketsTab";
 import AdminServicesTab from "./admin/AdminServicesTab";
 import AdminStaffActivityTab, { StaffActivityItem, BacklogByCluster } from "./admin/AdminStaffActivityTab";
+import AdminOverviewTab from "./admin/AdminOverviewTab";
 
-type AdminTab = "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets" | "services" | "staff_activity";
+type AdminTab = "overview" | "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets" | "services" | "staff_activity";
 
 export default function AdminPanelSection() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<AdminTab>("cases");
+  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   // Para saltar de "casos atrasados" en Actividad del Staff directo al caso
   // en la pestaña de Casos, en vez de solo mostrar el nombre sin acción posible.
   const [focusCase, setFocusCase] = useState<{ brokerId: string; clientId: string } | null>(null);
@@ -265,8 +266,15 @@ export default function AdminPanelSection() {
           .then((data) => {
             const role = data.profile?.role || "broker";
             setCurrentUserRole(role);
+            // Precarga lo que necesita el Resumen (nuevo tab por defecto) según
+            // rol, en vez de esperar a que el usuario visite cada tab manualmente.
             if (role === "admin") {
               fetchBrokers();
+              fetchStaffActivity();
+            }
+            if (role === "admin" || role === "support_agent") {
+              fetchTickets();
+              fetchFailedLeads();
             }
           })
           .catch(() => {});
@@ -275,10 +283,22 @@ export default function AdminPanelSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  const isFullAdmin = currentUserRole === "admin";
+  const isSupport = currentUserRole === "support_agent";
+  const isOnboardingMember = currentUserRole === "onboarding_member";
+
   const handleTabChange = (tab: AdminTab) => {
     setActiveTab(tab);
     setError("");
-    if (tab === "cases") fetchCases();
+    if (tab === "overview") {
+      fetchCases();
+      if (isFullAdmin) fetchStaffActivity();
+      if (isFullAdmin || isSupport) {
+        fetchTickets();
+        fetchFailedLeads();
+      }
+    }
+    else if (tab === "cases") fetchCases();
     else if (tab === "metrics") fetchMetrics();
     else if (tab === "brokers") fetchBrokers();
     else if (tab === "roles") fetchRoles();
@@ -288,30 +308,61 @@ export default function AdminPanelSection() {
     else if (tab === "staff_activity") fetchStaffActivity();
   };
 
-  const isRefreshing = loadingCases || loadingMetrics || loadingBrokers || loadingRoles || loadingFailedLeads || loadingLocations || loadingTickets || loadingStaffActivity;
-  const isFullAdmin = currentUserRole === "admin";
-  const isSupport = currentUserRole === "support_agent";
-  const isOnboardingMember = currentUserRole === "onboarding_member";
+  const handleGoToTab = (tab: "cases" | "tickets" | "failed_sync") => handleTabChange(tab);
 
-  const visibleTabs = [
-    { id: "cases", label: isFullAdmin ? "Master Feed de Casos" : "Gestión de Solicitudes", icon: FileSpreadsheet, count: cases.length || undefined, badgeColor: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" },
-    ...(isFullAdmin ? [
-      { id: "roles", label: "Equipo & Roles", icon: ShieldCheck, count: teamMembers.length || undefined, badgeColor: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
-      { id: "metrics", label: "Métricas Globales", icon: BarChart3 },
-      { id: "services", label: "Catálogo de Servicios", icon: Tag },
-      { id: "staff_activity", label: "Actividad del Staff", icon: UserCheck },
-    ] : []),
-    ...(isFullAdmin || isOnboardingMember ? [
-      { id: "brokers", label: "Roster de Brokers", icon: Users, count: brokers.length || undefined },
-    ] : []),
-    ...(isFullAdmin || isSupport ? [
-      { id: "failed_sync", label: "Cola de Sincronización", icon: AlertTriangle, count: failedLeads.length || undefined, badgeColor: "bg-red-500/20 text-red-400 border-red-500/30" },
-      { id: "tickets", label: "Tickets de Brokers", icon: Ticket, count: tickets.filter((t) => t.status !== "resolved").length || undefined, badgeColor: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
-    ] : []),
-    ...(isFullAdmin || isOnboardingMember ? [
-      { id: "locations", label: "Subcuentas GHL", icon: Building2, count: locations.length || undefined },
-    ] : []),
-  ];
+  const isRefreshing = loadingCases || loadingMetrics || loadingBrokers || loadingRoles || loadingFailedLeads || loadingLocations || loadingTickets || loadingStaffActivity;
+
+  const navGroups = [
+    {
+      id: "operacion",
+      label: "Operación diaria",
+      items: [
+        { id: "overview", label: "Resumen", icon: LayoutDashboard, count: undefined, badgeColor: undefined },
+        { id: "cases", label: isFullAdmin ? "Master Feed de Casos" : "Gestión de Solicitudes", icon: FileSpreadsheet, count: cases.length || undefined, badgeColor: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" },
+        ...(isFullAdmin || isSupport ? [
+          { id: "tickets", label: "Tickets de Brokers", icon: Ticket, count: tickets.filter((t) => t.status !== "resolved").length || undefined, badgeColor: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+        ] : []),
+        ...(isFullAdmin ? [
+          { id: "staff_activity", label: "Actividad del Staff", icon: UserCheck, count: undefined, badgeColor: undefined },
+        ] : []),
+        ...(isFullAdmin || isSupport ? [
+          { id: "failed_sync", label: "Cola de Sincronización", icon: AlertTriangle, count: failedLeads.length || undefined, badgeColor: "bg-red-500/20 text-red-400 border-red-500/30" },
+        ] : []),
+      ],
+    },
+    {
+      id: "equipo",
+      label: "Equipo",
+      items: [
+        ...(isFullAdmin || isOnboardingMember ? [
+          { id: "brokers", label: "Roster de Brokers", icon: Users, count: brokers.length || undefined, badgeColor: undefined },
+        ] : []),
+        ...(isFullAdmin ? [
+          { id: "roles", label: "Equipo & Roles", icon: ShieldCheck, count: teamMembers.length || undefined, badgeColor: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+        ] : []),
+      ],
+    },
+    {
+      id: "configuracion",
+      label: "Configuración",
+      items: [
+        ...(isFullAdmin ? [
+          { id: "services", label: "Catálogo de Servicios", icon: Tag, count: undefined, badgeColor: undefined },
+        ] : []),
+        ...(isFullAdmin || isOnboardingMember ? [
+          { id: "locations", label: "Subcuentas GHL", icon: Building2, count: locations.length || undefined, badgeColor: undefined },
+        ] : []),
+        ...(isFullAdmin ? [
+          { id: "metrics", label: "Métricas Globales", icon: BarChart3, count: undefined, badgeColor: undefined },
+        ] : []),
+      ],
+    },
+  ].filter((group) => group.items.length > 0);
+
+  const overviewLoading =
+    loadingCases ||
+    (isFullAdmin && loadingStaffActivity) ||
+    ((isFullAdmin || isSupport) && (loadingTickets || loadingFailedLeads));
 
   return (
     <div className="space-y-6">
@@ -348,92 +399,116 @@ export default function AdminPanelSection() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-gray-800">
-        {visibleTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id as AdminTab)}
-              className={`flex items-center gap-2 px-5 py-3 border-b-2 text-xs md:text-sm font-semibold whitespace-nowrap transition-colors ${
-                isActive
-                  ? "border-cyan-400 text-cyan-400"
-                  : "border-transparent text-gray-400 hover:text-white"
-              }`}
-            >
-              <Icon size={16} />
-              <span>{tab.label}</span>
-              {typeof tab.count === "number" && tab.count > 0 && (
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${tab.badgeColor || "bg-gray-800 text-gray-300 border-gray-700"}`}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Sidebar de navegación, agrupada por categoría */}
+        <nav className="lg:w-64 xl:w-72 shrink-0 space-y-5">
+          {navGroups.map((group) => (
+            <div key={group.id}>
+              <p className="px-3 mb-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">{group.label}</p>
+              <div className="space-y-0.5">
+                {group.items.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleTabChange(tab.id as AdminTab)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors border ${
+                        isActive
+                          ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                          : "border-transparent text-gray-400 hover:text-white hover:bg-[#0A182D]/60"
+                      }`}
+                    >
+                      <Icon size={16} className="shrink-0" />
+                      <span className="flex-1 text-left truncate">{tab.label}</span>
+                      {typeof tab.count === "number" && tab.count > 0 && (
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${tab.badgeColor || "bg-gray-800 text-gray-300 border-gray-700"}`}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Alertas */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-start gap-3">
+              <AlertCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-red-300">{error}</p>
+            </div>
+          )}
+
+          {syncSuccessMsg && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex items-start gap-3">
+              <CheckCircle2 size={18} className="text-emerald-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-emerald-300">{syncSuccessMsg}</p>
+            </div>
+          )}
+
+          {/* Vistas por Tab */}
+          {activeTab === "overview" && (
+            <AdminOverviewTab
+              cases={cases}
+              tickets={tickets}
+              failedLeads={failedLeads}
+              backlogByCluster={backlogByCluster}
+              isFullAdmin={isFullAdmin}
+              isSupport={isSupport}
+              loading={overviewLoading}
+              onOpenCase={handleOpenStaleCase}
+              onGoToTab={handleGoToTab}
+            />
+          )}
+          {activeTab === "cases" && (
+            <AdminCasesTab
+              cases={cases}
+              loading={loadingCases}
+              onRefresh={fetchCases}
+              focusCase={focusCase}
+              onFocusCaseHandled={() => setFocusCase(null)}
+            />
+          )}
+          {activeTab === "roles" && (
+            <AdminRolesTab
+              teamMembers={teamMembers}
+              roleDefinitions={roleDefinitions}
+              allBrokers={brokers}
+              loading={loadingRoles}
+              onRefresh={fetchRoles}
+            />
+          )}
+          {activeTab === "metrics" && <AdminMetricsTab metrics={metrics} loading={loadingMetrics} />}
+          {activeTab === "brokers" && <AdminBrokersTab brokers={brokers} loading={loadingBrokers} onRefresh={fetchBrokers} />}
+          {activeTab === "failed_sync" && (
+            <AdminFailedSyncTab
+              failedLeads={failedLeads}
+              loading={loadingFailedLeads}
+              retryingId={retryingId}
+              onRetrySync={handleRetrySync}
+            />
+          )}
+          {activeTab === "locations" && <AdminLocationsTab locations={locations} loading={loadingLocations} />}
+          {activeTab === "tickets" && (
+            <AdminTicketsTab tickets={tickets} loading={loadingTickets} onRefresh={fetchTickets} />
+          )}
+          {activeTab === "services" && <AdminServicesTab />}
+          {activeTab === "staff_activity" && (
+            <AdminStaffActivityTab
+              staff={staffActivity}
+              backlogByCluster={backlogByCluster}
+              windowDays={staffActivityWindow}
+              loading={loadingStaffActivity}
+              onChangeWindow={handleChangeStaffActivityWindow}
+              onOpenCase={handleOpenStaleCase}
+            />
+          )}
+        </div>
       </div>
-
-      {/* Alertas */}
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-start gap-3">
-          <AlertCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
-          <p className="text-sm text-red-300">{error}</p>
-        </div>
-      )}
-
-      {syncSuccessMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex items-start gap-3">
-          <CheckCircle2 size={18} className="text-emerald-400 shrink-0 mt-0.5" />
-          <p className="text-sm text-emerald-300">{syncSuccessMsg}</p>
-        </div>
-      )}
-
-      {/* Vistas por Tab */}
-      {activeTab === "cases" && (
-        <AdminCasesTab
-          cases={cases}
-          loading={loadingCases}
-          onRefresh={fetchCases}
-          focusCase={focusCase}
-          onFocusCaseHandled={() => setFocusCase(null)}
-        />
-      )}
-      {activeTab === "roles" && (
-        <AdminRolesTab
-          teamMembers={teamMembers}
-          roleDefinitions={roleDefinitions}
-          allBrokers={brokers}
-          loading={loadingRoles}
-          onRefresh={fetchRoles}
-        />
-      )}
-      {activeTab === "metrics" && <AdminMetricsTab metrics={metrics} loading={loadingMetrics} />}
-      {activeTab === "brokers" && <AdminBrokersTab brokers={brokers} loading={loadingBrokers} onRefresh={fetchBrokers} />}
-      {activeTab === "failed_sync" && (
-        <AdminFailedSyncTab
-          failedLeads={failedLeads}
-          loading={loadingFailedLeads}
-          retryingId={retryingId}
-          onRetrySync={handleRetrySync}
-        />
-      )}
-      {activeTab === "locations" && <AdminLocationsTab locations={locations} loading={loadingLocations} />}
-      {activeTab === "tickets" && (
-        <AdminTicketsTab tickets={tickets} loading={loadingTickets} onRefresh={fetchTickets} />
-      )}
-      {activeTab === "services" && <AdminServicesTab />}
-      {activeTab === "staff_activity" && (
-        <AdminStaffActivityTab
-          staff={staffActivity}
-          backlogByCluster={backlogByCluster}
-          windowDays={staffActivityWindow}
-          loading={loadingStaffActivity}
-          onChangeWindow={handleChangeStaffActivityWindow}
-          onOpenCase={handleOpenStaleCase}
-        />
-      )}
     </div>
   );
 }
