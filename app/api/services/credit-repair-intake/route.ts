@@ -279,7 +279,7 @@ export async function POST(request: Request) {
           await leadRef.update({
             crcSynced: result.success,
             crcSyncedAt: new Date().toISOString(),
-            ...(result.success ? {} : { crcSyncError: result.errorMessage || "Error desconocido" })
+            ...(result.success ? { crcLeadId: result.crcId || "" } : { crcSyncError: result.errorMessage || "Error desconocido" })
           });
           if (!result.success) {
             console.error("Error sincronizando lead con Credit Repair Cloud:", result.errorCode, result.errorMessage, result.raw);

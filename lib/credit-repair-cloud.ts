@@ -2,27 +2,28 @@
 // credenciales por parámetro (nunca lee process.env directo), calcado del
 // patrón de lib/ghl.ts.
 //
-// Es una API vieja basada en XML, no REST/JSON: todo va por POST con 3
-// parámetros de formulario (apiauthkey, secretkey, xmlData).
+// Es una API vieja basada en XML, no REST/JSON. Confirmado en vivo el
+// 2026-10-20 contra la página real de "Developer References → Insert Record
+// (Lead/Client)" (la doc pública en app.creditrepaircloud.com/webapi está
+// desactualizada y usa nombres de parámetro distintos — NO seguirla):
 //
-// OJO: la documentación pública (https://app.creditrepaircloud.com/webapi/)
-// está desactualizada — ese host redirige (301) a un dominio y ruta
-// distintos. Confirmado en vivo el 2026-10-19 con una llamada real:
-//   app.creditrepaircloud.com/api/lead/insertRecord
-//     → 301 → api.creditrepaircloud.com/api/webapi/clients/insertRecord
-// Es decir, el módulo "lead" documentado ahora se llama "clients" bajo el
-// host api.*, no app.*. Las otras 3 operaciones (update/delete/viewRecord) y
-// el módulo Affiliate no se han probado — antes de usarlas, repetir esta
-// misma verificación (pegar la URL vieja en curl -i y ver el header Location
-// del 301) en vez de asumir que siguen el mismo patrón.
+//   POST https://api.creditrepaircloud.com/api/webapi/clients/insertRecord
+//   Parámetros de formulario: api_auth_key, secret_key, xml_data
+//   (ojo: con guión bajo — "apiauthkey"/"secretkey"/"xmlData" de la doc
+//   pública vieja NO existen como parámetros y el server los ignora
+//   silenciosamente, devolviendo 4405 como si la key no existiera)
 //
-// La respuesta si es un error real (confirmada en vivo, error 4405 por una
-// apiauthkey incorrecta):
-//   <response><success>False</success><result><errors>
-//     <error_no>4405</error_no><error_message>...</error_message>
-//   </errors></result></response>
-// No se ha visto todavía un ejemplo real de response exitoso — se asume que
-// <success>True</success> es la señal, sin más estructura garantizada.
+//   xml_data va envuelto en <crcloud><lead>...</lead></crcloud>, no <data>.
+//   "type" es obligatorio: Lead | Lead/Inactive | Inactive | Suspended.
+//
+// Respuesta real confirmada en vivo:
+//   Éxito:  <response><success>True</success><result>
+//             <message>Record(s) added successfully</message>
+//             <id>...</id><created_time>...</created_time>
+//           </result></response>
+//   Error:  <response><success>False</success><result><errors>
+//             <error_no>4405</error_no><error_message>...</error_message>
+//           </errors></result></response>
 
 const CRC_BASE_URL = "https://api.creditrepaircloud.com/api/webapi";
 
@@ -31,13 +32,13 @@ const CRC_ERROR_MESSAGES: Record<string, string> = {
   "4402": "Falta un campo obligatorio",
   "4403": "Email inválido",
   "4404": "Error de parsing del XML",
-  "4405": "apiauthkey incorrecto o con valor incorrecto",
+  "4405": "api_auth_key incorrecto o con valor incorrecto",
   "4406": "API Key o Secret Key incorrectos",
   "4407": "El API Key está inactivo",
   "4408": "Error interno del servidor de CRC",
   "4409": "Se excedió el número de llamadas a la API",
   "4410": "ID incorrecto en el update",
-  "4411": "secretkey incorrecto o con valor incorrecto",
+  "4411": "secret_key incorrecto o con valor incorrecto",
   "4412": "Mensaje de error personalizado",
   "4413": "Client ID incorrecto",
   "4416": "Referido por no encontrado",
@@ -64,6 +65,9 @@ export interface CRCResult {
   raw: string;
   errorCode?: string;
   errorMessage?: string;
+  // Solo en éxito — id opaco que CRC asigna al registro (guardar tal cual,
+  // sin decodificar, por si updateRecord/viewRecord lo esperan de vuelta igual).
+  crcId?: string;
 }
 
 function escapeXml(value: string): string {
@@ -80,17 +84,21 @@ function tag(name: string, value?: string): string {
 }
 
 function buildLeadInsertXml(fields: CRCLeadFields): string {
-  return `<data>${tag("type", "lead")}${tag("firstname", fields.firstname)}${tag("lastname", fields.lastname)}${tag("email", fields.email)}${tag("phone_mobile", fields.phone_mobile)}${tag("memo", fields.memo)}</data>`;
+  const inner = `${tag("type", "Lead")}${tag("firstname", fields.firstname)}${tag("lastname", fields.lastname)}${tag("email", fields.email)}${tag("phone_mobile", fields.phone_mobile)}${tag("memo", fields.memo)}`;
+  return `<crcloud><lead>${inner}</lead></crcloud>`;
 }
 
-function parseCRCResponse(raw: string): { success: boolean; errorCode?: string; errorMessage?: string } {
+function parseCRCResponse(raw: string): { success: boolean; errorCode?: string; errorMessage?: string; crcId?: string } {
   const successMatch = raw.match(/<success>\s*(true|false)\s*<\/success>/i);
   const success = successMatch ? successMatch[1].toLowerCase() === "true" : false;
 
+  if (success) {
+    const crcId = raw.match(/<id>([\s\S]*?)<\/id>/i)?.[1]?.trim();
+    return { success: true, crcId };
+  }
+
   const errorCode = raw.match(/<error_no>\s*(\d+)\s*<\/error_no>/i)?.[1];
   const errorMessageFromApi = raw.match(/<error_message>([\s\S]*?)<\/error_message>/i)?.[1]?.trim();
-
-  if (success) return { success: true };
 
   return {
     success: false,
@@ -102,9 +110,9 @@ function parseCRCResponse(raw: string): { success: boolean; errorCode?: string; 
 export async function createCRCLead(fields: CRCLeadFields, credentials: CRCCredentials): Promise<CRCResult> {
   const xmlData = buildLeadInsertXml(fields);
   const body = new URLSearchParams({
-    apiauthkey: credentials.apiAuthKey,
-    secretkey: credentials.secretKey,
-    xmlData
+    api_auth_key: credentials.apiAuthKey,
+    secret_key: credentials.secretKey,
+    xml_data: xmlData
   });
 
   const res = await fetch(`${CRC_BASE_URL}/clients/insertRecord`, {
