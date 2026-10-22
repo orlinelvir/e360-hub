@@ -1,6 +1,6 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { getRoleIdsForCluster } from "@/lib/roles";
-import { sendNewCreditRepairApplicationEmail } from "@/lib/email/send";
+import { sendNewCreditRepairApplicationEmail, sendNewCaseEmailToSupport } from "@/lib/email/send";
 import { resolvePipelineCluster } from "@/lib/service-routing";
 
 // "link" es el id de tab del Hub (ej. "clientes", "admin"), no una URL — el Hub
@@ -88,6 +88,22 @@ export async function findStaffUidsForCluster(cluster: string): Promise<string[]
 }
 
 /**
+ * Checkbox "Notificar casos nuevos por correo" en Equipo & Roles
+ * (settings/notifications.newCaseEmailEnabled) — apagado por defecto hasta
+ * que un admin lo prenda desde el Hub.
+ */
+async function isNewCaseEmailEnabled(): Promise<boolean> {
+  if (!adminDb) return false;
+  try {
+    const snap = await adminDb.collection("settings").doc("notifications").get();
+    return snap.exists && snap.data()?.newCaseEmailEnabled === true;
+  } catch (err) {
+    console.error("No se pudo leer settings/notifications:", err);
+    return false;
+  }
+}
+
+/**
  * Punto único de "entró un caso nuevo, avisa a quien corresponda" — antes
  * cada ruta de creación de caso (services/submit, credit-repair-intake)
  * tenía su propio bloque inline de notifyMany, y "Referir Cliente" no tenía
@@ -116,6 +132,17 @@ export async function notifyStaffOfNewCase(opts: {
     await sendNewCreditRepairApplicationEmail({
       brokerName: opts.brokerName,
       clientName: opts.clientName
+    });
+  }
+
+  // Checkbox de Equipo & Roles: además de lo anterior, cualquier caso nuevo
+  // (de cualquier vertical) también manda aviso a la bandeja compartida de
+  // soporte cuando el toggle está activo.
+  if (await isNewCaseEmailEnabled()) {
+    await sendNewCaseEmailToSupport({
+      brokerName: opts.brokerName,
+      clientName: opts.clientName,
+      serviceName: opts.serviceName
     });
   }
 }

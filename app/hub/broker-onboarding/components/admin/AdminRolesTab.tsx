@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck,
@@ -10,8 +10,10 @@ import {
   CheckCircle2,
   Loader2,
   X,
-  Key
+  Key,
+  BellRing
 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 export interface RoleDefinition {
   id: string;
@@ -56,6 +58,7 @@ export default function AdminRolesTab({
   loading,
   onRefresh,
 }: AdminRolesTabProps) {
+  const { user } = useAuth();
   const [search, setSearch] = useState<string>("");
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<CandidateUser | null>(null);
@@ -64,6 +67,55 @@ export default function AdminRolesTab({
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [successMsg, setSuccessMsg] = useState<string>("");
+
+  // Checkbox "Notificar casos nuevos por correo" — a diferencia del resto de
+  // este tab (roles), esto no viene de AdminPanelSection sino que se carga y
+  // guarda aquí mismo, mismo patrón que AdminServicesTab.
+  const [notifyNewCasesByEmail, setNotifyNewCasesByEmail] = useState<boolean>(false);
+  const [loadingNotifySetting, setLoadingNotifySetting] = useState<boolean>(true);
+  const [savingNotifySetting, setSavingNotifySetting] = useState<boolean>(false);
+
+  const fetchNotifySetting = useCallback(async () => {
+    if (!user) return;
+    setLoadingNotifySetting(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/admin/notification-settings", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) setNotifyNewCasesByEmail(!!data.newCaseEmailEnabled);
+    } catch (err) {
+      console.error("Error cargando preferencia de notificación por correo:", err);
+    } finally {
+      setLoadingNotifySetting(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchNotifySetting();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchNotifySetting]);
+
+  const handleToggleNotifySetting = async () => {
+    if (!user || savingNotifySetting) return;
+    const next = !notifyNewCasesByEmail;
+    setSavingNotifySetting(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/admin/notification-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ newCaseEmailEnabled: next })
+      });
+      const data = await res.json();
+      if (res.ok) setNotifyNewCasesByEmail(!!data.newCaseEmailEnabled);
+    } catch (err) {
+      console.error("Error guardando preferencia de notificación por correo:", err);
+    } finally {
+      setSavingNotifySetting(false);
+    }
+  };
 
   const filteredTeam = useMemo(() => {
     if (!search.trim()) return teamMembers;
@@ -168,6 +220,37 @@ export default function AdminRolesTab({
           <p className="text-xs text-emerald-300">{successMsg}</p>
         </div>
       )}
+
+      {/* Notificaciones por correo — bandeja compartida de soporte */}
+      <div className="bg-[#0A182D]/60 border border-gray-800 rounded-2xl p-4 flex items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <BellRing size={18} className="text-cyan-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-white">Notificar casos nuevos por correo</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              Cuando entra una solicitud nueva de cualquier vertical, se manda un aviso a{" "}
+              <span className="text-gray-300 font-mono">soporte@emprende360.info</span>, además de la
+              notificación de siempre dentro del Hub.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={notifyNewCasesByEmail}
+          disabled={loadingNotifySetting || savingNotifySetting}
+          onClick={handleToggleNotifySetting}
+          className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
+            notifyNewCasesByEmail ? "bg-cyan-500" : "bg-gray-700"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+              notifyNewCasesByEmail ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </button>
+      </div>
 
       {/* Catálogo de Roles Disponibles */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

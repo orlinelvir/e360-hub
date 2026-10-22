@@ -34,3 +34,10 @@ export const HARD_MONEY_WORK_SCOPE_EMAIL = process.env.HARD_MONEY_WORK_SCOPE_EMA
 // con su hermano/JP sigue en planeación), así que por ahora el punto de
 // contacto real para esta vertical es él mismo.
 export const CREDIT_REPAIR_NEW_APPLICATION_EMAIL = process.env.CREDIT_REPAIR_NEW_APPLICATION_EMAIL || "fernando.elvire360@gmail.com";
+
+// Checkbox en Torre de Control → Equipo & Roles ("notifyNewCasesByEmail" en
+// settings/notifications): en vez de darle a Anthony/Elian/Mario un correo
+// personal cada uno, todos comparten esta bandeja — cuando el toggle está
+// activo, CUALQUIER caso nuevo (de cualquier vertical) manda aviso aquí
+// además de la notificación in-app de siempre.
+export const NEW_CASE_SUPPORT_EMAIL = process.env.NEW_CASE_SUPPORT_EMAIL || "soporte@emprende360.info";

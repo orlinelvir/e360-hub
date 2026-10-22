@@ -1,4 +1,4 @@
-import { getResendClient, EMAIL_FROM, HARD_MONEY_WORK_SCOPE_EMAIL, CREDIT_REPAIR_NEW_APPLICATION_EMAIL } from "./client";
+import { getResendClient, EMAIL_FROM, HARD_MONEY_WORK_SCOPE_EMAIL, CREDIT_REPAIR_NEW_APPLICATION_EMAIL, NEW_CASE_SUPPORT_EMAIL } from "./client";
 import CaseStatusEmail, { CaseEmailStatus } from "./templates/CaseStatusEmail";
 import BrokerNoteEmail from "./templates/BrokerNoteEmail";
 import WelcomeApplicationEmail from "./templates/WelcomeApplicationEmail";
@@ -7,6 +7,7 @@ import PasswordResetEmail from "./templates/PasswordResetEmail";
 import MissingApplicationEmail from "./templates/MissingApplicationEmail";
 import HardMoneyWorkScopeEmail from "./templates/HardMoneyWorkScopeEmail";
 import NewCreditRepairApplicationEmail from "./templates/NewCreditRepairApplicationEmail";
+import NewCaseStaffEmail from "./templates/NewCaseStaffEmail";
 import TicketUpdateEmail, { TicketUpdateKind } from "./templates/TicketUpdateEmail";
 
 /**
@@ -279,6 +280,32 @@ export async function sendNewCreditRepairApplicationEmail(params: NewCreditRepai
     });
   } catch (err) {
     console.error("Error enviando email de nueva solicitud de Reparación de Crédito:", err);
+  }
+}
+
+interface NewCaseStaffEmailParams {
+  brokerName: string;
+  clientName: string;
+  serviceName: string;
+}
+
+// Checkbox de "Notificar casos nuevos por correo" en Equipo & Roles — a
+// diferencia del correo de Reparación de Crédito (un destinatario fijo, pedido
+// explícito de Fernando), este aplica a cualquier vertical y manda siempre a
+// la bandeja compartida de soporte, no a un correo personal.
+export async function sendNewCaseEmailToSupport(params: NewCaseStaffEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend) return;
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: NEW_CASE_SUPPORT_EMAIL,
+      subject: `Nueva solicitud — ${params.clientName} (${params.serviceName})`,
+      react: <NewCaseStaffEmail brokerName={params.brokerName} clientName={params.clientName} serviceName={params.serviceName} />,
+    });
+  } catch (err) {
+    console.error("Error enviando email de nueva solicitud a soporte:", err);
   }
 }
 
