@@ -6,7 +6,7 @@ import { encrypt } from "@/lib/crypto";
 import { sendWelcomeApplicationEmail } from "@/lib/email/send";
 import { checkRateLimit } from "@/lib/services/rate-limit-service";
 import { notifyStaffOfNewCase } from "@/lib/services/notification-service";
-import { createCRCLead } from "@/lib/credit-repair-cloud";
+import { createCRCLead, CREDIT_REPAIR_PAYMENT_LINK } from "@/lib/credit-repair-cloud";
 
 // Vercel limita el tamaño del body de las funciones serverless (4.5MB en la mayoría
 // de los planes) — nos quedamos debajo de eso para no depender de configuración extra.
@@ -139,7 +139,7 @@ export async function POST(request: Request) {
       amount: CREDIT_REPAIR_FEE_AMOUNT,
       status: "pending_review",
       proofPath,
-      paymentLink: "https://link.fastpaydirect.com/payment-link/6a8688d6f9c8c807930b9166",
+      paymentLink: CREDIT_REPAIR_PAYMENT_LINK,
       // Denormalizados para poder ubicar esta ronda desde el webhook de pagos de GHL
       // (colecciones anidadas bajo brokers/{uid}/clients/{clientId}, sin llave única global).
       clientEmail: email.toLowerCase(),

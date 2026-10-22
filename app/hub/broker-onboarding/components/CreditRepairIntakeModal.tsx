@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, UserPlus, Loader2, CreditCard, ExternalLink, Upload, CheckCircle2, ChevronRight, ChevronLeft, Lock } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { CREDIT_REPAIR_PAYMENT_LINK } from "@/lib/credit-repair-cloud";
 
 interface CreditRepairIntakeModalProps {
   isOpen: boolean;
@@ -10,7 +11,6 @@ interface CreditRepairIntakeModalProps {
   onSuccess: () => void;
 }
 
-const FEE_PAYMENT_LINK = "https://link.fastpaydirect.com/payment-link/6a8688d6f9c8c807930b9166";
 const OFFICIAL_FORM_LINK = "https://api.leadconnectorhq.com/widget/form/hXr9MAZMR8AHID3LC5cg";
 
 const CRC_PLATFORMS = ["IdentityIQ", "SmartCredit", "MyFreeScoreNow", "MyScoreIQ", "PrivacyGuard", "Otro"];
@@ -153,7 +153,7 @@ export default function CreditRepairIntakeModal({ isOpen, onClose, onSuccess }: 
                 Este mismo fee se repite en cada ronda mensual de seguimiento.
               </p>
               <a
-                href={FEE_PAYMENT_LINK}
+                href={CREDIT_REPAIR_PAYMENT_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg text-xs transition-colors"

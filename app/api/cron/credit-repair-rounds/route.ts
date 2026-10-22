@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 import { createNotification } from "@/lib/services/notification-service";
+import { CREDIT_REPAIR_PAYMENT_LINK } from "@/lib/credit-repair-cloud";
 
 // "Duración de 6 a 12 meses" según data/services.ts — pasado ese punto se asume
 // que el caso se revisa manualmente en vez de seguir generando rondas solas.
 const ROUND_INTERVAL_DAYS = 30;
 const MAX_AUTO_ROUNDS = 12;
 const FEE_AMOUNT = 10;
-const PAYMENT_LINK = "https://link.fastpaydirect.com/payment-link/6a8688d6f9c8c807930b9166";
 
 /**
  * Cron diario (ver vercel.json) que avanza la ronda de seguimiento mensual de
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
         roundNumber: nextRoundNumber,
         amount: FEE_AMOUNT,
         status: "pending_review",
-        paymentLink: PAYMENT_LINK,
+        paymentLink: CREDIT_REPAIR_PAYMENT_LINK,
         clientEmail,
         brokerId,
         leadId,

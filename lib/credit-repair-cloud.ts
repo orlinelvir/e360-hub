@@ -27,6 +27,12 @@
 
 const CRC_BASE_URL = "https://api.creditrepaircloud.com/api/webapi";
 
+// Link de pago de la cuota mensual de $10 — compartido entre el intake, el
+// cron de rondas y el modal de admisión. Antes vivía copiado a mano en los 3
+// lugares (y quedó desactualizado en los 3 a la vez); con un solo export
+// actualizarlo es un cambio de una línea.
+export const CREDIT_REPAIR_PAYMENT_LINK = "https://link.fastpaydirect.com/payment-link/6acf189f075ea22a20cde58f";
+
 const CRC_ERROR_MESSAGES: Record<string, string> = {
   "4401": "Parámetro inválido",
   "4402": "Falta un campo obligatorio",
