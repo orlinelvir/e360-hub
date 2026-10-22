@@ -26,7 +26,10 @@ import {
   ArrowUpDown,
   ChevronDown,
   ChevronRight,
-  Layers
+  Layers,
+  Lock,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { CaseNote, CaseNoteCategory, CaseDocument } from "../../types";
 import { ReviewStatus, SyncStatus, REVIEW_STATUS_META, SYNC_STATUS_META, VALID_REVIEW_STATUSES } from "@/lib/services/case-status";
@@ -58,6 +61,17 @@ export interface CaseItem {
   // el estado de la ronda de seguimiento de $10/mes.
   feeRoundNumber?: number;
   feeRoundStatus?: string;
+}
+
+interface CreditRepairCredentials {
+  exists: boolean;
+  hasExistingSubscription?: boolean;
+  existingPlatform?: string;
+  idType?: "ssn" | "itin";
+  credentialEmail?: string;
+  credentialPassword?: string;
+  credentialToken?: string;
+  last4Ssn?: string;
 }
 
 interface AdminCasesTabProps {
@@ -162,6 +176,15 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
   const [loadingDocuments, setLoadingDocuments] = useState<boolean>(false);
   const [uploadingDocument, setUploadingDocument] = useState<boolean>(false);
   const [isNotifyingPending, setIsNotifyingPending] = useState<boolean>(false);
+
+  // Credenciales de plataforma (Reparación de Crédito) — a propósito NO se
+  // cargan automáticamente al abrir el caso como notas/documentos: son datos
+  // sensibles (contraseña, últimos 4 de SSN) que solo deben descifrarse
+  // cuando el empleado realmente las pide, con un clic explícito.
+  const [credentials, setCredentials] = useState<CreditRepairCredentials | null>(null);
+  const [loadingCredentials, setLoadingCredentials] = useState<boolean>(false);
+  const [credentialsError, setCredentialsError] = useState<string>("");
+  const [revealSecret, setRevealSecret] = useState<boolean>(false);
   const [notifyPendingMsg, setNotifyPendingMsg] = useState<string>("");
   const [noteFeedback, setNoteFeedback] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -351,8 +374,27 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
     setNewNoteContent("");
     setCaseNotes([]);
     setCaseDocuments([]);
+    setCredentials(null);
+    setCredentialsError("");
+    setRevealSecret(false);
     fetchCaseNotes(c.brokerId, c.id);
     fetchCaseDocuments(c.brokerId, c.id);
+  };
+
+  const fetchCredentials = async () => {
+    if (!activeCase) return;
+    setLoadingCredentials(true);
+    setCredentialsError("");
+    try {
+      const res = await fetch(`/api/admin/cases/credentials?brokerId=${activeCase.brokerId}&clientId=${activeCase.id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudieron cargar las credenciales.");
+      setCredentials(data);
+    } catch (err) {
+      setCredentialsError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setLoadingCredentials(false);
+    }
   };
 
   useEffect(() => {
@@ -874,6 +916,77 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
                   <div className="pt-1">{getSyncBadge(activeCase.syncStatus)}</div>
                 </div>
               </div>
+
+              {isCreditRepair(activeCase) && (
+                <div className="bg-[#05101F] p-4 rounded-xl border border-gray-800 space-y-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-gray-500 uppercase font-mono font-bold flex items-center gap-1.5">
+                      <Lock size={11} /> Credenciales de Plataforma
+                    </p>
+                    {!credentials && (
+                      <button
+                        type="button"
+                        onClick={fetchCredentials}
+                        disabled={loadingCredentials}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
+                      >
+                        {loadingCredentials ? <Loader2 size={13} className="animate-spin" /> : <Eye size={13} />}
+                        {loadingCredentials ? "Cargando..." : "Ver Credenciales"}
+                      </button>
+                    )}
+                  </div>
+
+                  {credentialsError && <p className="text-red-400">{credentialsError}</p>}
+
+                  {credentials && !credentials.exists && (
+                    <p className="text-gray-500">El broker no sometió datos de plataforma para este cliente.</p>
+                  )}
+
+                  {credentials && credentials.exists && (
+                    <div className="space-y-1.5">
+                      <p className="text-gray-300">
+                        <strong>¿Ya tenía suscripción?:</strong> {credentials.hasExistingSubscription ? "Sí" : "No, hay que crearla"}
+                      </p>
+                      {credentials.hasExistingSubscription && (
+                        <p className="text-gray-300"><strong>Plataforma:</strong> {credentials.existingPlatform || "—"}</p>
+                      )}
+                      <p className="text-gray-300">
+                        <strong>Identificación:</strong> {credentials.idType === "itin" ? "ITIN" : "SSN"}
+                      </p>
+                      <p className="text-gray-300"><strong>Correo de acceso:</strong> {credentials.credentialEmail || "—"}</p>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setRevealSecret((v) => !v)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300"
+                        >
+                          {revealSecret ? <EyeOff size={13} /> : <Eye size={13} />}
+                          {revealSecret ? "Ocultar" : "Mostrar"} datos sensibles
+                        </button>
+                      </div>
+
+                      {credentials.idType === "itin" ? (
+                        <p className="text-gray-300">
+                          <strong>Token MyFreeScoreNow:</strong>{" "}
+                          <span className="font-mono">{revealSecret ? (credentials.credentialToken || "—") : "••••••••"}</span>
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-gray-300">
+                            <strong>Contraseña:</strong>{" "}
+                            <span className="font-mono">{revealSecret ? (credentials.credentialPassword || "—") : "••••••••"}</span>
+                          </p>
+                          <p className="text-gray-300">
+                            <strong>Últimos 4 de SSN:</strong>{" "}
+                            <span className="font-mono">{revealSecret ? (credentials.last4Ssn || "—") : "••••"}</span>
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {activeCase.reviewStatus === "pending_docs" && (
                 <div className="bg-amber-500/5 border border-amber-500/30 rounded-2xl p-4 space-y-2">

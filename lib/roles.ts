@@ -59,7 +59,10 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
     name: "Agente de Soporte & Operaciones",
     description: "Atención a tickets de brokers, reintento de sincronizaciones GHL y asistencia general.",
     allowedClusters: ["fondeo_rapido", "real_estate", "credit_repair", "seguros", "corporativo", "debt_consolidation"],
-    permissions: ["view_tickets", "reply_tickets", "retry_sync"],
+    // view_cases/view_sensitive_credentials: Soporte necesita poder abrir el
+    // Master Feed y ver las credenciales de plataforma de Reparación de
+    // Crédito para resolver tickets sin tener que pasarle el caso a un admin.
+    permissions: ["view_tickets", "reply_tickets", "retry_sync", "view_cases", "view_sensitive_credentials"],
     color: "indigo"
   },
   {
