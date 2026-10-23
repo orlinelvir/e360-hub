@@ -360,13 +360,18 @@ export const servicesData: ServiceDetail[] = [
       "Código postal (ZIP) de residencia e historial de manejo (tickets, colisiones)"
     ],
     process: [
-      "Si tienes licencia activa: ingresa los datos a la plataforma para cotización directa. Si no tienes: refiere la información.",
+      "Entra al formulario de Zein Insurance Services (botón de abajo) y selecciona 'Personal Auto'.",
+      "En el campo 'E360 Member Referral Code', escribe tu NOMBRE COMPLETO como broker (no el del cliente) — así se te atribuye la comisión.",
       "Comparar cotizaciones obtenidas con el cliente (se sugieren las 3 mejores opciones).",
       "Cliente acepta y firma la póliza; emisión de los 'binders' de cobertura."
     ],
     timeframe: "Cotización en menos de 24 horas. Emisión de cobertura en minutos tras el pago.",
     comission: "Comisión completa directa de la póliza (si tiene licencia) o bono por referido (sin licencia).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/E8DVdcBCS2GwqB7EqgI1",
+    // Alianza con Zein Insurance Services (ZIS) — un solo formulario externo
+    // compartido para las 6 verticales de seguros que ellos cubren (no vida).
+    // El campo "E360 Member Referral Code" de ese formulario es el NOMBRE
+    // COMPLETO del broker, no un código real — así atribuyen la comisión.
+    formLink: "https://zisinsurance.com/e360/",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636",
     sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
@@ -387,14 +392,15 @@ export const servicesData: ServiceDetail[] = [
       "Licencias CDL o de conducir de los choferes y registro de radio de operación"
     ],
     process: [
+      "Entra al formulario de Zein Insurance Services (botón de abajo) y selecciona 'Commercial Auto'.",
+      "En el campo 'E360 Member Referral Code', escribe tu NOMBRE COMPLETO como broker (no el del cliente) — así se te atribuye la comisión.",
       "Entrevistar al cliente sobre los vehículos, rutas y carga transportada.",
-      "Enviar formulario al departamento de suscripción de camiones y auto comercial.",
       "Revisar cotizaciones con las aseguradoras especializadas en transportación.",
       "Emisión del certificado de seguro (COI) y cobertura activa."
     ],
     timeframe: "Cotizaciones en 24 a 48 horas hábiles.",
     comission: "Comisión sobre la prima comercial adjudicada o tarifa de referido.",
-    formLink: "https://api.leadconnectorhq.com/widget/form/60emAjUAUDqQYyNl0Zld",
+    formLink: "https://zisinsurance.com/e360/",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636",
     sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
@@ -415,13 +421,14 @@ export const servicesData: ServiceDetail[] = [
       "Historial de reclamos de seguros de casa del propietario"
     ],
     process: [
+      "Entra al formulario de Zein Insurance Services (botón de abajo) y selecciona 'Homeowners'.",
+      "En el campo 'E360 Member Referral Code', escribe tu NOMBRE COMPLETO como broker (no el del cliente) — así se te atribuye la comisión.",
       "Recopilar la información y detalles de la propiedad a asegurar.",
-      "Someter los datos a cotización con las agencias aliadas de E360 (24-48 horas).",
       "Presentar ofertas, verificar endosos requeridos (hipoteca) y emitir póliza."
     ],
     timeframe: "Cotizaciones de seguros de hogar listas en 24 a 48 horas.",
     comission: "Comisión sobre prima anual (con licencia) o tarifa de referido (sin licencia).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/Yig6zhFlJ3M0GHbsD4oH",
+    formLink: "https://zisinsurance.com/e360/",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636",
     sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
@@ -442,14 +449,15 @@ export const servicesData: ServiceDetail[] = [
       "Número de empleados y detalles físicos de la locación comercial"
     ],
     process: [
+      "Entra al formulario de Zein Insurance Services (botón de abajo) y selecciona 'General Liability'.",
+      "En el campo 'E360 Member Referral Code', escribe tu NOMBRE COMPLETO como broker (no el del cliente) — así se te atribuye la comisión.",
       "Entrevistar al cliente sobre los riesgos específicos de su industria.",
-      "Enviar formulario al departamento de suscripción comercial de E360.",
       "El equipo cotiza con múltiples mercados especializados en riesgos comerciales.",
       "Revisión de coberturas con el cliente y emisión de certificados de seguro (COI)."
     ],
     timeframe: "Cotizaciones comerciales toman de 24 a 48 horas hábiles.",
     comission: "Comisión comercial según la póliza adjudicada (o referido a agentes de E360).",
-    formLink: "https://api.leadconnectorhq.com/widget/form/gwG8U5ZnUFKsLFp0uXe3",
+    formLink: "https://zisinsurance.com/e360/",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636",
     sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
@@ -470,14 +478,15 @@ export const servicesData: ServiceDetail[] = [
       "Clasificación del tipo de trabajo / industria (Construcción, Transporte, Comercio, etc.)"
     ],
     process: [
+      "Entra al formulario de Zein Insurance Services (botón de abajo) y selecciona 'Worker's Compensation'.",
+      "En el campo 'E360 Member Referral Code', escribe tu NOMBRE COMPLETO como broker (no el del cliente) — así se te atribuye la comisión.",
       "Recopilar la nómina anual estimada y clasificación de puestos.",
-      "Someter aplicación al departamento de suscripción de Workers Comp.",
       "Presentar cotizaciones comparativas ajustadas al riesgo de la nómina.",
       "Emisión inmediata de certificados de cumplimiento laboral."
     ],
     timeframe: "Cotización e inspección de riesgo en 24 a 48 horas.",
     comission: "Comisión sobre prima de nómina contratada por la empresa.",
-    formLink: "https://api.leadconnectorhq.com/widget/form/W7oUNvRvQ9NMjTnmx0YV",
+    formLink: "https://zisinsurance.com/e360/",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636",
     sla: "El agente de seguros contactará al cliente en 24-48 horas hábiles."
@@ -580,13 +589,15 @@ export const servicesData: ServiceDetail[] = [
       "Documento de estatus migratorio válido en USA para planes subsidiados (Obamacare)"
     ],
     process: [
+      "Entra al formulario de Zein Insurance Services (botón de abajo) y selecciona 'Group Health'.",
+      "En el campo 'E360 Member Referral Code', escribe tu NOMBRE COMPLETO como broker (no el del cliente) — así se te atribuye la comisión.",
       "Recopilar ingresos y dependientes para calcular el subsidio federal asignado.",
       "Seleccionar el plan ideal considerando deducibles, copagos y red de especialistas.",
       "Proceder con el enrolamiento en el sistema oficial del Mercado de Salud."
     ],
     timeframe: "Inscripción en 20 minutos. Cobertura activa el primer día del mes entrante.",
     comission: "Sólo brokers con licencia de salud activa: comisión mensual recurrente por miembro inscrito.",
-    formLink: "Formulario en desarrollo",
+    formLink: "https://zisinsurance.com/e360/",
     supportPhone: "tel:+19172845636",
     supportPhoneFormatted: "+1 (917) 284-5636",
     sla: "El agente de seguros contactará al cliente en 24-72 horas hábiles."
