@@ -177,13 +177,16 @@ interface Resource {
 const resources: Resource[] = [
   { id: "business-loan", label: "Préstamos de Negocios", desc: "Aplicación en línea — ve a Inicio / Servicios", icon: Building2, action: { type: "internal" } },
   { id: "credit-repair", label: "Reparación de Crédito", desc: "Comenzar proceso — ve a Inicio / Servicios", icon: Star, action: { type: "internal" } },
-  { id: "adios-deudas", label: "AdiosDeudas — Admitir Cliente", desc: "Negociación de Deudas — ve a Inicio / Servicios", icon: HandCoins, action: { type: "internal" } },
+  { id: "adios-deudas", label: "Negociación de Deudas (AdiosDeudas)", desc: "Admitir cliente nuevo — ve a Inicio / Servicios", icon: HandCoins, action: { type: "internal" } },
   {
     id: "quantum-debt-solutions",
-    label: "AdiosDeudas — Soporte y Referidos",
+    // Antes ambas tarjetas empezaban con "AdiosDeudas —" y, aunque tenían
+    // descripciones distintas, seguían leyéndose como una tarjeta duplicada
+    // al escanear la cuadrícula rápido. Nombrar esta por el proveedor real
+    // (Quantum Debt Solutions, no por el servicio) las hace lucir distintas
+    // de un vistazo, sin depender de leer el texto completo.
+    label: "Soporte de Quantum Debt Solutions",
     // Contacto operativo del broker — nunca se le comparte al cliente final.
-    // Puesto justo al lado de "Admitir Cliente" arriba para que se lea como
-    // un par (admitir / contactar al proveedor), no como una tarjeta repetida.
     desc: "Dudas de elegibilidad o enviar un referido — support@quantumdebtsolutions.com",
     icon: Phone,
     action: { type: "external", href: "mailto:support@quantumdebtsolutions.com" }
