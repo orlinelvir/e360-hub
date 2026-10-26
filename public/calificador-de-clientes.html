@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Calificador de Clientes — Emprende 360</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d2d5e;--navy2:#0a1f45;--gold:#d4a017;--gold2:#f5c842;
+  --blue:#1a4a8a;--blue-bg:#eef3fb;--green:#1a7a3a;--green-bg:#edfaf2;
+  --red:#c0392b;--red-bg:#fff0ee;--purple:#4a1a7a;--purple-bg:#f5eeff;
+  --teal:#0a5a5a;--teal-bg:#eafaf8;--orange:#c45000;--orange-bg:#fff4ee;
+  --gray:#6a7a8a;--light:#f4f6f9;--border:#d0dae6;--text:#1a2a3a;
+  --surface:#f4f6f9;--card:#fff;--white:#fff;
+  color-scheme:light dark;
+}
+@media(prefers-color-scheme:dark){:root{
+  --light:#1a1f28;--border:#2a3a50;--text:#d0dae8;--surface:#111827;
+  --card:#1a2235;--gray:#8899aa;--blue-bg:#1a2a40;--green-bg:#0a2010;
+  --red-bg:#2a1010;--purple-bg:#1a0a30;--teal-bg:#0a1a1a;--orange-bg:#2a1a0a;
+}}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--surface);color:var(--text);min-height:100vh;padding:0 0 48px;}
+
+.hdr{background:var(--navy);padding:16px 24px 12px;border-bottom:4px solid var(--gold);}
+.hdr-brand{color:#fff;font-size:15px;font-weight:800;}
+.hdr-sub{color:rgba(255,255,255,.45);font-size:10.5px;margin-top:2px;}
+.hdr-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.hdr-badge{background:rgba(212,160,23,.2);border:1px solid rgba(212,160,23,.5);color:var(--gold2);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;}
+
+.main{max-width:1060px;margin:0 auto;padding:20px 16px 0;}
+
+/* INPUT SECTION */
+.input-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:18px;}
+.section-title{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.section-title::before{content:'';display:block;width:3px;height:14px;background:var(--gold);border-radius:2px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:650px){.grid2,.grid3{grid-template-columns:1fr;}}
+.field{margin-bottom:0;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--gray);margin-bottom:5px;letter-spacing:.3px;}
+.field input,.field select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;background:var(--surface);color:var(--text);transition:border .2s;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue);background:var(--card);}
+.field select option{background:var(--card);}
+.input-prefix-wrap{position:relative;}
+.input-prefix-wrap .pfx{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:600;color:var(--gray);pointer-events:none;}
+.input-prefix-wrap input{padding-left:24px;}
+.input-suffix-wrap{position:relative;}
+.input-suffix-wrap .sfx{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:600;color:var(--gray);pointer-events:none;}
+.input-suffix-wrap input{padding-right:30px;}
+input[type=number]{-moz-appearance:textfield;}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;}
+
+.qualify-btn{width:100%;padding:13px;background:var(--navy);color:#fff;font-size:14px;font-weight:800;border:none;border-radius:10px;cursor:pointer;margin-top:16px;letter-spacing:.5px;transition:background .2s;}
+.qualify-btn:hover{background:var(--blue);}
+
+/* RESULTS */
+.results-section{display:none;}
+.results-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.results-title{font-size:14px;font-weight:800;color:var(--text);}
+.results-sub{font-size:11px;color:var(--gray);margin-top:2px;}
+.reset-btn{padding:7px 16px;background:var(--light);border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:700;color:var(--gray);cursor:pointer;font-family:'Inter',sans-serif;}
+.reset-btn:hover{border-color:var(--navy);color:var(--navy);}
+
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+
+.product-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .2s;}
+.product-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1);}
+.pc-header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;}
+.pc-name{font-size:13px;font-weight:700;color:#fff;}
+.pc-prob{font-size:22px;font-weight:900;color:var(--gold2);}
+.pc-prob-label{font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;}
+.pc-body{padding:14px 16px;}
+.pc-amount{margin-bottom:10px;}
+.pc-amount-label{font-size:9.5px;font-weight:700;color:var(--gray);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.pc-amount-value{font-size:20px;font-weight:900;color:var(--text);letter-spacing:-0.5px;}
+.pc-bar-wrap{margin-bottom:12px;}
+.pc-bar-bg{height:7px;background:var(--light);border-radius:4px;overflow:hidden;}
+.pc-bar-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+.pc-factors{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.pc-factor{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;line-height:1.4;}
+.pc-factor-icon{flex-shrink:0;margin-top:1px;font-size:12px;}
+.pc-factor.pass{color:var(--green);}
+.pc-factor.fail{color:var(--red);}
+.pc-factor.warn{color:var(--orange);}
+.pc-note{background:var(--light);border-radius:8px;padding:9px 11px;font-size:11px;color:var(--gray);line-height:1.5;font-style:italic;}
+.pc-avatar{background:var(--blue-bg);border-radius:8px;padding:9px 11px;font-size:11px;color:var(--blue);line-height:1.5;margin-bottom:8px;}
+.pc-avatar strong{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;color:var(--blue);}
+
+/* PROB colors */
+.prob-alto{background:linear-gradient(135deg,var(--green) 0%,#2a9a4a 100%);}
+.prob-medio{background:linear-gradient(135deg,#d4a017 0%,#e8b830 100%);}
+.prob-bajo{background:linear-gradient(135deg,#c0392b 0%,#e74c3c 100%);}
+.prob-no{background:linear-gradient(135deg,#6a7a8a 0%,#8899aa 100%);}
+
+.no-qualify{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;color:var(--gray);font-size:13px;}
+
+/* LEGEND */
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--gray);}
+.legend-dot{width:10px;height:10px;border-radius:50%;}
+
+.disclaimer{font-size:10px;color:var(--gray);text-align:center;margin-top:20px;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-row">
+    <div>
+      <div class="hdr-brand">EMPRENDE 360 — Calificador de Clientes y Productos de Financiamiento</div>
+      <div class="hdr-sub">Herramienta exclusiva para brokers | Ingresa el perfil del cliente para ver a qué productos califica</div>
+    </div>
+    <div class="hdr-badge">Solo para brokers E360</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- INPUT FORM -->
+  <div class="input-card" id="inputSection">
+    <div class="section-title">Perfil del Cliente</div>
+    <div class="grid3" style="margin-bottom:14px;">
+      <div class="field">
+        <label>Puntaje de crédito (FICO)</label>
+        <div class="input-suffix-wrap">
+          <input type="number" id="score" placeholder="ej. 680" min="300" max="850">
+          <span class="sfx">pts</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Antigüedad del crédito (años)</label>
+        <div class="input-suffix-wrap">
+          <input type="number" id="creditAge" placeholder="ej. 4" min="0" max="40">
+          <span class="sfx">años</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>¿Tiene negocio registrado?</label>
+        <select id="hasBiz">
+          <option value="">Selecciona...</option>
+          <option value="si">Sí — LLC / Corp registrada</option>
+          <option value="no">No — trabaja informal</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid3" style="margin-bottom:14px;">
+      <div class="field">
+        <label>Tiempo en negocio (meses)</label>
+        <div class="input-suffix-wrap">
+          <input type="number" id="bizAge" placeholder="ej. 18" min="0">
+          <span class="sfx">mes</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Depósitos mensuales promedio</label>
+        <div class="input-prefix-wrap">
+          <span class="pfx">$</span>
+          <input type="number" id="monthlyDeposits" placeholder="ej. 25000">
+        </div>
+      </div>
+      <div class="field">
+        <label>Días negativos en banco por mes</label>
+        <div class="input-suffix-wrap">
+          <input type="number" id="negDays" placeholder="ej. 2" min="0" max="31">
+          <span class="sfx">días</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid3" style="margin-bottom:14px;">
+      <div class="field">
+        <label>¿Tiene deudas activas de MCA?</label>
+        <select id="mcaStack">
+          <option value="">Selecciona...</option>
+          <option value="no">No — sin MCA activo</option>
+          <option value="1">Sí — 1 MCA activo</option>
+          <option value="2+">Sí — 2 o más MCAs activos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Ingreso bruto mensual personal</label>
+        <div class="input-prefix-wrap">
+          <span class="pfx">$</span>
+          <input type="number" id="income" placeholder="ej. 6000">
+        </div>
+      </div>
+      <div class="field">
+        <label>Deudas mensuales (auto, tarjetas, etc.)</label>
+        <div class="input-prefix-wrap">
+          <span class="pfx">$</span>
+          <input type="number" id="debts" placeholder="ej. 800">
+        </div>
+      </div>
+    </div>
+
+    <div class="grid3" style="margin-bottom:14px;">
+      <div class="field">
+        <label>Tipo de ingreso personal</label>
+        <select id="incomeType">
+          <option value="">Selecciona...</option>
+          <option value="w2">W-2 (empleado)</option>
+          <option value="1099">1099 / Self-employed</option>
+          <option value="mixto">Mixto (W-2 + negocio)</option>
+          <option value="ninguno">Sin ingreso verificable</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Años en el mismo empleo/campo</label>
+        <div class="input-suffix-wrap">
+          <input type="number" id="jobYears" placeholder="ej. 3" min="0">
+          <span class="sfx">años</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>¿Tiene SSN o ITIN?</label>
+        <select id="idType">
+          <option value="">Selecciona...</option>
+          <option value="ssn">SSN</option>
+          <option value="itin">ITIN</option>
+          <option value="ninguno">Ninguno</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid3" style="margin-bottom:14px;">
+      <div class="field">
+        <label>¿Tiene propiedad / activos?</label>
+        <select id="hasAssets">
+          <option value="">Selecciona...</option>
+          <option value="si">Sí — casa, propiedad u otros activos</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Monto que el cliente necesita ($)</label>
+        <div class="input-prefix-wrap">
+          <span class="pfx">$</span>
+          <input type="number" id="needed" placeholder="ej. 50000">
+        </div>
+      </div>
+      <div class="field">
+        <label>¿Termina el mes positivo en banco?</label>
+        <select id="monthPositive">
+          <option value="">Selecciona...</option>
+          <option value="si">Sí — siempre termina positivo</option>
+          <option value="aveces">A veces — no consistente</option>
+          <option value="no">No — frecuentemente negativo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-bottom:4px;">
+      <div class="field">
+        <label>Propósito del financiamiento</label>
+        <select id="purpose">
+          <option value="">Selecciona...</option>
+          <option value="capital">Capital de trabajo / inventario</option>
+          <option value="expansion">Expansión del negocio</option>
+          <option value="equipo">Compra de equipo</option>
+          <option value="deudas">Consolidación de deudas</option>
+          <option value="personal">Necesidad personal</option>
+          <option value="casa">Compra de casa</option>
+          <option value="inversion">Propiedad de inversión</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>¿Tiene bancarrota reciente? (últimos 3 años)</label>
+        <select id="bankruptcy">
+          <option value="">Selecciona...</option>
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="qualify-btn" onclick="qualify()">🔍 CALIFICAR AL CLIENTE</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-section" id="resultsSection">
+    <div class="results-header">
+      <div>
+        <div class="results-title" id="resultsTitle">Resultados del perfil</div>
+        <div class="results-sub" id="resultsSub"></div>
+      </div>
+      <button class="reset-btn" onclick="reset()">← Nuevo cliente</button>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Alta probabilidad (75-100%)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Probabilidad media (40-74%)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Probabilidad baja (1-39%)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--gray)"></div>No califica actualmente</div>
+    </div>
+
+    <div class="products-grid" id="productsGrid"></div>
+
+    <div class="disclaimer">
+      ⚠️ Esta herramienta es una estimación basada en criterios generales de elegibilidad. Los lenders siempre realizarán su propio proceso de underwriting adicional. Los resultados no garantizan aprobación. Emprende 360 LLC — Solo para uso interno de brokers.
+    </div>
+  </div>
+</div>
+
+<script>
+function getVals() {
+  return {
+    score: parseInt(document.getElementById('score').value) || 0,
+    creditAge: parseFloat(document.getElementById('creditAge').value) || 0,
+    hasBiz: document.getElementById('hasBiz').value,
+    bizAge: parseInt(document.getElementById('bizAge').value) || 0,
+    monthlyDeposits: parseFloat(document.getElementById('monthlyDeposits').value) || 0,
+    negDays: parseInt(document.getElementById('negDays').value) || 0,
+    mcaStack: document.getElementById('mcaStack').value,
+    income: parseFloat(document.getElementById('income').value) || 0,
+    debts: parseFloat(document.getElementById('debts').value) || 0,
+    incomeType: document.getElementById('incomeType').value,
+    jobYears: parseFloat(document.getElementById('jobYears').value) || 0,
+    idType: document.getElementById('idType').value,
+    hasAssets: document.getElementById('hasAssets').value,
+    needed: parseFloat(document.getElementById('needed').value) || 0,
+    monthPositive: document.getElementById('monthPositive').value,
+    purpose: document.getElementById('purpose').value,
+    bankruptcy: document.getElementById('bankruptcy').value,
+  };
+}
+
+function fmt(n) {
+  if(n >= 1000000) return '$' + (n/1000000).toFixed(1) + 'M';
+  if(n >= 1000) return '$' + Math.round(n/1000) + 'K';
+  return '$' + Math.round(n).toLocaleString();
+}
+
+function dti(v) {
+  if(!v.income) return 999;
+  return (v.debts / v.income) * 100;
+}
+
+// ══════════════════════════════════════════
+// PRODUCT EVALUATORS
+// ══════════════════════════════════════════
+function evalMCA(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 0;
+  // Deposits
+  if(v.monthlyDeposits >= 15000) {factors.push({t:'pass',txt:`Depósitos mensuales: ${fmt(v.monthlyDeposits)} ✓`});}
+  else if(v.monthlyDeposits >= 10000){factors.push({t:'warn',txt:`Depósitos: ${fmt(v.monthlyDeposits)} — en el límite mínimo`});prob-=20;}
+  else if(v.monthlyDeposits >= 5000){factors.push({t:'warn',txt:`Depósitos: ${fmt(v.monthlyDeposits)} — por debajo del ideal`});prob-=40;}
+  else{factors.push({t:'fail',txt:`Depósitos insuficientes (mín. $5,000/mes)`});prob-=70;}
+  // Biz age
+  if(v.bizAge >= 12){factors.push({t:'pass',txt:`Tiempo en negocio: ${v.bizAge} meses ✓`});}
+  else if(v.bizAge >= 6){factors.push({t:'warn',txt:`Tiempo en negocio: ${v.bizAge} meses — mínimo aceptable`});prob-=15;}
+  else{factors.push({t:'fail',txt:`Tiempo en negocio muy corto (mín. 6 meses)`});prob-=50;}
+  // Neg days
+  if(v.negDays <= 3){factors.push({t:'pass',txt:`Días negativos: ${v.negDays}/mes ✓`});}
+  else if(v.negDays <= 7){factors.push({t:'warn',txt:`Días negativos: ${v.negDays}/mes — lenders lo revisan`});prob-=15;}
+  else{factors.push({t:'fail',txt:`Demasiados días negativos: ${v.negDays}/mes`});prob-=35;}
+  // Month positive
+  if(v.monthPositive==='si'){factors.push({t:'pass',txt:'Termina el mes positivo ✓'});}
+  else if(v.monthPositive==='aveces'){factors.push({t:'warn',txt:'No siempre termina positivo'});prob-=10;}
+  else if(v.monthPositive==='no'){factors.push({t:'fail',txt:'Frecuentemente termina negativo'});prob-=30;}
+  // Stacking
+  if(v.mcaStack==='no'){factors.push({t:'pass',txt:'Sin MCA activo — posición limpia ✓'});}
+  else if(v.mcaStack==='1'){factors.push({t:'warn',txt:'1 MCA activo — posible stacking'});prob-=20;}
+  else if(v.mcaStack==='2+'){factors.push({t:'fail',txt:'2+ MCAs activos — stacking crítico'});prob-=50;}
+  // Bankruptcy
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota reciente — limita opciones'});prob-=30;}
+  // Amount
+  if(v.monthlyDeposits > 0){
+    min = Math.round(v.monthlyDeposits * 0.75);
+    max = Math.round(v.monthlyDeposits * 1.5);
+  }
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'MCA — Merchant Cash Advance', color:'#0d2d5e', prob, min, max, factors,
+    avatar:'Dueño de negocio con 6+ meses de operación, $5,000-$15,000+/mes en depósitos, menos de 3 días negativos, sin stacking.',
+    note:'El lender revisa los últimos 4-6 estados de cuenta bancarios. El crédito es secundario — los depósitos son el factor principal.'};
+}
+
+function evalPersonalLoan(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 0;
+  if(v.score >= 720){factors.push({t:'pass',txt:`Score ${v.score} — excelente ✓`});}
+  else if(v.score >= 680){factors.push({t:'pass',txt:`Score ${v.score} — bueno ✓`});}
+  else if(v.score >= 640){factors.push({t:'warn',txt:`Score ${v.score} — aceptable, tasa más alta`});prob-=20;}
+  else if(v.score >= 580){factors.push({t:'warn',txt:`Score ${v.score} — limitado, opciones reducidas`});prob-=45;}
+  else{factors.push({t:'fail',txt:`Score ${v.score} — muy bajo para préstamo personal`});prob-=80;}
+  if(v.creditAge >= 3){factors.push({t:'pass',txt:`Antigüedad crédito: ${v.creditAge} años ✓`});}
+  else if(v.creditAge >= 1){factors.push({t:'warn',txt:`Antigüedad crédito: ${v.creditAge} años — algo corto`});prob-=15;}
+  else{factors.push({t:'fail',txt:'Historial de crédito muy corto'});prob-=40;}
+  const d = dti(v);
+  if(d <= 36){factors.push({t:'pass',txt:`DTI ${d.toFixed(0)}% — excelente ✓`});}
+  else if(d <= 43){factors.push({t:'warn',txt:`DTI ${d.toFixed(0)}% — aceptable`});prob-=15;}
+  else if(d <= 50){factors.push({t:'warn',txt:`DTI ${d.toFixed(0)}% — alto`});prob-=30;}
+  else{factors.push({t:'fail',txt:`DTI ${d.toFixed(0)}% — demasiado alto`});prob-=60;}
+  if(v.jobYears >= 2){factors.push({t:'pass',txt:`${v.jobYears} años de empleo estable ✓`});}
+  else{factors.push({t:'warn',txt:`Solo ${v.jobYears} años de empleo`});prob-=15;}
+  if(v.idType==='ssn'){factors.push({t:'pass',txt:'SSN ✓'});}
+  else if(v.idType==='itin'){factors.push({t:'warn',txt:'ITIN — opciones limitadas'});prob-=20;}
+  else{factors.push({t:'fail',txt:'Sin SSN/ITIN'});prob-=80;}
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota reciente'});prob-=50;}
+  if(v.income > 0){ min = Math.round(v.income * 3); max = Math.round(v.income * 8); }
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'Préstamo Personal', color:'#1a4a8a', prob, min, max, factors,
+    avatar:'Cliente con score 680+, 2+ años de historial, empleo estable 2+ años, DTI menor al 43%, SSN.',
+    note:'Los lenders revisan historial de pagos, utilización de crédito, DTI e ingreso verificable. Las tasas van de 7% a 35% según el perfil.'};
+}
+
+function evalCreditCard(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 0;
+  if(v.score >= 720){factors.push({t:'pass',txt:`Score ${v.score} — ideal para stacking ✓`});}
+  else if(v.score >= 680){factors.push({t:'pass',txt:`Score ${v.score} — bueno ✓`});}
+  else{factors.push({t:'fail',txt:`Score ${v.score} — se necesita 680+ para credit card stacking`});prob-=80;}
+  if(v.creditAge >= 2){factors.push({t:'pass',txt:`Historial ${v.creditAge} años ✓`});}
+  else{factors.push({t:'fail',txt:'Se necesitan 2+ años de historial'});prob-=60;}
+  if(v.idType==='ssn'){factors.push({t:'pass',txt:'SSN requerido ✓'});}
+  else{factors.push({t:'fail',txt:'Se requiere SSN para tarjetas empresariales'});prob-=100;}
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota reciente — descalifica'});prob-=80;}
+  const d = dti(v);
+  if(d <= 40){factors.push({t:'pass',txt:`DTI ${d.toFixed(0)}% ✓`});}
+  else{factors.push({t:'warn',txt:`DTI ${d.toFixed(0)}% — puede limitar los límites`});prob-=20;}
+  if(v.score >= 680 && v.creditAge >= 2){ min = 30000; max = 150000; }
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'Tarjetas de Crédito Empresariales (0% Stacking)', color:'#4a1a7a', prob, min, max, factors,
+    avatar:'Score 680+, 2+ años de historial, SSN requerido, sin bancarrota, DTI menor al 40%.',
+    note:'Se aplica a múltiples tarjetas empresariales simultáneamente. Período introductorio de 0% por 12-18 meses. Fondos disponibles en 2-4 semanas.'};
+}
+
+function evalFHA(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 0;
+  if(v.score >= 620){factors.push({t:'pass',txt:`Score ${v.score} ✓`});}
+  else if(v.score >= 580){factors.push({t:'warn',txt:`Score ${v.score} — califica pero requiere 10% enganche`});prob-=20;}
+  else{factors.push({t:'fail',txt:`Score ${v.score} — mínimo 580 para FHA`});prob-=80;}
+  if(v.jobYears >= 2){factors.push({t:'pass',txt:`${v.jobYears} años de empleo estable ✓`});}
+  else{factors.push({t:'warn',txt:`Solo ${v.jobYears} años de empleo`});prob-=25;}
+  const d = dti(v);
+  if(d <= 43){factors.push({t:'pass',txt:`DTI ${d.toFixed(0)}% ✓`});}
+  else if(d <= 50){factors.push({t:'warn',txt:`DTI ${d.toFixed(0)}% — en el límite`});prob-=20;}
+  else{factors.push({t:'fail',txt:`DTI ${d.toFixed(0)}% — demasiado alto`});prob-=60;}
+  if(v.idType==='ssn'){factors.push({t:'pass',txt:'SSN ✓'});}
+  else if(v.idType==='itin'){factors.push({t:'warn',txt:'ITIN — algunos lenders FHA aceptan'});prob-=30;}
+  else{factors.push({t:'fail',txt:'Se requiere SSN o ITIN'});prob-=80;}
+  if(v.incomeType==='w2'||v.incomeType==='mixto'){factors.push({t:'pass',txt:'Ingreso W-2 verificable ✓'});}
+  else if(v.incomeType==='1099'){factors.push({t:'warn',txt:'Self-employed — necesita 2 años de tax returns'});prob-=15;}
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota — espera de 2 años requerida'});prob-=60;}
+  if(v.income > 0){
+    const maxPmt = v.income * 0.31;
+    const estRate = 7.5/100/12;
+    const n = 30*12;
+    const loanAmt = maxPmt * (Math.pow(1+estRate,n)-1) / (estRate * Math.pow(1+estRate,n));
+    max = Math.round(loanAmt * 0.965);
+    min = Math.round(max * 0.5);
+  }
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'Préstamo FHA — Primera Vivienda', color:'#1a7a3a', prob, min, max, factors,
+    avatar:'Score 580+, 2 años de empleo, DTI menor al 43%, SSN o ITIN, sin bancarrota en últimos 2 años.',
+    note:'Enganche mínimo 3.5% (con score 580+). Requiere MIP anual. Propiedad debe ser vivienda primaria. Cierre en 30-45 días.'};
+}
+
+function evalConvencional(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 0;
+  if(v.score >= 740){factors.push({t:'pass',txt:`Score ${v.score} — excelente para convencional ✓`});}
+  else if(v.score >= 680){factors.push({t:'pass',txt:`Score ${v.score} — bueno ✓`});}
+  else if(v.score >= 640){factors.push({t:'warn',txt:`Score ${v.score} — califica con tasa más alta`});prob-=20;}
+  else{factors.push({t:'fail',txt:`Score ${v.score} — mínimo 640 para convencional`});prob-=70;}
+  if(v.jobYears >= 2){factors.push({t:'pass',txt:`${v.jobYears} años de empleo ✓`});}
+  else{factors.push({t:'warn',txt:'Se recomiendan 2+ años de empleo'});prob-=20;}
+  const d = dti(v);
+  if(d <= 36){factors.push({t:'pass',txt:`DTI ${d.toFixed(0)}% — excelente ✓`});}
+  else if(d <= 45){factors.push({t:'warn',txt:`DTI ${d.toFixed(0)}% — aceptable`});prob-=15;}
+  else{factors.push({t:'fail',txt:`DTI ${d.toFixed(0)}% — muy alto`});prob-=50;}
+  if(v.idType==='ssn'){factors.push({t:'pass',txt:'SSN requerido ✓'});}
+  else{factors.push({t:'fail',txt:'Se requiere SSN para convencional'});prob-=80;}
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota — espera de 4 años'});prob-=80;}
+  if(v.income > 0){
+    const maxPmt = v.income * 0.28;
+    const estRate = 7.5/100/12;
+    const n = 30*12;
+    const loanAmt = maxPmt * (Math.pow(1+estRate,n)-1) / (estRate * Math.pow(1+estRate,n));
+    max = Math.round(loanAmt * 0.97);
+    min = Math.round(max * 0.5);
+  }
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'Préstamo Convencional', color:'#0a5a5a', prob, min, max, factors,
+    avatar:'Score 680+, 2 años de empleo, DTI menor al 43%, SSN, sin bancarrota en 4 años, enganche 3-20%.',
+    note:'Enganche desde 3%. Sin MIP si LTV es menor al 80%. Cierre en 30-45 días. Mejores tasas con score 740+.'};
+}
+
+function evalDSCR(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 0;
+  if(v.score >= 680){factors.push({t:'pass',txt:`Score ${v.score} ✓`});}
+  else if(v.score >= 640){factors.push({t:'warn',txt:`Score ${v.score} — límite inferior`});prob-=20;}
+  else{factors.push({t:'fail',txt:`Score ${v.score} — mínimo 640 para DSCR`});prob-=70;}
+  if(v.purpose==='inversion'){factors.push({t:'pass',txt:'Propósito: propiedad de inversión ✓'});}
+  else{factors.push({t:'warn',txt:'DSCR es para propiedades de inversión/alquiler'});prob-=30;}
+  if(v.hasAssets==='si'){factors.push({t:'pass',txt:'Tiene activos / propiedades ✓'});}
+  else{factors.push({t:'warn',txt:'Enganche del 20-25% requerido'});prob-=10;}
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota reciente'});prob-=60;}
+  factors.push({t:'pass',txt:'No verifica ingreso personal — usa renta de la propiedad'});
+  if(v.income > 0){ min = 100000; max = 2000000; } else { min = 100000; max = 1000000; }
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'DSCR — Propiedad de Inversión', color:'#c45000', prob, min, max, factors,
+    avatar:'Inversionista con score 640+, propiedad que genera renta, enganche 20-25%. No se verifica ingreso personal.',
+    note:'El ratio DSCR mínimo es 1.10x (renta ÷ pago mensual). Ideal para LLC o inversionistas. Sin límite de propiedades.'};
+}
+
+function evalNoIncome(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 0;
+  if(v.score >= 700){factors.push({t:'pass',txt:`Score ${v.score} ✓`});}
+  else if(v.score >= 660){factors.push({t:'warn',txt:`Score ${v.score} — aceptable`});prob-=15;}
+  else{factors.push({t:'fail',txt:`Score ${v.score} — mínimo 660-680`});prob-=60;}
+  if(v.monthlyDeposits >= 8000){factors.push({t:'pass',txt:`Depósitos ${fmt(v.monthlyDeposits)}/mes — se usan en lugar de income ✓`});}
+  else{factors.push({t:'warn',txt:'Se necesitan estados bancarios robustos (12-24 meses)'});prob-=20;}
+  if(v.hasAssets==='si'){factors.push({t:'pass',txt:'Tiene activos — respalda la aplicación ✓'});}
+  else{factors.push({t:'warn',txt:'Sin activos — mayor riesgo para el lender'});prob-=25;}
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota reciente'});prob-=60;}
+  factors.push({t:'pass',txt:'No requiere W-2 ni tax returns ✓'});
+  min = 50000; max = 500000;
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'No Income Verification', color:'#8b1a1a', prob, min, max, factors,
+    avatar:'Score 680+, estados bancarios 12-24 meses, activos o propiedad como respaldo, enganche 20-30%.',
+    note:'Tasa aproximadamente 1-2% más alta que convencional. Ideal para self-employed sin declaraciones robustas. Enganche mínimo 20-30%.'};
+}
+
+function evalSBAMicro(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 50000;
+  if(v.score >= 640){factors.push({t:'pass',txt:`Score ${v.score} ✓`});}
+  else{factors.push({t:'warn',txt:`Score ${v.score} — SBA Micro es más flexible`});prob-=20;}
+  if(v.bizAge >= 12){factors.push({t:'pass',txt:`${v.bizAge} meses en negocio ✓`});}
+  else if(v.bizAge >= 6){factors.push({t:'warn',txt:'Tiempo en negocio corto para SBA'});prob-=20;}
+  else{factors.push({t:'fail',txt:'Muy poco tiempo en negocio'});prob-=50;}
+  if(v.hasBiz==='si'){factors.push({t:'pass',txt:'Negocio registrado ✓'});}
+  else{factors.push({t:'warn',txt:'Preferiblemente debe estar registrado'});prob-=20;}
+  if(v.idType==='ssn'){factors.push({t:'pass',txt:'SSN ✓'});}
+  else{factors.push({t:'fail',txt:'SBA generalmente requiere SSN y ciudadanía/residencia'});prob-=60;}
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota — puede descalificar para SBA'});prob-=70;}
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'SBA Microloan (hasta $50K)', color:'#1a5a3a', prob, min:5000, max, factors,
+    avatar:'Negocio pequeño o startup, score 640+, SSN, negocio registrado. Ideal para negocios en sus primeros años.',
+    note:'Monto máximo $50,000. Tasa de 8-13%. Plazo de hasta 6 años. Algunos programas no requieren colateral. Proceso 2-4 semanas.'};
+}
+
+function evalSBA7a(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 0;
+  if(v.score >= 680){factors.push({t:'pass',txt:`Score ${v.score} ✓`});}
+  else if(v.score >= 650){factors.push({t:'warn',txt:`Score ${v.score} — en el límite`});prob-=25;}
+  else{factors.push({t:'fail',txt:`Score ${v.score} — mínimo 680 preferiblemente`});prob-=60;}
+  if(v.bizAge >= 24){factors.push({t:'pass',txt:`${v.bizAge} meses en negocio ✓`});}
+  else if(v.bizAge >= 12){factors.push({t:'warn',txt:`Solo ${v.bizAge} meses — SBA 7a prefiere 2+ años`});prob-=30;}
+  else{factors.push({t:'fail',txt:'SBA 7a requiere mínimo 1-2 años de negocio'});prob-=70;}
+  if(v.hasBiz==='si'){factors.push({t:'pass',txt:'Negocio registrado ✓'});}
+  else{factors.push({t:'fail',txt:'Se requiere negocio registrado (LLC/Corp)'});prob-=50;}
+  if(v.idType==='ssn'){factors.push({t:'pass',txt:'SSN ✓'});}
+  else{factors.push({t:'fail',txt:'SBA 7a requiere SSN y estatus migratorio'});prob-=70;}
+  if(v.incomeType!=='ninguno'){factors.push({t:'pass',txt:'Tiene ingreso verificable ✓'});}
+  else{factors.push({t:'fail',txt:'Se requieren declaraciones de impuestos'});prob-=50;}
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota — descalifica para SBA 7a'});prob-=80;}
+  if(v.monthlyDeposits > 0){ min = 50000; max = 500000; }
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'SBA 7(a) — Préstamo Empresarial', color:'#2a5a1a', prob, min, max, factors,
+    avatar:'Negocio con 2+ años, score 680+, SSN, tax returns 2 años, ciudadanía/residencia, sin bancarrota.',
+    note:'Monto hasta $5M. Tasa prime + 2-3%. Plazo hasta 25 años. Proceso de 30-90 días. Requiere garantía personal.'};
+}
+
+function evalFixFlip(v) {
+  let prob = 100; let factors = []; let min = 0; let max = 0;
+  if(v.score >= 650){factors.push({t:'pass',txt:`Score ${v.score} ✓`});}
+  else if(v.score >= 620){factors.push({t:'warn',txt:`Score ${v.score} — algunos lenders aceptan`});prob-=15;}
+  else{factors.push({t:'fail',txt:`Score ${v.score} — muy bajo para Fix & Flip`});prob-=60;}
+  if(v.purpose==='inversion'){factors.push({t:'pass',txt:'Propósito de inversión ✓'});}
+  else{factors.push({t:'warn',txt:'Fix & Flip es para propiedades de inversión'});prob-=30;}
+  if(v.hasAssets==='si'){factors.push({t:'pass',txt:'Tiene activos — posible enganche ✓'});}
+  else{factors.push({t:'warn',txt:'Se necesita 10-20% del precio de compra'});prob-=20;}
+  if(v.bankruptcy==='si'){factors.push({t:'fail',txt:'Bancarrota reciente'});prob-=50;}
+  factors.push({t:'pass',txt:'No requiere ingreso documentado extenso'});
+  min = 50000; max = 1000000;
+  prob = Math.max(0, Math.min(100, prob));
+  return {name:'Fix & Flip — Inversión en Propiedades', color:'#5a3a00', prob, min, max, factors,
+    avatar:'Inversionista con score 620+, experiencia en proyectos de remodelación, 10-20% de enganche disponible.',
+    note:'Plazo corto 6-18 meses. Tasa 8-14%. Aprobación en 7-21 días. El lender financia hasta 65-75% del ARV (valor después de reparación).'};
+}
+
+// ══════════════════════════════════════════
+// QUALIFY FUNCTION
+// ══════════════════════════════════════════
+function qualify() {
+  const v = getVals();
+  if(!v.score && !v.income && !v.monthlyDeposits) {
+    alert('Por favor ingresa al menos el puntaje de crédito, ingreso mensual o depósitos bancarios del cliente.');
+    return;
+  }
+
+  const products = [
+    evalMCA(v), evalPersonalLoan(v), evalCreditCard(v),
+    evalFHA(v), evalConvencional(v), evalDSCR(v),
+    evalNoIncome(v), evalSBAMicro(v), evalSBA7a(v), evalFixFlip(v)
+  ];
+
+  // Sort by probability desc
+  products.sort((a,b) => b.prob - a.prob);
+
+  document.getElementById('inputSection').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'block';
+
+  const qualified = products.filter(p => p.prob > 0);
+  const top = products.filter(p => p.prob >= 75);
+  document.getElementById('resultsTitle').textContent =
+    `${qualified.length} productos evaluados — ${top.length} con alta probabilidad`;
+  document.getElementById('resultsSub').textContent =
+    `Score: ${v.score || 'N/A'} | Depósitos: ${v.monthlyDeposits ? fmt(v.monthlyDeposits) + '/mes' : 'N/A'} | Ingreso: ${v.income ? fmt(v.income) + '/mes' : 'N/A'} | DTI: ${v.income ? dti(v).toFixed(0) + '%' : 'N/A'}`;
+
+  const grid = document.getElementById('productsGrid');
+  grid.innerHTML = products.map(p => {
+    const probClass = p.prob >= 75 ? 'prob-alto' : p.prob >= 40 ? 'prob-medio' : p.prob > 0 ? 'prob-bajo' : 'prob-no';
+    const barColor = p.prob >= 75 ? 'var(--green)' : p.prob >= 40 ? 'var(--gold)' : p.prob > 0 ? 'var(--red)' : 'var(--gray)';
+    const amtStr = (p.min > 0 && p.max > 0) ? `${fmt(p.min)} — ${fmt(p.max)}` : 'Depende del perfil';
+    return `<div class="product-card">
+      <div class="pc-header ${probClass}" style="background:${p.color}">
+        <div class="pc-name">${p.name}</div>
+        <div style="text-align:right">
+          <div class="pc-prob">${p.prob}%</div>
+          <div class="pc-prob-label">probabilidad</div>
+        </div>
+      </div>
+      <div class="pc-body">
+        <div class="pc-bar-wrap">
+          <div class="pc-bar-bg">
+            <div class="pc-bar-fill" style="width:${p.prob}%;background:${barColor}"></div>
+          </div>
+        </div>
+        <div class="pc-amount">
+          <div class="pc-amount-label">Monto estimado</div>
+          <div class="pc-amount-value">${amtStr}</div>
+        </div>
+        <div class="pc-avatar"><strong>Avatar del cliente ideal</strong>${p.avatar}</div>
+        <div class="pc-factors">
+          ${p.factors.map(f=>`<div class="pc-factor ${f.t}">
+            <span class="pc-factor-icon">${f.t==='pass'?'✅':f.t==='warn'?'⚠️':'❌'}</span>
+            <span>${f.txt}</span>
+          </div>`).join('')}
+        </div>
+        <div class="pc-note">📋 ${p.note}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function reset() {
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('inputSection').style.display = 'block';
+  document.querySelectorAll('input').forEach(i=>i.value='');
+  document.querySelectorAll('select').forEach(s=>s.value='');
+}
+</script>
+</body>
+</html>

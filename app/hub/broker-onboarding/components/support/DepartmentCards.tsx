@@ -23,7 +23,8 @@ import {
   Wallet,
   Eye,
   Briefcase,
-  HandCoins
+  HandCoins,
+  Gauge
 } from "lucide-react";
 
 interface DepartmentCardsProps {
@@ -217,6 +218,13 @@ const resources: Resource[] = [
     desc: "Contenido educativo, anuncios y scripts de ventas por servicio y plataforma",
     icon: Megaphone,
     action: { type: "external", href: "/centro-de-marketing.html" }
+  },
+  {
+    id: "calificador-de-clientes",
+    label: "Calificador de Clientes",
+    desc: "Ingresa el perfil del cliente y ve a qué productos de financiamiento califica (MCA, FHA, DSCR, SBA y más)",
+    icon: Gauge,
+    action: { type: "external", href: "/calificador-de-clientes.html" }
   },
   { id: "e360-library", label: "E360 Library", desc: "Acceso al curso", icon: GraduationCap, action: { type: "external", href: "https://e360library.com" } },
   {
