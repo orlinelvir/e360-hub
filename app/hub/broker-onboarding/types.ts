@@ -46,6 +46,9 @@ export interface ClientLead {
   // alertas — evita repetir el mismo aviso cada día que el caso sigue pendiente.
   lastPendingAlertHours?: number;
   adminNotes?: string;
+  // "ghl_sync": contacto crudo importado de la subcuenta GHL del broker, no
+  // una solicitud de servicio real — ver lib/services/broker-service.ts.
+  source?: "ghl_sync";
 }
 
 // Secuencia de citas de onboarding de un broker nuevo (Ventas -> Onboarding Básico

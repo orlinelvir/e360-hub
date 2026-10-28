@@ -52,6 +52,10 @@ export async function GET(request: Request) {
 
         clientsSnap.docs.forEach((cDoc) => {
           const c = cDoc.data();
+          // Contactos crudos sincronizados desde GHL (ver /api/admin/cases) —
+          // nunca tienen `status`, así que deriveCaseStatus los marca como
+          // "pending" aunque no sean una solicitud real pendiente de sync.
+          if (c.source === "ghl_sync" || c.serviceName === "Cliente StartPoint CRM") return;
           const { syncStatus } = deriveCaseStatus(c);
           if (syncStatus === "failed" || syncStatus === "pending") {
             failedLeads.push({

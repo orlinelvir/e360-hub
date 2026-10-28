@@ -41,6 +41,11 @@ export interface ClientLeadData {
   status?: string;
   syncStatus?: string;
   adminNotes?: string;
+  // "ghl_sync": contacto crudo importado de la subcuenta GHL del broker
+  // (pestaña "Mis Clientes (CRM)") — NO es una solicitud de servicio real,
+  // aunque se guarde en la misma subcolección. El Master Feed de Casos
+  // (admin) lo excluye explícitamente por este campo.
+  source?: "ghl_sync";
 }
 
 /**

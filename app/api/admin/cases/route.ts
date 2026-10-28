@@ -92,6 +92,16 @@ export async function GET(request: Request) {
 
         clientsSnap.docs.forEach((cDoc) => {
           const c = cDoc.data();
+
+          // Contactos crudos sincronizados desde la subcuenta GHL del broker
+          // (pestaña "Mis Clientes (CRM)") — nunca fueron una solicitud de
+          // servicio real, solo viven en la misma subcolección por
+          // conveniencia. "source" es la marca nueva; el texto fijo cubre los
+          // que ya existían en Firestore antes de que existiera ese campo.
+          if (c.source === "ghl_sync" || c.serviceName === "Cliente StartPoint CRM") {
+            return;
+          }
+
           const amt = Number(c.amount) || 0;
           // Antes "0 || fallback" trataba un estimatedCommission real de 0
           // (ej. todo caso de Reparación de Crédito, que no maneja comisión)

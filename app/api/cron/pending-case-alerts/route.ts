@@ -42,6 +42,9 @@ export async function GET(request: Request) {
         for (const cDoc of clientsSnap.docs) {
           const c = cDoc.data();
           if (!c.createdAt) continue;
+          // Contactos crudos sincronizados desde GHL (ver /api/admin/cases) —
+          // no son solicitudes reales, no deben generar alertas de "caso sin avanzar".
+          if (c.source === "ghl_sync" || c.serviceName === "Cliente StartPoint CRM") continue;
           checked++;
 
           const { reviewStatus } = deriveCaseStatus(c);

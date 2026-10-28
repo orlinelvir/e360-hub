@@ -77,6 +77,10 @@ export async function GET(request: Request) {
         clientsSnap.docs.forEach((cDoc) => {
           const c = cDoc.data();
 
+          // Contactos crudos sincronizados desde GHL (ver /api/admin/cases) —
+          // no son solicitudes reales, no deben contar como backlog pendiente.
+          if (c.source === "ghl_sync" || c.serviceName === "Cliente StartPoint CRM") return;
+
           if (c.updatedByUid && staff[c.updatedByUid] && isRecent(c.updatedAt)) {
             staff[c.updatedByUid].statusChanges++;
           }

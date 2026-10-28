@@ -49,10 +49,20 @@ export async function GET(request: Request) {
         }
 
         const clientsSnap = await bDoc.ref.collection("clients").get();
-        totalLeads += clientsSnap.size;
 
         clientsSnap.docs.forEach((cDoc) => {
           const c = cDoc.data();
+
+          // Contactos crudos sincronizados desde la subcuenta GHL del broker
+          // (pestaña "Mis Clientes (CRM)") — no son solicitudes de servicio
+          // reales, inflaban totalLeads/estimatedCommissions con montos
+          // inventados ($25,000 / $1,250 por defecto). Mismo criterio que
+          // /api/admin/cases.
+          if (c.source === "ghl_sync" || c.serviceName === "Cliente StartPoint CRM") {
+            return;
+          }
+
+          totalLeads++;
           const amt = Number(c.amount) || 0;
           const comm = Number(c.estimatedCommission) || (amt > 0 ? Math.round(amt * 0.05) : 250);
           totalVolume += amt;

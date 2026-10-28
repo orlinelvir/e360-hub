@@ -145,7 +145,10 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
           createdAt: cnt.dateAdded ? cnt.dateAdded.split("T")[0] : new Date().toISOString().split("T")[0],
           lastActivity: "Sincronizado en vivo desde el CRM",
           ghlContactId: cnt.id || `cnt_${cnt.phone}`,
-          notes: cnt.source || "Contacto importado en tiempo real desde subcuenta CRM."
+          notes: cnt.source || "Contacto importado en tiempo real desde subcuenta CRM.",
+          // Marca explícita: esto es un contacto crudo de GHL, no una
+          // solicitud de servicio — el Master Feed de Casos (admin) lo excluye.
+          source: "ghl_sync"
         }));
 
         if (ghlMappedLeads.length > 0) {
