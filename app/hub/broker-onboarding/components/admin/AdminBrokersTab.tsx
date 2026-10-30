@@ -20,6 +20,10 @@ export interface BrokerItem {
   onboardingStage?: OnboardingStage;
   packagePaid?: boolean;
   referralEarnings?: number;
+  brokerId?: string;
+  contractSignedAt?: string;
+  contractSignedMethod?: string;
+  contractSignedSelfReported?: boolean;
   createdAt: string;
   totalClients: number;
   totalVolume: number;
@@ -85,6 +89,7 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [isTogglingAccount, setIsTogglingAccount] = useState(false);
   const [isVerifyingGhl, setIsVerifyingGhl] = useState(false);
+  const [isConfirmingContract, setIsConfirmingContract] = useState(false);
   const [isSavingGhl, setIsSavingGhl] = useState(false);
   const [ghlForm, setGhlForm] = useState({ ghlLocationId: "", ghlSubaccountEmail: "", ghlApiKey: "" });
 
@@ -140,6 +145,23 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
       setActionError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setPendingUid(null);
+    }
+  };
+
+  const handleConfirmContractSigned = async () => {
+    if (!detailTarget) return;
+    setIsConfirmingContract(true);
+    setDetailError("");
+    try {
+      await callOnboardingAction(detailTarget.uid, { action: "confirm_contract_signed" });
+      const signedAt = new Date().toISOString();
+      setDetailTarget({ ...detailTarget, contractSignedAt: signedAt, contractSignedMethod: "manual" });
+      setDetailNotice("Firma del contrato confirmada.");
+      onRefresh();
+    } catch (err) {
+      setDetailError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setIsConfirmingContract(false);
     }
   };
 
@@ -555,6 +577,34 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
                           El reset de contraseña envía un enlace de un solo uso al correo del cliente. Deshabilitar la cuenta bloquea su inicio de sesión de inmediato.
                         </p>
                       </>
+                    )}
+                  </div>
+
+                  {/* Contrato de Servicios */}
+                  <div className="bg-[#05101F] border border-gray-800 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Contrato de Servicios</h4>
+                      {detailTarget.contractSignedAt ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-md text-[10px] font-bold">
+                          <CheckCircle2 size={11} /> Firmado ({detailTarget.contractSignedMethod === "webhook" ? "auto" : "manual"})
+                        </span>
+                      ) : detailTarget.contractSignedSelfReported ? (
+                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-md text-[10px] font-bold">Broker dice que firmó</span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-gray-800 text-gray-400 border border-gray-700 rounded-md text-[10px] font-bold">Sin firmar</span>
+                      )}
+                    </div>
+                    {detailTarget.contractSignedAt ? (
+                      <p className="text-[11px] text-gray-500">Confirmado el {formatDate(detailTarget.contractSignedAt)}.</p>
+                    ) : (
+                      <button
+                        onClick={handleConfirmContractSigned}
+                        disabled={isConfirmingContract}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
+                      >
+                        {isConfirmingContract ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+                        Confirmar firma manualmente
+                      </button>
                     )}
                   </div>
 

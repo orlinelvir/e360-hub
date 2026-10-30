@@ -1,5 +1,7 @@
 import { getResendClient, EMAIL_FROM, HARD_MONEY_WORK_SCOPE_EMAIL, CREDIT_REPAIR_NEW_APPLICATION_EMAIL, NEW_CASE_SUPPORT_EMAIL } from "./client";
 import CaseStatusEmail, { CaseEmailStatus } from "./templates/CaseStatusEmail";
+import CreditRepairStatusEmail, { CreditRepairEmailStatus } from "./templates/CreditRepairStatusEmail";
+import BrokerWelcomeEmail from "./templates/BrokerWelcomeEmail";
 import BrokerNoteEmail from "./templates/BrokerNoteEmail";
 import WelcomeApplicationEmail from "./templates/WelcomeApplicationEmail";
 import BrokerOnboardingEmail from "./templates/BrokerOnboardingEmail";
@@ -54,6 +56,86 @@ export async function sendCaseStatusEmail(params: CaseStatusEmailParams): Promis
     });
   } catch (err) {
     console.error("Error enviando email de cambio de status:", err);
+  }
+}
+
+interface CreditRepairStatusEmailParams {
+  brokerEmail: string;
+  brokerName: string;
+  clientName: string;
+  status: CreditRepairEmailStatus;
+  reason?: string;
+}
+
+// Vocabulario propio de Reparación de Crédito (Activo/Pausado/Cancelado/
+// Declinado) — ver sendCaseStatusEmail arriba para el equivalente de
+// préstamos (Aprobado/Declinado/Fondeado). No comparten plantilla porque
+// "Fondeado" no tiene sentido para una suscripción de $10/mes.
+export async function sendCreditRepairStatusEmail(params: CreditRepairStatusEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend || !params.brokerEmail) return;
+
+  const subjectByStatus: Record<CreditRepairEmailStatus, string> = {
+    active: `✅ Activo: ${params.clientName}`,
+    paused: `⏸ Pausado: ${params.clientName}`,
+    cancelled: `⚠️ Cancelado: ${params.clientName}`,
+    declined: `⚠️ Declinado: ${params.clientName}`,
+  };
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: params.brokerEmail,
+      subject: subjectByStatus[params.status],
+      react: (
+        <CreditRepairStatusEmail
+          brokerName={params.brokerName}
+          clientName={params.clientName}
+          status={params.status}
+          reason={params.reason}
+        />
+      ),
+    });
+  } catch (err) {
+    console.error("Error enviando email de cambio de status de Reparación de Crédito:", err);
+  }
+}
+
+interface BrokerWelcomeEmailParams {
+  brokerEmail: string;
+  brokerName: string;
+  // undefined cuando el broker pagó pero todavía no tiene cuenta en el Hub
+  // (ver "payment_completed" en app/api/webhooks/ghl/route.ts) — el ID real
+  // solo se puede asignar una vez existe una cuenta de Firebase Auth.
+  brokerId?: string;
+}
+
+// Correo real de bienvenida de broker — dispara desde 2 lugares posibles
+// (ver lib/services/broker-registration.ts): el registro en el Hub, o el
+// webhook de GHL de pago completado, lo que ocurra primero. Antes el único
+// "bienvenida" era un tag disparando un correo básico desde GHL en texto
+// plano, sin este nivel de detalle ni el ID real del broker.
+export async function sendBrokerWelcomeEmail(params: BrokerWelcomeEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend || !params.brokerEmail) return;
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: params.brokerEmail,
+      subject: params.brokerId
+        ? `¡Bienvenido a Emprende 360! Tu ID de Broker es ${params.brokerId}`
+        : "¡Bienvenido a Emprende 360!",
+      react: (
+        <BrokerWelcomeEmail
+          brokerName={params.brokerName}
+          brokerEmail={params.brokerEmail}
+          brokerId={params.brokerId}
+        />
+      ),
+    });
+  } catch (err) {
+    console.error("Error enviando email de bienvenida de broker:", err);
   }
 }
 

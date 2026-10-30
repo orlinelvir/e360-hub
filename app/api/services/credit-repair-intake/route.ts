@@ -7,11 +7,16 @@ import { sendWelcomeApplicationEmail } from "@/lib/email/send";
 import { checkRateLimit } from "@/lib/services/rate-limit-service";
 import { notifyStaffOfNewCase } from "@/lib/services/notification-service";
 import { createCRCLead, CREDIT_REPAIR_PAYMENT_LINK } from "@/lib/credit-repair-cloud";
+import { addCaseDocument } from "@/lib/services/case-service";
 
 // Vercel limita el tamaño del body de las funciones serverless (4.5MB en la mayoría
 // de los planes) — nos quedamos debajo de eso para no depender de configuración extra.
 const MAX_PROOF_SIZE = 4 * 1024 * 1024;
 const ALLOWED_PROOF_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+
+// Mismo límite que applicationFile en app/api/services/submit/route.ts — el PDF
+// firmado (con el logo del broker) es opcional acá, nunca bloquea la admisión.
+const MAX_APPLICATION_FILE_SIZE = 8 * 1024 * 1024;
 
 const CREDIT_REPAIR_FEE_AMOUNT = 10;
 const RATE_LIMIT_MAX = 15;
@@ -55,6 +60,14 @@ export async function POST(request: Request) {
 
     const proof = formData.get("proof");
 
+    // Checklist opcional de verificación (ver AdminCasesTab.tsx) — a diferencia
+    // del gate de Financiamiento en services/submit, acá NUNCA bloquea la
+    // admisión: solo le da al admin visibilidad real de qué le falta al caso
+    // en vez del banner genérico "Falta el formulario oficial" de antes.
+    const officialFormConfirmed = formData.get("officialFormConfirmed") === "true";
+    const applicationFileEntry = formData.get("applicationFile");
+    const applicationFile = applicationFileEntry instanceof File && applicationFileEntry.size > 0 ? applicationFileEntry : null;
+
     if (!firstName || !email) {
       return NextResponse.json({ error: "Nombre y email del cliente son requeridos" }, { status: 400 });
     }
@@ -69,6 +82,15 @@ export async function POST(request: Request) {
 
     if (!ALLOWED_PROOF_TYPES.includes(proof.type)) {
       return NextResponse.json({ error: "El comprobante debe ser una imagen (JPG/PNG/WEBP) o PDF" }, { status: 400 });
+    }
+
+    if (applicationFile) {
+      if (applicationFile.type !== "application/pdf") {
+        return NextResponse.json({ error: "El documento firmado debe ser un PDF" }, { status: 400 });
+      }
+      if (applicationFile.size > MAX_APPLICATION_FILE_SIZE) {
+        return NextResponse.json({ error: "El documento firmado no puede superar 8MB" }, { status: 400 });
+      }
     }
 
     if (idType === "ssn" && (!credentialEmail || !credentialPassword || !last4Ssn)) {
@@ -110,7 +132,8 @@ export async function POST(request: Request) {
       status: "pending_sync",
       brokerId: user.uid,
       brokerName,
-      brokerEmail
+      brokerEmail,
+      officialFormConfirmed
     });
 
     // Subir comprobante de pago (todo pasa por el Admin SDK; el cliente no tiene
@@ -120,6 +143,25 @@ export async function POST(request: Request) {
     const proofPath = `credit-repair-proofs/${user.uid}/${leadRef.id}/round-1-${Date.now()}.${proofExt}`;
     const bucket = adminStorage.bucket();
     await bucket.file(proofPath).save(proofBuffer, { contentType: proof.type });
+
+    // PDF firmado opcional (con el logo del broker) — mismo patrón de Storage
+    // que applicationFile en services/submit/route.ts, pero tageado en
+    // caseDocuments como "signed_agreement" para que el checklist del admin
+    // lo distinga del resto de documentos del caso.
+    if (applicationFile) {
+      const applicationBuffer = Buffer.from(await applicationFile.arrayBuffer());
+      const applicationPath = `case-documents/${user.uid}/${leadRef.id}/${Date.now()}-${applicationFile.name}`;
+      await bucket.file(applicationPath).save(applicationBuffer, { contentType: applicationFile.type });
+      await addCaseDocument(user.uid, leadRef.id, {
+        fileName: applicationFile.name,
+        storagePath: applicationPath,
+        contentType: applicationFile.type,
+        size: applicationFile.size,
+        uploadedByName: brokerName,
+        uploadedById: user.uid,
+        documentType: "signed_agreement"
+      });
+    }
 
     // Datos sensibles (contraseña, token, últimos 4 del SSN) se cifran igual que
     // los tokens PIT de GHL — nunca se guardan en texto plano.

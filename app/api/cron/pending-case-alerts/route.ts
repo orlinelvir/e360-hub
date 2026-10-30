@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
+import { resolvePipelineCluster } from "@/lib/service-routing";
 import { deriveCaseStatus } from "@/lib/services/case-status";
 import { createNotification } from "@/lib/services/notification-service";
 import { businessHoursElapsed, highestThresholdReached } from "@/lib/services/business-hours";
@@ -47,7 +48,8 @@ export async function GET(request: Request) {
           if (c.source === "ghl_sync" || c.serviceName === "Cliente StartPoint CRM") continue;
           checked++;
 
-          const { reviewStatus } = deriveCaseStatus(c);
+          const cluster = resolvePipelineCluster(c.serviceId, c.serviceName);
+          const { reviewStatus } = deriveCaseStatus(c, cluster);
           if (reviewStatus !== "pending_docs" && reviewStatus !== "in_review") continue;
 
           const elapsed = businessHoursElapsed(c.createdAt, now);

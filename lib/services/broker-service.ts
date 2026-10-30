@@ -9,9 +9,28 @@ import {
   orderBy,
   FirestoreError
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { BrokerProfileData } from "@/app/hub/broker-onboarding/types";
+import { DEFAULT_BROKER_TIER } from "@/lib/constants/broker";
 export type { BrokerProfileData };
+
+// Red de seguridad igual a la de AuthProvider.tsx — cualquier código que
+// cargue/cree un perfil sin brokerId dispara (sin bloquear ni esperar) el
+// mismo endpoint idempotente que asigna el ID real, envía el correo de
+// bienvenida y sincroniza con GHL central la primera vez.
+function completeRegistrationInBackground(): void {
+  const currentUser = auth?.currentUser;
+  if (!currentUser) return;
+  currentUser
+    .getIdToken()
+    .then((token) =>
+      fetch("/api/broker/register-complete", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    )
+    .catch((err) => console.warn("No se pudo completar el registro del broker:", err));
+}
 
 export interface ClientLeadData {
   id?: string;
@@ -57,7 +76,7 @@ export async function getBrokerProfile(uid: string, defaultName?: string, defaul
     displayName: defaultName || "Broker E360",
     email: defaultEmail || "",
     phone: "",
-    tier: "Senior Broker VIP",
+    tier: DEFAULT_BROKER_TIER,
     onboardingStage: "ventas",
     packagePaid: false,
     ghlLocationId: "",
@@ -73,10 +92,13 @@ export async function getBrokerProfile(uid: string, defaultName?: string, defaul
     const snap = await getDoc(ref);
 
     if (snap.exists()) {
-      return { ...defaultProfile, ...(snap.data() as BrokerProfileData) };
+      const merged = { ...defaultProfile, ...(snap.data() as BrokerProfileData) };
+      if (!merged.brokerId) completeRegistrationInBackground();
+      return merged;
     }
 
-    await setDoc(ref, defaultProfile);
+    await setDoc(ref, defaultProfile, { merge: true });
+    completeRegistrationInBackground();
     return defaultProfile;
   } catch (err) {
     if (err instanceof FirestoreError && err.code === "permission-denied") {

@@ -1,11 +1,15 @@
 import { NextResponse, after } from "next/server";
 import { timingSafeEqual } from "crypto";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 import { createGHLLocationFromSnapshot } from "@/lib/ghl";
 import { findStaffUidsByRoles, notifyMany, createNotification } from "@/lib/services/notification-service";
 import { mapReviewStatusToPipelineStage, mapGHLStageToHubStatus } from "@/lib/services/case-status";
-import { sendCaseStatusEmail } from "@/lib/email/send";
+import { sendCaseStatusEmail, sendBrokerWelcomeEmail } from "@/lib/email/send";
 import { CaseEmailStatus } from "@/lib/email/templates/CaseStatusEmail";
+import { completeBrokerRegistration } from "@/lib/services/broker-registration";
+import { syncBrokerToCentralGHL } from "@/lib/services/broker-ghl-sync";
+import { REFERRAL_COMMISSION } from "@/lib/constants/broker";
 
 // Mismos estados que notifica el cambio manual desde el panel admin
 // (app/api/admin/cases/route.ts) — el broker debe enterarse igual cuando el
@@ -41,6 +45,8 @@ function secretsMatch(a: string, b: string): boolean {
  * - "opportunity_stage_updated" / "opportunity_status_updated" / "pipeline_update": Sincronización bidireccional en tiempo real del pipeline de GHL hacia E360 Hub.
  * - "payment_received": Marca como pagada la ronda del fee de Reparación de Crédito.
  * - "broker_onboarding_form_submitted": Auto-aprovisiona la subcuenta GHL del broker clonando el Snapshot.
+ * - "payment_completed": Marca packagePaid, asigna brokerId y envía el correo de bienvenida real del Hub.
+ * - "contract_signed": Marca contractSignedAt al enviarse el formulario del Contrato de Servicios.
  */
 export async function POST(request: Request) {
   // Solo por header — un secreto en la URL (?token=) queda expuesto en logs
@@ -62,7 +68,11 @@ export async function POST(request: Request) {
         receivedAt: new Date().toISOString(),
         success: false,
         reason: "invalid_secret",
-        providedSecretPrefix: (providedSecret || "").substring(0, 6)
+        providedSecretPrefix: (providedSecret || "").substring(0, 6),
+        // Nunca el secreto completo — solo largos, para diagnosticar typos o
+        // valores truncados al copiar/pegar sin exponer nada sensible.
+        providedSecretLength: providedSecret.length,
+        expectedSecretLength: expectedSecret.length
       });
     }
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -372,6 +382,110 @@ export async function POST(request: Request) {
       }
     }
 
+    if (eventType === "payment_completed") {
+      // Reemplaza el paso de correo plano ("Onboarding CRM Email") del
+      // Workflow "payment completed (spanish)" en GHL — el pago no tiene un
+      // orden fijo respecto al registro en el Hub, así que esto cubre los
+      // 2 casos. Confirmado en vivo con Fernando el 2026-10-29 contra el
+      // Workflow real.
+      const email = String(data.contactEmail || "").trim().toLowerCase();
+      const firstName = String(data.contactFirstName || "").trim();
+      const lastName = String(data.contactLastName || "").trim();
+      const phone = String(data.contactPhone || "").trim();
+      const fallbackName = `${firstName} ${lastName}`.trim();
+
+      if (!email) {
+        await webhookLogRef.update({ success: false, reason: "missing_contactEmail" });
+        return NextResponse.json({ error: "contactEmail requerido" }, { status: 400 });
+      }
+
+      const snap = await adminDb.collection("brokers").where("email", "==", email).limit(1).get();
+
+      if (snap.empty) {
+        // Pagó pero todavía no se registró en el Hub — no hay uid al cual
+        // asignarle un brokerId todavía. Se le manda la bienvenida igual
+        // (con el ID marcado como pendiente), y cuando sí se registre,
+        // completeBrokerRegistration corre de nuevo y completa lo que falta
+        // (es idempotente, ver lib/services/broker-registration.ts).
+        after(() =>
+          sendBrokerWelcomeEmail({
+            brokerEmail: email,
+            brokerName: fallbackName || email
+          })
+        );
+        await webhookLogRef.update({ success: true, reason: "broker_not_registered_yet", email });
+        return NextResponse.json({ received: true, matched: false, reason: "broker_not_registered_yet" });
+      }
+
+      const brokerDoc = snap.docs[0];
+      const brokerData = brokerDoc.data();
+      const wasAlreadyPaid = Boolean(brokerData.packagePaid);
+
+      await brokerDoc.ref.update({ packagePaid: true });
+
+      if (!wasAlreadyPaid && brokerData.referredByUid) {
+        const referrerRef = adminDb.collection("brokers").doc(brokerData.referredByUid);
+        await referrerRef.update({ referralEarnings: FieldValue.increment(REFERRAL_COMMISSION) });
+        after(() =>
+          createNotification(brokerData.referredByUid, {
+            title: "¡Ganaste una comisión de referido!",
+            message: `${brokerData.displayName || brokerData.name || "Un broker referido"} confirmó su pago — se te acreditaron $${REFERRAL_COMMISSION}.`,
+            link: "perfil"
+          })
+        );
+      }
+
+      const result = await completeBrokerRegistration(brokerDoc.id);
+      if (result?.isNewAssignment) {
+        after(() =>
+          sendBrokerWelcomeEmail({
+            brokerEmail: result.email || email,
+            brokerName: result.displayName || fallbackName || email,
+            brokerId: result.brokerId
+          })
+        );
+        after(() =>
+          syncBrokerToCentralGHL({
+            brokerName: result.displayName || fallbackName || email,
+            brokerEmail: result.email || email,
+            brokerPhone: phone || undefined,
+            brokerId: result.brokerId
+          })
+        );
+      }
+
+      await webhookLogRef.update({ success: true, email, brokerId: brokerDoc.id, assignedBrokerId: result?.brokerId });
+      return NextResponse.json({ received: true, matched: true, brokerId: brokerDoc.id });
+    }
+
+    if (eventType === "contract_signed") {
+      // Disparado por un Workflow de GHL en el envío del formulario de
+      // Contrato de Servicios (ver "Mi Contrato" en MiPerfilSection.tsx) —
+      // el Workflow debe mandar {{contact.email}} como "contactEmail" en el
+      // customData del Webhook, igual que ya hace payment_received arriba.
+      const email = String(data.contactEmail || "").trim().toLowerCase();
+      if (!email) {
+        await webhookLogRef.update({ success: false, reason: "missing_contactEmail" });
+        return NextResponse.json({ error: "contactEmail requerido" }, { status: 400 });
+      }
+
+      const snap = await adminDb.collection("brokers").where("email", "==", email).limit(1).get();
+      if (snap.empty) {
+        console.warn("Webhook de contrato: no se encontró broker para", email);
+        await webhookLogRef.update({ success: false, reason: "broker_not_found", email });
+        return NextResponse.json({ received: true, matched: false });
+      }
+
+      const brokerDoc = snap.docs[0];
+      await brokerDoc.ref.update({
+        contractSignedAt: new Date().toISOString(),
+        contractSignedMethod: "webhook"
+      });
+
+      await webhookLogRef.update({ success: true, email, brokerId: brokerDoc.id });
+      return NextResponse.json({ received: true, matched: true, brokerId: brokerDoc.id });
+    }
+
     console.warn("Webhook GHL: eventType no reconocido:", eventType);
     await webhookLogRef.update({ success: false, reason: "unknown_event_type" });
     return NextResponse.json({ received: true, matched: false, reason: "unknown_event_type" });
@@ -391,7 +505,9 @@ export async function GET() {
       "opportunity_status_updated",
       "pipeline_update",
       "payment_received",
-      "broker_onboarding_form_submitted"
+      "broker_onboarding_form_submitted",
+      "payment_completed",
+      "contract_signed"
     ]
   });
 }

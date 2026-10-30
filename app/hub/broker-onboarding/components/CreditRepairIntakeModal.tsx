@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, UserPlus, Loader2, CreditCard, ExternalLink, Upload, CheckCircle2, ChevronRight, ChevronLeft, Lock } from "lucide-react";
+import { X, UserPlus, Loader2, CreditCard, ExternalLink, Upload, CheckCircle2, ChevronRight, ChevronLeft, Lock, FileCheck } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { CREDIT_REPAIR_PAYMENT_LINK } from "@/lib/credit-repair-cloud";
 
@@ -28,6 +28,9 @@ export default function CreditRepairIntakeModal({ isOpen, onClose, onSuccess }: 
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
 
+  const [officialFormConfirmed, setOfficialFormConfirmed] = useState(false);
+  const [applicationFile, setApplicationFile] = useState<File | null>(null);
+
   const [hasExistingSubscription, setHasExistingSubscription] = useState<boolean | null>(null);
   const [existingPlatform, setExistingPlatform] = useState(CRC_PLATFORMS[0]);
   const [idType, setIdType] = useState<"ssn" | "itin">("ssn");
@@ -52,6 +55,8 @@ export default function CreditRepairIntakeModal({ isOpen, onClose, onSuccess }: 
     setEmail("");
     setPhone("");
     setNotes("");
+    setOfficialFormConfirmed(false);
+    setApplicationFile(null);
     setHasExistingSubscription(null);
     setExistingPlatform(CRC_PLATFORMS[0]);
     setIdType("ssn");
@@ -103,6 +108,10 @@ export default function CreditRepairIntakeModal({ isOpen, onClose, onSuccess }: 
       body.append("credentialToken", idType === "itin" ? credentialToken : "");
       body.append("last4Ssn", idType === "ssn" ? last4Ssn : "");
       body.append("proof", proofFile);
+      body.append("officialFormConfirmed", String(officialFormConfirmed));
+      if (applicationFile) {
+        body.append("applicationFile", applicationFile);
+      }
 
       const response = await fetch("/api/services/credit-repair-intake", {
         method: "POST",
@@ -252,15 +261,45 @@ export default function CreditRepairIntakeModal({ isOpen, onClose, onSuccess }: 
               </div>
             </div>
 
-            <a
-              href={OFFICIAL_FORM_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between px-4 py-3 bg-[#05101F] border border-gray-800 rounded-lg text-xs text-cyan-400 hover:border-cyan-500/50 transition-colors"
-            >
-              <span>Recuerda también completar el formulario oficial de aplicación en GHL</span>
-              <ExternalLink size={14} className="shrink-0" />
-            </a>
+            <div className="p-4 bg-[#05101F] border border-gray-800 rounded-lg space-y-3">
+              <a
+                href={OFFICIAL_FORM_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between px-4 py-3 bg-[#0A182D] border border-gray-800 rounded-lg text-xs text-cyan-400 hover:border-cyan-500/50 transition-colors"
+              >
+                <span>Abrir Formulario Oficial de E360 (GHL)</span>
+                <ExternalLink size={14} className="shrink-0" />
+              </a>
+
+              <label className="flex items-start gap-3 p-3 bg-[#0A182D] border border-gray-800 rounded-lg cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={officialFormConfirmed}
+                  onChange={(e) => setOfficialFormConfirmed(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="text-xs text-gray-300">El cliente ya llenó el formulario oficial de E360 (enlace de arriba).</span>
+              </label>
+
+              <label className="flex items-center gap-3 px-4 py-3 bg-[#0A182D] border border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500 transition-colors">
+                <Upload size={18} className="text-gray-500 shrink-0" />
+                <span className="text-xs text-gray-400 truncate">
+                  {applicationFile ? applicationFile.name : "O sube el PDF firmado de tu propia subcuenta (con tu logo), máx. 8MB"}
+                </span>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(e) => setApplicationFile(e.target.files?.[0] || null)}
+                />
+              </label>
+
+              <p className="text-[11px] text-gray-500 flex items-start gap-1.5">
+                <FileCheck size={13} className="shrink-0 mt-0.5" />
+                <span>Ninguno de los dos es obligatorio para admitir al cliente — pero el equipo de Reparación de Crédito los va a ver como pendientes en el expediente hasta que uno de los dos quede marcado.</span>
+              </p>
+            </div>
 
             <div className="p-4 bg-[#05101F] border border-gray-800 rounded-lg space-y-3">
               <p className="text-sm font-medium text-gray-300">

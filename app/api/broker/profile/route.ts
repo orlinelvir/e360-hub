@@ -61,7 +61,8 @@ export async function POST(request: Request) {
       bio,
       specialties,
       referralSlug,
-      documentsStatus
+      documentsStatus,
+      contractSignedSelfReported
     } = body;
 
     const brokerRef = adminDb.collection("brokers").doc(user.uid);
@@ -82,6 +83,13 @@ export async function POST(request: Request) {
     if (specialties !== undefined) updatePayload.specialties = Array.isArray(specialties) ? specialties : [];
     if (referralSlug !== undefined) updatePayload.referralSlug = String(referralSlug).toLowerCase().replace(/[^a-z0-9-]/g, "");
     if (documentsStatus !== undefined) updatePayload.documentsStatus = documentsStatus;
+    // Solo informativo para staff mientras no hay confirmación real
+    // (contractSignedAt, que SOLO fija el webhook de GHL o un admin desde
+    // el Roster) — el broker puede marcar que ya firmó, nunca des-marcarlo.
+    if (contractSignedSelfReported === true) {
+      updatePayload.contractSignedSelfReported = true;
+      updatePayload.contractSignedSelfReportedAt = new Date().toISOString();
+    }
 
     await brokerRef.set(updatePayload, { merge: true });
 

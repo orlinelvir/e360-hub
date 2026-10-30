@@ -8,8 +8,7 @@ import { createNotification } from "@/lib/services/notification-service";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { APP_BASE_URL } from "@/lib/email/client";
 import { OnboardingStage } from "@/app/hub/broker-onboarding/types";
-
-const REFERRAL_COMMISSION = 100;
+import { REFERRAL_COMMISSION } from "@/lib/constants/broker";
 
 const VALID_STAGES: OnboardingStage[] = ["ventas", "onboarding_basico", "onboarding_crm", "redes_sociales", "completado"];
 
@@ -172,6 +171,18 @@ export async function PATCH(request: Request) {
         const message = err instanceof CRMError ? err.message : "Error consultando GHL";
         return NextResponse.json({ error: message }, { status: 502 });
       }
+    }
+
+    if (action === "confirm_contract_signed") {
+      // Confirmación manual mientras no esté (o hasta que no se confirme)
+      // configurado el webhook de GHL para el formulario de Contrato — ver
+      // "contract_signed" en app/api/webhooks/ghl/route.ts. Un admin
+      // verificó la firma a mano (ej. revisando el submission en GHL).
+      await brokerRef.update({
+        contractSignedAt: new Date().toISOString(),
+        contractSignedMethod: "manual"
+      });
+      return NextResponse.json({ success: true });
     }
 
     if (action === "send_message") {

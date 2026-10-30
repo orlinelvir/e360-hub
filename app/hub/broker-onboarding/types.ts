@@ -49,6 +49,12 @@ export interface ClientLead {
   // "ghl_sync": contacto crudo importado de la subcuenta GHL del broker, no
   // una solicitud de servicio real — ver lib/services/broker-service.ts.
   source?: "ghl_sync";
+  // Solo Reparación de Crédito — el broker confirma que el cliente llenó el
+  // formulario oficial de E360 (GHL) al admitirlo. No bloquea la admisión
+  // (a diferencia de officialFormConfirmed en el flujo genérico de
+  // financiamiento, que sí es un gate pero nunca se guarda) — aquí sí se
+  // persiste, para que el checklist del admin refleje estado real.
+  officialFormConfirmed?: boolean;
 }
 
 // Secuencia de citas de onboarding de un broker nuevo (Ventas -> Onboarding Básico
@@ -104,6 +110,18 @@ export interface BrokerProfileData {
     w9Form?: boolean;
     directDepositAuth?: boolean;
   };
+  // Contrato de Servicios de E360 (el que incluye la garantía de devolución
+  // de 90 días / $750) — firmado vía un formulario externo de GHL embebido
+  // en "Mi Contrato". `contractSignedAt`/`contractSignedMethod` son
+  // autoritativos (solo el backend los escribe: el webhook de GHL si está
+  // configurado, o un admin confirmando manualmente desde el Roster).
+  // `contractSignedSelfReported` es lo que el propio broker puede marcar
+  // ("Ya firmé") mientras no hay confirmación real — solo informativo para
+  // staff, nunca se trata como la firma confirmada.
+  contractSignedAt?: string;
+  contractSignedMethod?: "manual" | "webhook";
+  contractSignedSelfReported?: boolean;
+  contractSignedSelfReportedAt?: string;
   createdAt?: string;
   // Último inicio de sesión — ubicación aproximada por IP (la que provee
   // automáticamente la red de Vercel, sin servicio externo ni costo). Nunca
@@ -234,5 +252,9 @@ export interface CaseDocument {
   uploadedByName: string;
   uploadedById: string;
   createdAt: string;
+  // Sin categoría, la mayoría de documentos quedan sin distinguir de nada más
+  // ("Documentos" los mezcla todos). Por ahora solo distingue el PDF firmado
+  // de Reparación de Crédito (ver CreditRepairIntakeModal.tsx) del resto.
+  documentType?: "signed_agreement";
 }
 

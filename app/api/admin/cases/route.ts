@@ -2,10 +2,19 @@ import { NextResponse, after } from "next/server";
 import { verifyAuthToken, adminDb, adminAuth } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
-import { sendCaseStatusEmail, sendWelcomeApplicationEmail } from "@/lib/email/send";
+import { sendCaseStatusEmail, sendCreditRepairStatusEmail, sendWelcomeApplicationEmail } from "@/lib/email/send";
 import { CaseEmailStatus } from "@/lib/email/templates/CaseStatusEmail";
+import { CreditRepairEmailStatus } from "@/lib/email/templates/CreditRepairStatusEmail";
 import { createNotification } from "@/lib/services/notification-service";
-import { deriveCaseStatus, justGotVerified, VALID_REVIEW_STATUSES, ReviewStatus } from "@/lib/services/case-status";
+import {
+  deriveCaseStatus,
+  justGotVerified,
+  VALID_REVIEW_STATUSES,
+  VALID_CREDIT_REPAIR_STATUSES,
+  ReviewStatus,
+  CreditRepairStatus
+} from "@/lib/services/case-status";
+import { updateCRCLead, CRCLeadType } from "@/lib/credit-repair-cloud";
 
 const STATUS_LABELS: Record<CaseEmailStatus, string> = {
   approved: "aprobada",
@@ -14,6 +23,29 @@ const STATUS_LABELS: Record<CaseEmailStatus, string> = {
 };
 
 const NOTIFIABLE_STATUSES: CaseEmailStatus[] = ["approved", "rejected", "funded"];
+
+const CREDIT_REPAIR_STATUS_LABELS: Record<CreditRepairEmailStatus, string> = {
+  active: "activo",
+  paused: "pausado",
+  cancelled: "cancelado",
+  declined: "declinado"
+};
+
+// "pending_verification" es el estado inicial, nunca una transición real —
+// no amerita correo/notificación al broker.
+const NOTIFIABLE_CREDIT_REPAIR_STATUSES: CreditRepairEmailStatus[] = ["active", "paused", "cancelled", "declined"];
+
+// Mapeo a los "type" que soporta CRC (ver lib/credit-repair-cloud.ts) — "Lead"
+// es el único usado hasta ahora (al crear). Sincronización best-effort: si
+// CRC rechaza el ID (ver updateCRCLead) no debe tumbar el cambio de estado
+// real, que vive en Firestore.
+const CRC_TYPE_BY_STATUS: Record<CreditRepairStatus, CRCLeadType | null> = {
+  pending_verification: null,
+  active: "Lead",
+  paused: "Suspended",
+  cancelled: "Inactive",
+  declined: "Lead/Inactive"
+};
 
 export async function GET(request: Request) {
   const user = await verifyAuthToken(request);
@@ -66,6 +98,8 @@ export async function GET(request: Request) {
       ghlOpportunityId?: string;
       feeRoundNumber?: number;
       feeRoundStatus?: string;
+      creditRepairStatus?: string;
+      officialFormConfirmed?: boolean;
     }> = [];
 
     await Promise.all(
@@ -118,7 +152,7 @@ export async function GET(request: Request) {
             return;
           }
 
-          const { reviewStatus, syncStatus } = deriveCaseStatus(c);
+          const { reviewStatus, syncStatus, creditRepairStatus } = deriveCaseStatus(c, cluster);
 
           allCases.push({
             id: cDoc.id,
@@ -144,6 +178,8 @@ export async function GET(request: Request) {
             ghlOpportunityId: c.ghlOpportunityId,
             feeRoundNumber: c.feeRoundNumber,
             feeRoundStatus: c.feeRoundStatus,
+            creditRepairStatus,
+            officialFormConfirmed: c.officialFormConfirmed,
           });
         });
       })
@@ -193,10 +229,6 @@ export async function PATCH(request: Request) {
     const actingStaffSnap = await adminDb.collection("brokers").doc(user.uid).get();
     const actingStaffName = actingStaffSnap.data()?.displayName || actingStaffSnap.data()?.name || user.email || "Staff";
 
-    if (reviewStatus !== undefined && !VALID_REVIEW_STATUSES.includes(reviewStatus)) {
-      return NextResponse.json({ error: "reviewStatus inválido" }, { status: 400 });
-    }
-
     const clientRef = adminDb.collection("brokers").doc(brokerId).collection("clients").doc(clientId);
     const clientSnap = await clientRef.get();
 
@@ -206,6 +238,17 @@ export async function PATCH(request: Request) {
 
     const client = clientSnap.data()!;
     const clientCluster = resolvePipelineCluster(client.serviceId, client.serviceName);
+    const isCreditRepairCase = clientCluster === "credit_repair";
+
+    // Reparación de Crédito tiene su propio vocabulario de estado
+    // (Activo/Pausado/Cancelado/Declinado) — "Aprobado/Fondeado" no aplica a
+    // una suscripción de $10/mes. Ver lib/services/case-status.ts.
+    if (reviewStatus !== undefined) {
+      const validStatuses: string[] = isCreditRepairCase ? VALID_CREDIT_REPAIR_STATUSES : VALID_REVIEW_STATUSES;
+      if (!validStatuses.includes(reviewStatus)) {
+        return NextResponse.json({ error: "reviewStatus inválido" }, { status: 400 });
+      }
+    }
 
     // Un especialista solo puede editar casos de su propio cluster (admin no tiene restricción).
     if (role !== "admin") {
@@ -218,7 +261,7 @@ export async function PATCH(request: Request) {
       }
     }
 
-    const { reviewStatus: previousReviewStatus } = deriveCaseStatus(client);
+    const { reviewStatus: previousReviewStatus, creditRepairStatus: previousCreditRepairStatus } = deriveCaseStatus(client, clientCluster);
 
     const updatePayload: Record<string, unknown> = {
       lastActivity: `Actualizado por Admin: ${new Date().toLocaleDateString()}`,
@@ -254,7 +297,11 @@ export async function PATCH(request: Request) {
     // tras revisar la documentación por fuera del sistema. Nunca le llega
     // directo al cliente — JP fue explícito: el cliente firmó contrato con
     // el broker, no con E360, así que toda comunicación pasa por el broker.
-    if (reviewStatus !== undefined && justGotVerified(previousReviewStatus, reviewStatus as ReviewStatus) && brokerEmail) {
+    // El "recibimos tu aplicación" de arriba no aplica a Reparación de
+    // Crédito — su propio correo de solicitud nueva ya existe
+    // (sendNewCreditRepairApplicationEmail) y "pending_docs" ahí significa
+    // "pendiente de verificación", no "falta el formulario oficial".
+    if (!isCreditRepairCase && reviewStatus !== undefined && justGotVerified(previousReviewStatus, reviewStatus as ReviewStatus) && brokerEmail) {
       after(() =>
         sendWelcomeApplicationEmail({
           brokerEmail,
@@ -265,9 +312,61 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Notificar al broker por correo solo si el status realmente cambió a uno de
-    // los 3 estados relevantes (evita reenviar en cada guardado de comisión/notas).
-    if (reviewStatus !== undefined && reviewStatus !== previousReviewStatus && NOTIFIABLE_STATUSES.includes(reviewStatus)) {
+    if (isCreditRepairCase) {
+      // Notificar solo si el estado realmente cambió a uno de los 4 estados
+      // relevantes ("pending_verification" es el inicial, nunca una
+      // transición real que amerite correo).
+      if (
+        reviewStatus !== undefined &&
+        reviewStatus !== previousCreditRepairStatus &&
+        NOTIFIABLE_CREDIT_REPAIR_STATUSES.includes(reviewStatus as CreditRepairEmailStatus)
+      ) {
+        const newStatus = reviewStatus as CreditRepairEmailStatus;
+
+        after(() =>
+          sendCreditRepairStatusEmail({
+            brokerEmail,
+            brokerName,
+            clientName: client.name || "Cliente",
+            status: newStatus,
+            reason: statusReason ? String(statusReason).trim() : undefined,
+          })
+        );
+
+        after(() =>
+          createNotification(brokerId, {
+            title: `Reparación de Crédito ${CREDIT_REPAIR_STATUS_LABELS[newStatus]}`,
+            message: `${client.name || "Cliente"} — Reparación de Crédito`,
+            link: "clientes"
+          })
+        );
+
+        // Sincronización best-effort con CRC (ver updateCRCLead en
+        // lib/credit-repair-cloud.ts) — nunca debe tumbar el cambio de
+        // estado real, que ya quedó guardado en Firestore arriba. El ID que
+        // acepta updateRecord sigue sin confirmar (ver comentario en
+        // updateCRCLead), así que esto puede fallar silenciosamente hasta
+        // tener la doc oficial de CRC.
+        const crcLeadId = client.crcLeadId as string | undefined;
+        const crcType = CRC_TYPE_BY_STATUS[newStatus as CreditRepairStatus];
+        const crcApiAuthKey = process.env.CRC_API_AUTH_KEY;
+        const crcSecretKey = process.env.CRC_SECRET_KEY;
+        if (crcLeadId && crcType && crcApiAuthKey && crcSecretKey) {
+          after(async () => {
+            try {
+              const result = await updateCRCLead(crcLeadId, crcType, { apiAuthKey: crcApiAuthKey, secretKey: crcSecretKey });
+              if (!result.success) {
+                console.error("Error sincronizando estado con Credit Repair Cloud:", result.errorCode, result.errorMessage, result.raw);
+              }
+            } catch (error) {
+              console.error("Error llamando a updateRecord de Credit Repair Cloud:", error);
+            }
+          });
+        }
+      }
+    } else if (reviewStatus !== undefined && reviewStatus !== previousReviewStatus && NOTIFIABLE_STATUSES.includes(reviewStatus)) {
+      // Notificar al broker por correo solo si el status realmente cambió a uno de
+      // los 3 estados relevantes (evita reenviar en cada guardado de comisión/notas).
       after(() =>
         sendCaseStatusEmail({
           brokerEmail,

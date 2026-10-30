@@ -71,12 +71,65 @@ export const SYNC_STATUS_META: Record<SyncStatus, StatusMeta> = {
   failed: { label: "Fallo de Sync", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30" }
 };
 
+// Reparación de Crédito es una suscripción de $10/mes, no un préstamo —
+// "Aprobar / Declinar / Marcar Fondeado" (ReviewStatus de arriba) no tiene
+// sentido ahí ("Fondeado" en particular: no hay ningún monto que se
+// desembolse). Vocabulario aparte, específico para este cluster.
+export type CreditRepairStatus = "pending_verification" | "active" | "paused" | "cancelled" | "declined";
+
+export const VALID_CREDIT_REPAIR_STATUSES: CreditRepairStatus[] = [
+  "pending_verification", "active", "paused", "cancelled", "declined"
+];
+
+export const CREDIT_REPAIR_STATUS_META: Record<CreditRepairStatus, StatusMeta> = {
+  pending_verification: { label: "Pendiente de Verificación", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30" },
+  active: { label: "Activo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30" },
+  paused: { label: "Pausado", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30" },
+  cancelled: { label: "Cancelado", color: "text-gray-400", bg: "bg-gray-500/10", border: "border-gray-500/30" },
+  declined: { label: "Declinado", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30" }
+};
+
+export function isValidCreditRepairStatus(value: string | undefined): value is CreditRepairStatus {
+  return !!value && (VALID_CREDIT_REPAIR_STATUSES as string[]).includes(value);
+}
+
 interface RawCaseStatus {
   status?: string;
   syncStatus?: string;
 }
 
-export function deriveCaseStatus(raw: RawCaseStatus): { reviewStatus: ReviewStatus; syncStatus: SyncStatus } {
+export function deriveCaseStatus(
+  raw: RawCaseStatus,
+  cluster?: string
+): { reviewStatus: ReviewStatus; syncStatus: SyncStatus; creditRepairStatus?: CreditRepairStatus } {
+  let syncStatus: SyncStatus;
+  if (raw.syncStatus === "synced" || raw.syncStatus === "failed" || raw.syncStatus === "pending") {
+    syncStatus = raw.syncStatus;
+  } else if (raw.status === "synced") {
+    syncStatus = "synced";
+  } else if (raw.status === "failed_sync") {
+    syncStatus = "failed";
+  } else {
+    syncStatus = "pending";
+  }
+
+  if (cluster === "credit_repair") {
+    const creditRepairStatus: CreditRepairStatus = isValidCreditRepairStatus(raw.status)
+      ? raw.status
+      : "pending_verification";
+
+    // Cubeta genérica SOLO para vistas agregadas que no conocen este
+    // vocabulario (Métricas, Actividad del Staff, Cola de Sync, alertas de
+    // caso atrasado) — deciden si "necesita atención" o no, nunca se
+    // muestra como texto (eso lo hace CREDIT_REPAIR_STATUS_META).
+    const reviewStatus: ReviewStatus =
+      creditRepairStatus === "pending_verification" ? "pending_docs" :
+      creditRepairStatus === "active" ? "funded" :
+      "rejected"; // paused / cancelled / declined — ya no requieren seguimiento
+
+    return { reviewStatus, syncStatus, creditRepairStatus };
+  }
+
   const status = raw.status;
 
   let reviewStatus: ReviewStatus;
@@ -88,17 +141,6 @@ export function deriveCaseStatus(raw: RawCaseStatus): { reviewStatus: ReviewStat
     // "synced" / "failed_sync" / "pending_sync" / vacío: nunca hubo una
     // revisión humana real registrada, sin importar si el CRM se sincronizó.
     reviewStatus = "pending_docs";
-  }
-
-  let syncStatus: SyncStatus;
-  if (raw.syncStatus === "synced" || raw.syncStatus === "failed" || raw.syncStatus === "pending") {
-    syncStatus = raw.syncStatus;
-  } else if (status === "synced") {
-    syncStatus = "synced";
-  } else if (status === "failed_sync") {
-    syncStatus = "failed";
-  } else {
-    syncStatus = "pending";
   }
 
   return { reviewStatus, syncStatus };

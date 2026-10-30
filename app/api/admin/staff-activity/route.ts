@@ -86,7 +86,7 @@ export async function GET(request: Request) {
           }
 
           const cluster = resolvePipelineCluster(c.serviceId, c.serviceName);
-          const { reviewStatus } = deriveCaseStatus(c);
+          const { reviewStatus } = deriveCaseStatus(c, cluster);
           if (reviewStatus !== "pending_docs" && reviewStatus !== "in_review") return;
 
           if (!backlogByCluster[cluster]) backlogByCluster[cluster] = { pendingDocs: 0, inReview: 0, staleCases: [] };

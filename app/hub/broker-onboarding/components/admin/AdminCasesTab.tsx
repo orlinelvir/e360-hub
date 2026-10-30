@@ -29,10 +29,22 @@ import {
   Layers,
   Lock,
   Eye,
-  EyeOff
+  EyeOff,
+  PauseCircle,
+  PlayCircle
 } from "lucide-react";
 import { CaseNote, CaseNoteCategory, CaseDocument } from "../../types";
-import { ReviewStatus, SyncStatus, REVIEW_STATUS_META, SYNC_STATUS_META, VALID_REVIEW_STATUSES } from "@/lib/services/case-status";
+import {
+  ReviewStatus,
+  SyncStatus,
+  CreditRepairStatus,
+  REVIEW_STATUS_META,
+  SYNC_STATUS_META,
+  VALID_REVIEW_STATUSES,
+  VALID_CREDIT_REPAIR_STATUSES,
+  CREDIT_REPAIR_STATUS_META,
+  isValidCreditRepairStatus
+} from "@/lib/services/case-status";
 
 export interface CaseItem {
   id: string;
@@ -61,6 +73,12 @@ export interface CaseItem {
   // el estado de la ronda de seguimiento de $10/mes.
   feeRoundNumber?: number;
   feeRoundStatus?: string;
+  // Solo Reparación de Crédito — vocabulario propio (Activo/Pausado/
+  // Cancelado/Declinado), separado del reviewStatus genérico que usan las
+  // demás verticales. Ver lib/services/case-status.ts.
+  creditRepairStatus?: string;
+  // Solo Reparación de Crédito — ver checklist en el modal de detalle.
+  officialFormConfirmed?: boolean;
 }
 
 interface CreditRepairCredentials {
@@ -94,6 +112,25 @@ const CLUSTER_META: Record<string, { emoji: string; label: string }> = {
 };
 
 type SortKey = "name" | "amount" | "estimatedCommission" | "reviewStatus" | "createdAt";
+
+// Plantillas rápidas para "Notas para el Broker" en casos de Reparación de
+// Crédito — ese tab YA dispara un correo real al broker (sendBrokerNoteEmail),
+// solo le faltaba ser específico a esta vertical en vez de un cuadro en
+// blanco. El staff puede editar el texto antes de enviarlo.
+const CREDIT_REPAIR_NOTE_TEMPLATES: { label: string; text: string }[] = [
+  {
+    label: "Documento pendiente",
+    text: "Hola, nos falta un documento para continuar con el caso de Reparación de Crédito: [especifica cuál]. Por favor súbelo o pide que el cliente lo complete lo antes posible."
+  },
+  {
+    label: "Ronda procesada",
+    text: "Tu cliente completó exitosamente la ronda de seguimiento de este mes. Te avisamos si necesitamos algo más de tu parte."
+  },
+  {
+    label: "Actualización general",
+    text: "Actualización sobre el caso de Reparación de Crédito de tu cliente: "
+  }
+];
 
 // Definido fuera de AdminCasesTab (no inline) para que no se recree en cada
 // render — ver react-hooks/static-components.
@@ -364,7 +401,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
 
   const openDetailModal = (c: CaseItem) => {
     setActiveCase(c);
-    setEditStatus(c.reviewStatus);
+    setEditStatus(c.pipelineCluster === "credit_repair" ? (c.creditRepairStatus || "pending_verification") : c.reviewStatus);
     setEditCommission(String(c.estimatedCommission || 0));
     setStatusReason("");
     setSaveError("");
@@ -555,6 +592,25 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
     );
   };
 
+  const CREDIT_REPAIR_ICONS: Record<CreditRepairStatus, typeof CheckCircle2> = {
+    pending_verification: Clock,
+    active: CheckCircle2,
+    paused: PauseCircle,
+    cancelled: XCircle,
+    declined: XCircle
+  };
+
+  const getCreditRepairBadge = (st?: string) => {
+    const status = (isValidCreditRepairStatus(st) ? st : "pending_verification") as CreditRepairStatus;
+    const meta = CREDIT_REPAIR_STATUS_META[status];
+    const Icon = CREDIT_REPAIR_ICONS[status];
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${meta.bg} ${meta.color} border ${meta.border} flex items-center gap-1`}>
+        <Icon size={11} /> {meta.label}
+      </span>
+    );
+  };
+
   const getSyncBadge = (st: string) => {
     const syncStatus = (st === "synced" || st === "failed" ? st : "pending") as SyncStatus;
     const meta = SYNC_STATUS_META[syncStatus];
@@ -635,7 +691,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
       )}
       <td className="p-4 text-center">
         <div className="flex flex-col items-center gap-1">
-          {getStatusBadge(c.reviewStatus)}
+          {isCreditRepair(c) ? getCreditRepairBadge(c.creditRepairStatus) : getStatusBadge(c.reviewStatus)}
           {c.syncStatus === "failed" && getSyncBadge(c.syncStatus)}
         </div>
       </td>
@@ -988,57 +1044,137 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
                 </div>
               )}
 
-              {activeCase.reviewStatus === "pending_docs" && (
-                <div className="bg-amber-500/5 border border-amber-500/30 rounded-2xl p-4 space-y-2">
-                  <p className="text-[11px] font-bold text-amber-400 uppercase">Falta el formulario oficial</p>
-                  <p className="text-xs text-gray-300">
-                    Este caso no tiene ningún documento — el cliente puede no saber que le falta este paso.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleNotifyPending}
-                    disabled={isNotifyingPending}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
-                  >
-                    <Mail size={13} />
-                    {isNotifyingPending ? "Enviando..." : "Notificar al Cliente por Correo"}
-                  </button>
-                  {notifyPendingMsg && <p className="text-[11px] text-gray-400">{notifyPendingMsg}</p>}
-                </div>
+              {isCreditRepair(activeCase) ? (
+                (() => {
+                  const hasSignedDocument = caseDocuments.some((d) => d.documentType === "signed_agreement");
+                  const hasOfficialForm = Boolean(activeCase.officialFormConfirmed);
+                  if (hasSignedDocument && hasOfficialForm) return null;
+                  return (
+                    <div className="bg-amber-500/5 border border-amber-500/30 rounded-2xl p-4 space-y-2">
+                      <p className="text-[11px] font-bold text-amber-400 uppercase">Checklist de Verificación</p>
+                      <ul className="space-y-1.5 text-xs">
+                        <li className="flex items-center gap-2">
+                          {hasOfficialForm ? <CheckCircle2 size={14} className="text-emerald-400 shrink-0" /> : <XCircle size={14} className="text-amber-400 shrink-0" />}
+                          <span className={hasOfficialForm ? "text-gray-300" : "text-amber-300"}>Formulario oficial de E360 completado</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          {hasSignedDocument ? <CheckCircle2 size={14} className="text-emerald-400 shrink-0" /> : <XCircle size={14} className="text-amber-400 shrink-0" />}
+                          <span className={hasSignedDocument ? "text-gray-300" : "text-amber-300"}>Documento firmado (con logo) subido</span>
+                        </li>
+                      </ul>
+                      <button
+                        type="button"
+                        onClick={handleNotifyPending}
+                        disabled={isNotifyingPending}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
+                      >
+                        <Mail size={13} />
+                        {isNotifyingPending ? "Enviando..." : "Notificar al Cliente por Correo"}
+                      </button>
+                      {notifyPendingMsg && <p className="text-[11px] text-gray-400">{notifyPendingMsg}</p>}
+                    </div>
+                  );
+                })()
+              ) : (
+                activeCase.reviewStatus === "pending_docs" && (
+                  <div className="bg-amber-500/5 border border-amber-500/30 rounded-2xl p-4 space-y-2">
+                    <p className="text-[11px] font-bold text-amber-400 uppercase">Falta el formulario oficial</p>
+                    <p className="text-xs text-gray-300">
+                      Este caso no tiene ningún documento — el cliente puede no saber que le falta este paso.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleNotifyPending}
+                      disabled={isNotifyingPending}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
+                    >
+                      <Mail size={13} />
+                      {isNotifyingPending ? "Enviando..." : "Notificar al Cliente por Correo"}
+                    </button>
+                    {notifyPendingMsg && <p className="text-[11px] text-gray-400">{notifyPendingMsg}</p>}
+                  </div>
+                )
               )}
 
               {/* Acciones Rápidas de Decisión */}
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleSaveCase("approved")}
-                  disabled={saving}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
-                    editStatus === "approved" ? "bg-cyan-500 text-black" : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20"
-                  }`}
-                >
-                  <ThumbsUp size={14} /> Aprobar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditStatus("rejected")}
-                  disabled={saving}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
-                    editStatus === "rejected" ? "bg-gray-600 text-white" : "bg-gray-700/40 text-gray-400 border border-gray-600 hover:bg-gray-700/60"
-                  }`}
-                >
-                  <ThumbsDown size={14} /> Declinar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSaveCase("funded")}
-                  disabled={saving}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
-                    editStatus === "funded" ? "bg-emerald-500 text-black" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"
-                  }`}
-                >
-                  <Banknote size={14} /> Marcar Fondeado
-                </button>
+                {isCreditRepair(activeCase) ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCase("active")}
+                      disabled={saving}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+                        editStatus === "active" ? "bg-emerald-500 text-black" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"
+                      }`}
+                    >
+                      <PlayCircle size={14} /> Activar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditStatus("paused")}
+                      disabled={saving}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+                        editStatus === "paused" ? "bg-cyan-500 text-black" : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20"
+                      }`}
+                    >
+                      <PauseCircle size={14} /> Pausar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditStatus("cancelled")}
+                      disabled={saving}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+                        editStatus === "cancelled" ? "bg-gray-600 text-white" : "bg-gray-700/40 text-gray-400 border border-gray-600 hover:bg-gray-700/60"
+                      }`}
+                    >
+                      <XCircle size={14} /> Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditStatus("declined")}
+                      disabled={saving}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+                        editStatus === "declined" ? "bg-gray-600 text-white" : "bg-gray-700/40 text-gray-400 border border-gray-600 hover:bg-gray-700/60"
+                      }`}
+                    >
+                      <ThumbsDown size={14} /> Declinar
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCase("approved")}
+                      disabled={saving}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+                        editStatus === "approved" ? "bg-cyan-500 text-black" : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20"
+                      }`}
+                    >
+                      <ThumbsUp size={14} /> Aprobar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditStatus("rejected")}
+                      disabled={saving}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+                        editStatus === "rejected" ? "bg-gray-600 text-white" : "bg-gray-700/40 text-gray-400 border border-gray-600 hover:bg-gray-700/60"
+                      }`}
+                    >
+                      <ThumbsDown size={14} /> Declinar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCase("funded")}
+                      disabled={saving}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+                        editStatus === "funded" ? "bg-emerald-500 text-black" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"
+                      }`}
+                    >
+                      <Banknote size={14} /> Marcar Fondeado
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Controles de Actualización */}
@@ -1052,9 +1188,13 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
                     onChange={(e) => setEditStatus(e.target.value)}
                     className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-500"
                   >
-                    {VALID_REVIEW_STATUSES.map((rs) => (
-                      <option key={rs} value={rs}>{REVIEW_STATUS_META[rs].label}</option>
-                    ))}
+                    {isCreditRepair(activeCase)
+                      ? VALID_CREDIT_REPAIR_STATUSES.map((rs) => (
+                          <option key={rs} value={rs}>{CREDIT_REPAIR_STATUS_META[rs].label}</option>
+                        ))
+                      : VALID_REVIEW_STATUSES.map((rs) => (
+                          <option key={rs} value={rs}>{REVIEW_STATUS_META[rs].label}</option>
+                        ))}
                   </select>
                 </div>
 
@@ -1085,16 +1225,20 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
                 )}
               </div>
 
-              {editStatus === "rejected" && (
+              {(editStatus === "rejected" || editStatus === "paused" || editStatus === "cancelled" || editStatus === "declined") && (
                 <div>
                   <label className="block text-[11px] font-bold text-gray-300 uppercase mb-1.5">
-                    Razón del Declinado (se incluye en el correo al broker)
+                    Razón del Cambio (se incluye en el correo al broker)
                   </label>
                   <textarea
                     value={statusReason}
                     onChange={(e) => setStatusReason(e.target.value)}
                     rows={3}
-                    placeholder="Ej: El cliente no cumple con el mínimo de FICO requerido para este producto..."
+                    placeholder={
+                      isCreditRepair(activeCase)
+                        ? "Ej: El cliente pidió pausar el servicio por 2 meses..."
+                        : "Ej: El cliente no cumple con el mínimo de FICO requerido para este producto..."
+                    }
                     className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 resize-none"
                   />
                 </div>
@@ -1200,6 +1344,20 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
                     </label>
                   ) : (
                     <div className="space-y-2">
+                      {activeDetailTab === "broker" && isCreditRepair(activeCase) && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {CREDIT_REPAIR_NOTE_TEMPLATES.map((t) => (
+                            <button
+                              key={t.label}
+                              type="button"
+                              onClick={() => setNewNoteContent(t.text)}
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-[#0A182D] text-purple-400 border border-purple-500/30 hover:bg-purple-500/10 transition-colors"
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <div className="relative">
                         <textarea
                           rows={2}

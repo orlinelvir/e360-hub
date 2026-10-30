@@ -24,17 +24,24 @@ service cloud.firestore {
     // campos vía cliente — el guardado real de perfil pasa por /api/broker/profile
     // (Admin SDK), que ignora estas reglas.
     function protectedBrokerFields() {
-      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid'];
+      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid', 'brokerId', 'brokerSequence', 'firstSaleAt', 'contractSignedAt', 'contractSignedMethod'];
     }
 
     // 0. Reglas para la colección de BROKERS & E360 Hub
     match /brokers/{userId} {
       allow read: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
 
+      // 'brokerId' se asigna exclusivamente por /api/broker/register-complete
+      // (Admin SDK, vía una transacción contra counters/brokerSequence) — un
+      // create de cliente nunca puede incluirlo, o un broker podría
+      // auto-asignarse un ID falso antes de que el servidor le dé el real,
+      // dejando al endpoint creyendo que ya tiene uno y nunca corrigiéndolo.
       allow create: if (isOwner(userId)
           && (!('role' in request.resource.data) || request.resource.data.role == 'broker')
           && (!('packagePaid' in request.resource.data) || request.resource.data.packagePaid == false)
-          && (!('referralEarnings' in request.resource.data) || request.resource.data.referralEarnings == 0))
+          && (!('referralEarnings' in request.resource.data) || request.resource.data.referralEarnings == 0)
+          && !('brokerId' in request.resource.data)
+          && !('brokerSequence' in request.resource.data))
         || (isAuthenticated() && getRole() == 'admin');
 
       allow update: if (isOwner(userId)

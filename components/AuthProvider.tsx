@@ -12,6 +12,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
+import { DEFAULT_BROKER_TIER } from "@/lib/constants/broker";
 
 interface BrokerUserProfile {
   uid: string;
@@ -25,6 +26,22 @@ interface BrokerUserProfile {
   phone?: string;
   nmlsId?: string;
   createdAt?: string;
+  brokerId?: string;
+}
+
+// Llamado tras cualquier creación/carga del perfil — asigna (o confirma)
+// brokerId, dispara el correo de bienvenida y el sync a GHL central la
+// primera vez, de forma idempotente (ver app/api/broker/register-complete).
+// Nunca debe bloquear ni tumbar el login/registro si falla.
+async function completeRegistration(idToken: string): Promise<void> {
+  try {
+    await fetch("/api/broker/register-complete", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${idToken}` }
+    });
+  } catch (err) {
+    console.warn("No se pudo completar el registro del broker (brokerId/correo/GHL):", err);
+  }
 }
 
 interface AuthContextType {
@@ -69,7 +86,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userDocRef = doc(db, "brokers", currentUser.uid);
           const snap = await getDoc(userDocRef);
           if (snap.exists()) {
-            setProfile(snap.data() as BrokerUserProfile);
+            const existingProfile = snap.data() as BrokerUserProfile;
+            setProfile(existingProfile);
+            // Red de seguridad: si por lo que sea nunca se llamó (o falló) la
+            // vez anterior, cualquier carga de perfil sin brokerId lo vuelve
+            // a intentar — barato e idempotente.
+            if (!existingProfile.brokerId) {
+              completeRegistration(token);
+            }
           } else {
             const newProfile: BrokerUserProfile = {
               uid: currentUser.uid,
@@ -77,11 +101,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               displayName: currentUser.displayName || "Broker E360",
               ghlLocationId: "",
               role: "broker",
-              tier: "Senior Broker VIP",
+              tier: DEFAULT_BROKER_TIER,
               createdAt: new Date().toISOString()
             };
-            await setDoc(userDocRef, newProfile);
+            await setDoc(userDocRef, newProfile, { merge: true });
             setProfile(newProfile);
+            completeRegistration(token);
           }
         } catch (e) {
           console.error("Error al cargar perfil de Firestore:", e);
@@ -108,15 +133,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       displayName: name,
       ghlLocationId: "",
       role: "broker",
-      tier: "Junior Broker",
+      tier: DEFAULT_BROKER_TIER,
       createdAt: new Date().toISOString()
     };
-    await setDoc(doc(db, "brokers", cred.user.uid), newProfile);
+    await setDoc(doc(db, "brokers", cred.user.uid), newProfile, { merge: true });
     setProfile(newProfile);
+
+    const token = await cred.user.getIdToken();
+
+    // Await a propósito (a diferencia de los otros 2 call sites): este es el
+    // momento de más valor para tener el brokerId/correo/GHL listos antes de
+    // que el broker siga navegando.
+    await completeRegistration(token);
 
     if (referredBySlug) {
       try {
-        const token = await cred.user.getIdToken();
         await fetch("/api/broker/register-referral", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

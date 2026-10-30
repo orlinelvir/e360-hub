@@ -19,7 +19,8 @@ import {
   Check,
   FileText,
   User,
-  Info
+  Info,
+  Clock
 } from "lucide-react";
 import QRCode from "qrcode";
 import { BrokerProfileData } from "../types";
@@ -40,7 +41,6 @@ const createCleanProfile = (name: string): BrokerProfileData => ({
   name: name || "Broker E360",
   email: "",
   phone: "",
-  brokerId: "BRK-360-001",
   ghlLocationId: "",
   ghlSubaccountEmail: "",
   ghlConnected: false,
@@ -88,6 +88,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string>("");
+  const [reportingSigned, setReportingSigned] = useState<boolean>(false);
 
   useEffect(() => {
     if (!user) return;
@@ -106,8 +107,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
         ...prev,
         ...data,
         email: correctedEmail,
-        name: data.displayName || data.name || prev.name,
-        brokerId: `BRK-${data.uid ? data.uid.substring(0, 6).toUpperCase() : "360"}`
+        name: data.displayName || data.name || prev.name
       }));
       setBusinessName(data.businessName || "");
       setWhatsapp(data.whatsapp || data.phone || "");
@@ -125,6 +125,29 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3500);
+  };
+
+  // "Ya firmé" — solo informativo para staff (contractSignedSelfReported):
+  // la firma real/confirmada (contractSignedAt) la fija únicamente el
+  // webhook de GHL o un admin desde el Roster, ver /api/broker/profile.
+  const handleReportContractSigned = async () => {
+    if (!user) return;
+    setReportingSigned(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/broker/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ contractSignedSelfReported: true })
+      });
+      if (!res.ok) throw new Error("Error al guardar");
+      setProfile((prev) => ({ ...prev, contractSignedSelfReported: true }));
+      showToast("✓ Gracias — nuestro equipo confirmará tu firma en breve.");
+    } catch {
+      showToast("No se pudo guardar. Intenta de nuevo.");
+    } finally {
+      setReportingSigned(false);
+    }
   };
 
   const handleSavePersonalProfile = async (e: React.FormEvent) => {
@@ -280,7 +303,7 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
                   <span>{profile.tier}</span>
                 </span>
                 <span className="text-xs font-mono text-gray-500">
-                  ID: {profile.brokerId || `BRK-${user?.uid ? user.uid.substring(0, 6).toUpperCase() : "360"}`}
+                  ID: {profile.brokerId || "Asignando..."}
                 </span>
               </div>
               <h2 className="text-2xl md:text-3xl font-extrabold text-white mt-1">
@@ -682,6 +705,81 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
               E360 Hub · Transparencia y Liquidación de Honorarios · 2026
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* 6. MI CONTRATO DE SERVICIOS */}
+      <div className="bg-[#0A182D]/60 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-5">
+        <div className="flex items-center justify-between border-b border-gray-800 pb-3 flex-wrap gap-2">
+          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+            <Shield size={18} className="text-cyan-400" />
+            <span>Mi Contrato de Servicios</span>
+          </h3>
+          {profile.contractSignedAt ? (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 flex items-center gap-1">
+              <CheckCircle2 size={12} /> FIRMADO
+            </span>
+          ) : profile.contractSignedSelfReported ? (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-400 border-amber-500/30 flex items-center gap-1">
+              <Clock size={12} /> PENDIENTE DE CONFIRMAR
+            </span>
+          ) : (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-gray-700/40 text-gray-400 border-gray-600 flex items-center gap-1">
+              <Clock size={12} /> PENDIENTE DE FIRMA
+            </span>
+          )}
+        </div>
+
+        {profile.contractSignedAt ? (
+          <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
+            <CheckCircle2 size={22} className="text-emerald-400 shrink-0" />
+            <p className="text-xs text-gray-300">
+              Tu contrato de servicios quedó firmado el{" "}
+              <strong className="text-white">{new Date(profile.contractSignedAt).toLocaleDateString()}</strong>.
+              Si necesitas revisarlo de nuevo o hacer una corrección, escríbenos a{" "}
+              <a href="mailto:info@emprende360.biz" className="text-cyan-400 font-bold">info@emprende360.biz</a>.
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Firma tu contrato de servicios directamente aquí. Una vez enviado, nuestro equipo confirma tu firma
+              {profile.contractSignedSelfReported ? " (ya marcaste que firmaste — en revisión)" : ""}.
+            </p>
+            <div className="rounded-2xl overflow-hidden border border-gray-800">
+              <iframe
+                src="https://api.leadconnectorhq.com/widget/form/j8cbC01b5t6UhaDbAusL"
+                title="Contrato de Servicios Emprende 360"
+                style={{ width: "100%", height: "650px", border: "none" }}
+              />
+            </div>
+            {!profile.contractSignedSelfReported && (
+              <button
+                type="button"
+                onClick={handleReportContractSigned}
+                disabled={reportingSigned}
+                className="w-full py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 size={14} />
+                <span>{reportingSigned ? "Guardando..." : "Ya firmé el contrato"}</span>
+              </button>
+            )}
+          </>
+        )}
+
+        <div className="p-4 bg-[#05101F] border border-cyan-500/20 rounded-2xl space-y-2">
+          <p className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Info size={13} /> Garantía de Devolución de 90 Días ($750)
+          </p>
+          <ul className="space-y-1.5 text-[11px] text-gray-400 leading-relaxed list-disc list-inside">
+            <li>El plazo de 90 días empieza a contar desde que se recibe el pago completo.</li>
+            <li>Debes completar <strong className="text-gray-300">todas</strong> las sesiones de entrenamiento y seguir el proceso/sistemas de Emprende 360 al pie de la letra.</li>
+            <li>Solo aplica si, cumpliendo lo anterior, no generaste en ingresos al menos el monto invertido.</li>
+            <li>No hay reembolso antes de los 90 días, ni en planes de pago con el segundo pago incompleto.</li>
+          </ul>
+          <p className="text-[10px] text-gray-500 pt-1">
+            Este resumen es solo orientativo — el contrato firmado arriba es el documento legal vinculante. Es una garantía poco común: hasta hoy, nadie ha calificado para ella.
+          </p>
         </div>
       </div>
     </div>
