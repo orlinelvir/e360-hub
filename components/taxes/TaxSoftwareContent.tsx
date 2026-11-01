@@ -18,9 +18,15 @@ import {
   Smartphone,
   Sparkles,
   Users,
+  Calculator,
+  ShieldCheck,
+  Wallet,
+  Clock,
+  ExternalLink,
 } from "lucide-react";
 import {
   TAX_AI_BLOCK,
+  TAX_BANK_SECTION,
   TAX_FAQS,
   TAX_FEATURES,
   TAX_FORMS,
@@ -44,6 +50,8 @@ const FEATURE_ICONS: Record<TaxFeature["icon"], React.ComponentType<{ size?: num
   FileText,
   Lock,
   Languages,
+  Calculator,
+  LayoutDashboard,
 };
 
 const TRAINING_ICONS = [GraduationCap, Settings, Headset];
@@ -65,10 +73,6 @@ function formatPrice(price: number | null): string {
   }).format(price);
 }
 
-/**
- * Botón principal. Mientras el destino no esté definido, lleva a la sección de
- * planes en vez de a un link roto.
- */
 function CtaLink({
   url,
   children,
@@ -79,8 +83,8 @@ function CtaLink({
   primary?: boolean;
 }) {
   const className = primary
-    ? "bg-gradient-to-r from-cyan-400 to-blue-600 text-black px-8 py-4 rounded-lg font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all hover:scale-105 shadow-[0_0_20px_rgba(0,224,240,0.3)]"
-    : "border border-gray-700 text-white px-8 py-4 rounded-lg font-semibold flex items-center justify-center gap-2 hover:border-cyan-400/60 hover:text-cyan-300 active:scale-95 transition-all";
+    ? "bg-gradient-to-r from-cyan-400 to-blue-600 text-black px-8 py-4 rounded-lg font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all hover:scale-105 shadow-[0_0_20px_rgba(0,224,240,0.3)] cursor-pointer"
+    : "border border-gray-700 text-white px-8 py-4 rounded-lg font-semibold flex items-center justify-center gap-2 hover:border-cyan-400/60 hover:text-cyan-300 active:scale-95 transition-all cursor-pointer";
   const isExternal = url !== null;
   return (
     <a
@@ -106,17 +110,17 @@ function PlanCard({ plan, index }: { plan: TaxPlan; index: number }) {
       }`}
     >
       {plan.featured && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-400 text-black text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-widest">
-          Recomendado
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-400 text-black text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-widest shadow-md">
+          Más Popular
         </span>
       )}
       <h3 className="text-xl font-bold text-white">{plan.name}</h3>
-      <p className="text-sm text-gray-500 mt-1">{plan.tagline}</p>
+      <p className="text-sm text-gray-400 mt-1">{plan.tagline}</p>
 
       <div className="mt-6 mb-6">
         {plan.price === null ? (
-          <span className="inline-block text-sm font-semibold text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 rounded-lg">
-            Precio por confirmar
+          <span className="inline-block text-sm font-semibold text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 px-3.5 py-1.5 rounded-lg">
+            Tarifa de temporada por confirmar
           </span>
         ) : (
           <div className="flex items-baseline gap-2">
@@ -151,7 +155,7 @@ function PlanCard({ plan, index }: { plan: TaxPlan; index: number }) {
       ) : (
         <span
           aria-disabled="true"
-          className="mt-8 text-center font-semibold py-3 rounded-lg border border-dashed border-gray-700 text-gray-500 cursor-not-allowed"
+          className="mt-8 text-center font-semibold py-3 rounded-lg border border-dashed border-gray-700 text-gray-500 cursor-not-allowed text-sm"
         >
           Disponible muy pronto
         </span>
@@ -203,11 +207,11 @@ export default function TaxSoftwareContent({ variant }: TaxSoftwareContentProps)
 
       {/* BARRA DE CONFIANZA */}
       <section className="relative z-10 px-6 pb-16">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-3">
           {TAX_TRUST_BADGES.map((badge) => (
             <div
               key={badge}
-              className="flex items-center gap-2 bg-[#0A182D] border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-300"
+              className="flex items-center gap-2 bg-[#0A182D] border border-gray-800 rounded-xl px-4 py-3 text-xs md:text-sm text-gray-300 font-medium"
             >
               <CircleCheck size={16} className="text-cyan-400 shrink-0" />
               <span>{badge}</span>
@@ -216,86 +220,197 @@ export default function TaxSoftwareContent({ variant }: TaxSoftwareContentProps)
         </div>
       </section>
 
-      {/* ASISTENTE DE IA */}
+      {/* ASISTENTE DE IA & PRIVACIDAD ESTRICTA */}
       <section className="relative z-10 px-6 py-16 bg-[#030812] border-y border-gray-800/50">
-        <div className="max-w-5xl mx-auto bg-gradient-to-r from-[#0A182D] to-[#05101F] border border-cyan-500/30 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row gap-10 items-center">
-          <div className="md:w-3/5">
-            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-cyan-400 mb-4">
-              <Sparkles size={14} /> {TAX_AI_BLOCK.eyebrow}
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">{TAX_AI_BLOCK.title}</h2>
-            <p className="text-gray-400 leading-relaxed">{TAX_AI_BLOCK.description}</p>
-          </div>
-          <div className="md:w-2/5 flex flex-wrap gap-3 justify-center">
-            {TAX_AI_BLOCK.documents.map((doc) => (
-              <span
-                key={doc}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#05101F] border border-gray-700 text-sm font-semibold text-gray-200"
-              >
-                <FileText size={16} className="text-cyan-400" /> {doc}
+        <div className="max-w-6xl mx-auto space-y-8">
+          <div className="bg-gradient-to-r from-[#0A182D] to-[#05101F] border border-cyan-500/30 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row gap-10 items-center">
+            <div className="md:w-3/5">
+              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-cyan-400 mb-4">
+                <Sparkles size={14} /> {TAX_AI_BLOCK.eyebrow}
               </span>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">{TAX_AI_BLOCK.title}</h2>
+              <p className="text-gray-300 leading-relaxed mb-6">{TAX_AI_BLOCK.description}</p>
+              
+              <div className="flex flex-wrap gap-2">
+                {TAX_AI_BLOCK.documents.map((doc) => (
+                  <span
+                    key={doc}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#05101F] border border-gray-700 text-xs font-semibold text-gray-200"
+                  >
+                    <FileText size={14} className="text-cyan-400" /> {doc}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="md:w-2/5 space-y-4">
+              <div className="p-5 rounded-2xl bg-[#05101F] border border-cyan-500/40">
+                <div className="flex items-center gap-3 mb-2 text-cyan-300 font-bold text-sm">
+                  <ShieldCheck size={18} className="text-cyan-400" />
+                  <span>Seguridad de Datos de tus Clientes</span>
+                </div>
+                <p className="text-xs text-gray-300 leading-relaxed">
+                  {TAX_AI_BLOCK.privacyGuarantee}
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#05101F] border border-blue-500/30">
+                <div className="flex items-center gap-3 mb-2 text-blue-300 font-bold text-sm">
+                  <ScanLine size={18} className="text-blue-400" />
+                  <span>Control Humano en Todo Momento</span>
+                </div>
+                <p className="text-xs text-gray-300 leading-relaxed">
+                  {TAX_AI_BLOCK.humanOversight}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PRODUCTOS BANCARIOS Y ADELANTOS DE REEMBOLSO */}
+      <section className="relative z-10 px-6 py-20 max-w-6xl mx-auto">
+        <div className="text-center mb-14">
+          <span className="text-cyan-400 font-bold uppercase tracking-widest text-xs mb-3 block">
+            {TAX_BANK_SECTION.eyebrow}
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            {TAX_BANK_SECTION.title}
+          </h2>
+          <p className="text-gray-400 max-w-3xl mx-auto leading-relaxed">
+            {TAX_BANK_SECTION.subtitle}
+          </p>
+        </div>
+
+        {/* 3 Beneficios bancarios */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {TAX_BANK_SECTION.highlights.map((h, idx) => (
+            <div
+              key={h.title}
+              className="bg-[#0A182D] border border-gray-800 rounded-2xl p-6 relative overflow-hidden"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gray-900 border border-gray-700 flex items-center justify-center text-cyan-400 mb-5">
+                {idx === 0 && <Clock size={22} />}
+                {idx === 1 && <Wallet size={22} />}
+                {idx === 2 && <Landmark size={22} />}
+              </div>
+              <h3 className="font-bold text-lg text-white mb-2">{h.title}</h3>
+              <p className="text-sm text-gray-400 leading-relaxed">{h.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Bancos aliados */}
+        <div className="bg-[#030812] border border-gray-800/80 rounded-3xl p-8">
+          <div className="text-xs font-bold uppercase tracking-widest text-gray-400 text-center mb-6">
+            Bancos Fiscales Integrados en la Plataforma
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+            {TAX_BANK_SECTION.partners.map((p) => (
+              <a
+                key={p.name}
+                href={p.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col justify-between p-4 rounded-xl bg-[#0A182D] border border-gray-800 hover:border-cyan-500/50 transition-all group"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">
+                    <span>{p.name}</span>
+                    <ExternalLink size={12} className="opacity-40 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-2 leading-tight">{p.tagline}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FUNCIONES */}
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Todo lo que necesita una oficina de taxes moderna</h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Una sola plataforma para preparar, firmar, cobrar y transmitir.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {TAX_FEATURES.map((feature, i) => {
-            const Icon = FEATURE_ICONS[feature.icon];
-            return (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: (i % 4) * 0.08 }}
-                className="bg-[#0A182D] border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/40 transition-all group"
-              >
-                <div className="w-12 h-12 bg-gray-900 border border-gray-700 rounded-xl flex items-center justify-center text-cyan-400 mb-5 group-hover:scale-110 transition-transform">
-                  <Icon size={22} />
-                </div>
-                <h3 className="font-bold text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
-              </motion.div>
-            );
-          })}
+      {/* FUNCIONES COMPLETAS (CORE FEATURES) */}
+      <section className="relative z-10 px-6 py-20 bg-[#030812] border-y border-gray-800/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Todo lo que necesita una oficina de taxes moderna</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              Una plataforma integral pensada para optimizar cada etapa del flujo de trabajo de tu equipo.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {TAX_FEATURES.map((feature, i) => {
+              const Icon = FEATURE_ICONS[feature.icon];
+              return (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (i % 5) * 0.06 }}
+                  className="bg-[#0A182D] border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/40 transition-all group relative flex flex-col justify-between"
+                >
+                  <div>
+                    {feature.badge && (
+                      <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-cyan-300 bg-cyan-950/70 border border-cyan-500/30 px-2 py-0.5 rounded mb-4">
+                        {feature.badge}
+                      </span>
+                    )}
+                    <div className="w-12 h-12 bg-gray-900 border border-gray-700 rounded-xl flex items-center justify-center text-cyan-400 mb-5 group-hover:scale-110 transition-transform">
+                      <Icon size={22} />
+                    </div>
+                    <h3 className="font-bold text-white mb-2">{feature.title}</h3>
+                    <p className="text-xs text-gray-400 leading-relaxed">{feature.description}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      {/* FORMULARIOS */}
-      <section className="relative z-10 px-6 pb-20 max-w-5xl mx-auto">
-        <div className="bg-[#0A182D] border border-gray-800 rounded-3xl p-8 md:p-10">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2">Formularios incluidos</h2>
-          <p className="text-gray-400 mb-8">{TAX_FORMS.note}</p>
+      {/* FORMULARIOS Y NOVEDADES TRIBUTARIAS */}
+      <section className="relative z-10 px-6 py-20 max-w-6xl mx-auto">
+        <div className="bg-[#0A182D] border border-gray-800 rounded-3xl p-8 md:p-12 space-y-10">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">Formularios y Cobertura Tributaria Completa</h2>
+            <p className="text-gray-400 leading-relaxed">{TAX_FORMS.note}</p>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">Individuales</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">Individuales (1040 Series)</h3>
               <div className="flex flex-wrap gap-2">
                 {TAX_FORMS.individual.map((form) => (
-                  <span key={form} className="px-3 py-1.5 rounded-lg bg-[#05101F] border border-gray-700 text-sm font-mono">
+                  <span key={form} className="px-3 py-1.5 rounded-lg bg-[#05101F] border border-gray-700 text-xs font-mono">
                     {form}
                   </span>
                 ))}
               </div>
             </div>
             <div className="md:col-span-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">Negocios y corporaciones</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">Corporativos y Negocios</h3>
               <div className="flex flex-wrap gap-2">
                 {TAX_FORMS.business.map((form) => (
-                  <span key={form} className="px-3 py-1.5 rounded-lg bg-[#05101F] border border-gray-700 text-sm font-mono">
+                  <span key={form} className="px-3 py-1.5 rounded-lg bg-[#05101F] border border-gray-700 text-xs font-mono">
                     {form}
                   </span>
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Actualizaciones tributarias 2025/2026 */}
+          <div className="p-6 rounded-2xl bg-[#05101F] border border-cyan-500/30">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-300 mb-4 flex items-center gap-2">
+              <Sparkles size={16} /> Actualizado para la Temporada Fiscal Vigente
+            </h3>
+            <ul className="space-y-2">
+              {TAX_FORMS.updates2025.map((up) => (
+                <li key={up} className="flex items-start gap-2 text-xs md:text-sm text-gray-300">
+                  <CircleCheck size={16} className="text-cyan-400 shrink-0 mt-0.5" />
+                  <span>{up}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
@@ -304,7 +419,7 @@ export default function TaxSoftwareContent({ variant }: TaxSoftwareContentProps)
       <section id="planes" className="relative z-10 px-6 py-20 bg-[#030812] border-y border-gray-800/50 scroll-mt-24">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Modalidades de la temporada</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Modalidades de la Temporada</h2>
             <p className="text-gray-400 max-w-2xl mx-auto">Elige la modalidad que se ajusta a tu oficina.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -314,13 +429,13 @@ export default function TaxSoftwareContent({ variant }: TaxSoftwareContentProps)
           </div>
           <div className="mt-10 bg-[#0A182D] border border-gray-800 rounded-2xl p-6">
             <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">
-              Todas las modalidades incluyen
+              Todas las modalidades incluyen de fábrica
             </h3>
             <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {TAX_PLAN_COMMON.map((item) => (
-                <li key={item} className="flex gap-2 text-sm text-gray-300">
+                <li key={item} className="flex gap-2 text-xs md:text-sm text-gray-300">
                   <CircleCheck size={16} className="text-cyan-400 shrink-0 mt-0.5" />
-                  {item}
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
@@ -376,7 +491,7 @@ export default function TaxSoftwareContent({ variant }: TaxSoftwareContentProps)
       {/* PREGUNTAS FRECUENTES */}
       <section className="relative z-10 px-6 py-20 bg-[#030812] border-t border-gray-800/50">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold mb-10 text-center">Preguntas frecuentes</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-10 text-center">Preguntas Frecuentes</h2>
           <div className="space-y-3">
             {TAX_FAQS.map((faq) => (
               <details
