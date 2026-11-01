@@ -1,22 +1,25 @@
 /**
- * Contenido exhaustivo del Software de Taxes E360 (marca blanca).
+ * Contenido oficial del Software de Taxes y Servicios Fiscales Emprende 360.
  *
- * Fuente única de verdad para la página pública (/taxes) y la pestaña del Hub.
- * Incorpora todos los elementos clave de la industria (OLTPro y Luxora Tax):
- *  - Integración con los 5 bancos líderes y adelantos de reembolso (Refund Advances).
- *  - Asistente de IA con cláusula estricta de privacidad (no entrena modelos con SSN).
- *  - Suite de productividad: K-1 Import, Client Organizer, Portal del Contribuyente y Reportes.
- *  - Novedades del año tributario vigente (Schedule 1-A, Child Tax Credit, 1099-DA).
- *  - Garantía de 30 días y soporte 100% en español.
+ * Basado estrictamente en las "Fichas de Servicio - Equipo de Ventas E360".
+ * Modela los 3 Caminos Reales según el perfil del cliente:
+ *  1. Software Autónomo (tiene PTIN y EFIN - $899 Nov/Dic, $1,400 Enero)
+ *  2. Curso de Preparador + Mentoría (sin EFIN - $150 curso + desde $60/declaración)
+ *  3. Service Bureau (quiere vender software con su propia marca - Agenda con Yampiero)
  */
 
 export interface TaxPlan {
   id: string;
   name: string;
+  profile: string;
   tagline: string;
-  price: number | null; // null = pendiente de confirmar
-  priceNote?: string;
+  priceDisplay: string;
+  priceDetail: string;
+  priceBadge?: string;
   highlights: string[];
+  notIncluded?: string[];
+  ctaText: string;
+  ctaType: "software" | "mentoria" | "bureau";
   featured?: boolean;
 }
 
@@ -48,302 +51,315 @@ export interface BankPartner {
   website: string;
 }
 
-/** Destinos de los botones principales. null = pendiente de definir enlace final. */
-export const TAX_SOFTWARE_CTA: { buyUrl: string | null; trialUrl: string | null } = {
-  buyUrl: null,
-  trialUrl: null,
-};
-
-export const TAX_SOFTWARE_PENDING = {
-  pricing: true,
-  ctas: TAX_SOFTWARE_CTA.buyUrl === null || TAX_SOFTWARE_CTA.trialUrl === null,
+/** Destinos de los botones principales. null = link hacia la sección o WhatsApp de ventas. */
+export const TAX_SOFTWARE_CTA = {
+  buySoftwareUrl: null, // Si es null, lleva al formulario de compra o contacto
+  mentoriaUrl: null,    // Si es null, lleva al formulario de registro del curso
+  bureauUrl: "https://meet.google.com/", // O Calendly de Yampiero
 };
 
 export const TAX_HERO = {
-  eyebrow: "E360 • Temporada de Taxes 2025 - 2026",
+  eyebrow: "Emprende 360 • Temporada de Impuestos 2025 - 2026",
   title: "Tu oficina de taxes profesional,",
   titleAccent: "100% en la nube y con IA.",
   subtitle:
-    "El software de preparación tributaria más completo para el mercado hispano con la marca Emprende 360. Preparación individual y corporativa, firmas electrónicas ilimitadas, productos bancarios integrados con adelantos de dinero en 24h, y e-file directo al IRS.",
+    "El ecosistema fiscal más completo para la comunidad hispana. Ya sea que tengas tu propia oficina con EFIN, estés dando tus primeros pasos con mentoría guiada, o quieras lanzar tu propia marca de software, en E360 tenemos el camino exacto para ti.",
 };
 
 export const TAX_TRUST_BADGES: string[] = [
-  "Proveedor de e-file autorizado por el IRS",
-  "Formularios de los 50 estados (Federal y Estatal)",
-  "E-filing incluido sin cargos ocultos",
-  "Soporte técnico y capacitación en español",
-  "Garantía de satisfacción de 30 días",
+  "Software autorizado para e-file al IRS",
+  "Todos los 50 estados (Personal y Corporativo)",
+  "Sin costo por declaración en el software",
+  "Soporte en español: Fernando (9 AM a 6 PM EST)",
+  "Clases en vivo los jueves a las 12 PM EST",
 ];
 
 export const TAX_AI_BLOCK = {
-  eyebrow: "Asistente de IA Integrado • Entrada de Datos Inteligente",
-  title: "Menos tipeo manual. Más declaraciones cerradas.",
+  eyebrow: "Asistente de Inteligencia Artificial Integrado",
+  title: "Una IA que lee el W-2 y 1099 y llena el formulario.",
+  subtitle: "Ya no pierdes horas tipeando a mano.",
   description:
-    "Convierte documentos fiscales en datos listos para transmitir en segundos. Nuestro motor de IA escanea e interpreta los documentos mientras tus preparadores revisan y validan antes de enviar. Automatización inteligente con total control humano.",
+    "Sube la foto o el PDF de los W-2, 1099, K-1 y documentos del cliente. La IA identifica los datos y los coloca automáticamente en la declaración. Si la foto sale borrosa, el sistema te avisa de inmediato para mantener cero errores.",
   privacyGuarantee:
-    "Privacidad Blindada: Los documentos cargados se procesan exclusivamente para extraer datos. La información confidencial del cliente (SSN, ingresos) NUNCA se comparte ni se utiliza para entrenar modelos de IA.",
+    "Privacidad Estricta: La IA solo procesa la imagen para extraer los datos necesarios. La información confidencial del cliente (SSN, ingresos) NUNCA se utiliza para entrenar modelos de IA.",
   humanOversight:
-    "Supervisión Humana Total (Review & Approve): Ningún dato se somete a ciegas. Cada campo sugerido por la IA debe ser aprobado por el preparador antes de finalizar.",
-  documents: ["Form W-2", "Form 1099 (NEC/MISC/K/DA)", "Form 1098", "Schedule K-1", "Licencias / IDs"],
+    "El Preparador Siempre Aprueba: Nada se envía solo. El preparador revisa y aprueba cada dato antes de procesar cualquier declaración.",
+  documents: ["Form W-2", "Form 1099 (NEC/MISC/K/DA)", "Schedule K-1", "Form 1098", "Licencias / IDs"],
 };
 
 export const TAX_BANK_SECTION = {
-  eyebrow: "Alianzas Financieras Oficiales",
-  title: "Productos Bancarios Integrados: Reembolsos Rápidos y Cero Cobros de Bolsillo",
+  eyebrow: "Productos Bancarios Oficiales Integrados",
+  title: "Adelanto de Reembolso y Cobro de tus Honorarios Directo del Reembolso",
   subtitle:
-    "Facilita el pago a tus clientes y maximiza tus ingresos. Ofrece préstamos y adelantos de reembolso para que tus contribuyentes reciban su dinero sin esperar semanas al IRS.",
+    "El software viene con integración a los 4 bancos líderes del mercado fiscal. El cliente puede recibir su dinero antes y tú cobras sin que el cliente pague de su bolsillo.",
   highlights: [
     {
-      title: "Adelantos de Reembolso (Refund Advances)",
-      desc: "Ofrece a tus clientes préstamos inmediatos basados en su reembolso esperado, disponibles en 24 horas o el mismo día.",
+      title: "Adelantos de Reembolso Inmediatos",
+      desc: "Tus clientes pueden calificar para préstamos de reembolso desembolsados en 24 horas o el mismo día, según aprobación bancaria.",
     },
     {
-      title: "Retención Automática de Honorarios",
-      desc: "Tus honorarios profesionales de preparación se descuentan directamente del reembolso federal del cliente. Tu cliente paga $0 al momento de la cita.",
+      title: "Cobro de Honorarios de Preparación",
+      desc: "Tus tarifas se descuentan automáticamente del reembolso que emite el banco. El cliente paga $0 al momento de la preparación.",
     },
     {
-      title: "Múltiples Opciones de Desembolso",
-      desc: "Depósito directo en cuenta, tarjeta prepagada o emisión de cheque en tu oficina.",
+      title: "Costos Bancarios Transparentes",
+      desc: "Hay costos de banco y transmisión (alrededor de $37 a $47 según el banco) únicamente cuando el cliente decide usar el producto bancario. Si no usa banco, ¡no hay costo extra de transmisión!",
     },
   ],
   partners: [
-    { name: "Santa Barbara TPG (SBTPG)", tagline: "Líder nacional en soluciones de reembolso", website: "https://www.sbtpg.com/" },
-    { name: "Republic Bank", tagline: "Especialistas en adelantos y transferencias fiscales", website: "https://www.republicrefund.com/" },
-    { name: "Refundo", tagline: "La plataforma bancaria preferida de la comunidad hispana", website: "https://refundo.com/" },
-    { name: "Refund Advantage", tagline: "Procesamiento ágil con soporte de primer nivel", website: "https://www.refund-advantage.com/" },
-    { name: "EPS Financial", tagline: "Soluciones bancarias de reembolso flexibles y seguras", website: "https://www.epstax.net/" },
+    { name: "Santa Barbara TPG (SBTPG)", tagline: "El banco fiscal más grande de Estados Unidos", website: "https://www.sbtpg.com/" },
+    { name: "Refund Advantage", tagline: "Procesamiento ágil con soporte especializado", website: "https://www.refund-advantage.com/" },
+    { name: "Republic Bank", tagline: "Especialistas en adelantos y cheques en oficina", website: "https://www.republicrefund.com/" },
+    { name: "EPS Financial", tagline: "Soluciones de reembolso confiables y flexibles", website: "https://www.epstax.net/" },
   ],
 };
 
 export const TAX_FEATURES: TaxFeature[] = [
   {
     icon: "Users",
-    title: "Multiusuario Sin Costo Extra",
+    title: "Equipo Ilimitado Sin Costo",
     description:
-      "Agrega a todos los preparadores y asistentes de tu oficina sin pagar costos adicionales por asiento. Configura permisos granulares para cada rol.",
+      "Preparadores ilimitados sin pagar por usuario adicional. Cada persona tiene su propio acceso, usa su propio PTIN y ve únicamente sus clientes.",
     badge: "Sin Costo por Asiento",
   },
   {
-    icon: "PenLine",
-    title: "Firmas Electrónicas Ilimitadas",
+    icon: "ScanLine",
+    title: "Dos Formas de Trabajar",
     description:
-      "Recoge firmas digitales con plena validez legal (Formularios 8878 y 8879 del IRS) desde la pantalla táctil del móvil del cliente o su computadora.",
+      "Modo entrevista que pregunta paso a paso (ideal para principiantes) y modo directo para que el preparador experimentado llene los formularios a su ritmo.",
   },
   {
     icon: "FileText",
-    title: "Portal Móvil del Contribuyente",
+    title: "Años Anteriores Desde 2019",
     description:
-      "Tus clientes pueden escanear y enviar sus documentos fiscales (W-2, 1099, IDs) directamente desde sus teléfonos inteligentes con tu marca.",
+      "Prepara declaraciones de años anteriores desde 2019 hasta 2026. Los últimos 3 años se pueden enviar electrónicamente al IRS.",
+    badge: "2019 - 2026",
+  },
+  {
+    icon: "PenLine",
+    title: "Firma Electrónica Ilimitada",
+    description:
+      "El cliente firma desde su celular, por email o mensaje de texto. La firma llega al sistema al instante sin descargar apps ni crear cuentas.",
   },
   {
     icon: "Landmark",
-    title: "Productos Bancarios Integrados",
+    title: "4 Bancos Fiscales Integrados",
     description:
-      "Integrado con TPG, Republic Bank, Refundo, Refund Advantage y EPS para adelantos de reembolso instantáneos y cobro de honorarios directo.",
-    badge: "5 Bancos Aliados",
+      "TPG, Refund Advantage, Republic Bank y EPS Financial para adelantos y retención de honorarios directamente del reembolso.",
+    badge: "TPG • Republic • EPS • RA",
+  },
+  {
+    icon: "LayoutDashboard",
+    title: "Panel del Dueño de Oficina",
+    description:
+      "Control total: supervisa cuántas declaraciones hay, en qué estado se encuentran y qué hace cada preparador en tiempo real. Sirve para varias oficinas.",
   },
   {
     icon: "Calculator",
     title: "Importación de Schedule K-1",
     description:
-      "Extrae e importa automáticamente datos complejos de sociedades y corporaciones S (K-1) directamente dentro de la Forma 1040 sin teclear.",
-  },
-  {
-    icon: "ScanLine",
-    title: "Modo Entrevista vs. Formularios",
-    description:
-      "El modo entrevista paso a paso guía con facilidad a los preparadores principiantes, mientras que el modo de formulario directo brinda máxima velocidad a los veteranos.",
-  },
-  {
-    icon: "LayoutDashboard",
-    title: "Client Organizer y Gestor Documental",
-    description:
-      "Cuestionarios previos para recopilar la información del cliente antes de su cita y archivo digital seguro de declaraciones pasadas.",
+      "Importa directamente los datos de sociedades y corporaciones S (K-1) dentro de la Forma 1040 sin perder tiempo ingresando filas a mano.",
   },
   {
     icon: "Smartphone",
-    title: "100% Cloud: Cero Instalaciones",
+    title: "100% en la Nube: Cero Instalaciones",
     description:
-      "Accede desde cualquier navegador web en Mac, Windows, iPad, iPhone, Android o Chromebook. Toda tu oficina viaja contigo de forma segura.",
+      "Abre el navegador, entra con tu usuario y listo. Sirve en computadora, laptop, tableta o teléfono. Lo que haces en la oficina lo ves igual en tu casa.",
   },
   {
     icon: "Languages",
-    title: "100% Bilingüe (Español / Inglés)",
+    title: "Hecho para Hispanos (Bilingüe)",
     description:
-      "Cambia el idioma de la interfaz, los formularios, los reportes y las cartas al cliente con un solo clic según las necesidades de tu comunidad.",
-    badge: "Español / Inglés",
+      "Interfaz, formularios y reportes en español e inglés. Toda la capacitación y el soporte se brinda 100% en tu idioma.",
   },
   {
     icon: "Lock",
-    title: "Seguridad Grado Bancario",
+    title: "Seguridad y Cifrado 256 bits",
     description:
-      "Cifrado de datos en tránsito y en reposo, cumplimiento estricto con los estándares de seguridad de datos del IRS y copias de seguridad automáticas.",
+      "Datos cifrados de grado bancario, respaldos automáticos en la nube y formularios siempre al día con los últimos cambios de ley del IRS.",
   },
 ];
 
 export const TAX_FORMS = {
-  individual: ["1040", "1040-NR", "1040-SR", "1040-X"],
+  individual: ["1040 (Ilimitadas)", "1040-NR (No residentes)", "1040-SR (Seniors)", "1040-X (Enmiendas)"],
   business: [
+    "1041 (Fideicomisos y Patrimonios)",
+    "1065 (Sociedades / LLC)",
     "1120 (Corporaciones)",
     "1120-S (Corporaciones S)",
-    "1065 (Sociedades / LLC)",
-    "1041 (Fideicomisos y Patrimonios)",
-    "990 (Organizaciones sin fines de lucro)",
-    "2290 (Impuesto de Vehículos Pesados)",
+    "2290 (Impuesto Vehículos Pesados)",
+    "5500 (Planes de Beneficios)",
     "720 (Impuestos Especiales)",
     "706 (Herencias)",
     "709 (Donaciones)",
-    "5500 (Planes de Beneficios)",
-    "8849 (Reclamo de Reembolso)",
-    "8038-CP (Créditos de Bonos)",
+    "990 (Sin Fines de Lucro)",
+    "8849 (Reembolso de Impuestos Especiales)",
   ],
   updates2025: [
-    "Schedule 1-A: Nuevas deducciones para propinas calificadas, horas extra e intereses vehiculares.",
-    "Child Tax Credit: Ajuste aumentado de crédito tributario por hijos hasta $2,200.",
-    "Form 1099-DA: Cumplimiento mandatorio para reporte de transacciones de activos digitales y criptomonedas.",
+    "Schedule 1-A: Nuevas deducciones para propinas calificadas, horas extra e intereses en préstamos de auto.",
+    "Child Tax Credit: Crédito tributario aumentado de hasta $2,200 por cada hijo calificado.",
+    "Form 1099-DA: Nuevo formulario mandatorio para reporte de operaciones con criptoactivos y activos digitales.",
   ],
-  note: "Formularios federales y declaraciones estatales completas para los 50 estados, adaptados de forma continua ante cualquier cambio legislativo del IRS.",
+  note: "Formularios de todos los 50 estados (personales y de empresas) sin costo extra por declaración.",
 };
 
-/** Lo que incluyen TODAS las modalidades (no depende del precio). */
-export const TAX_PLAN_COMMON: string[] = [
-  "Declaraciones individuales y de negocios ilimitadas (según modalidad)",
-  "Todos los 50 estados soportados sin costo adicional",
-  "Transmisión electrónica (e-file) ilimitada al IRS",
-  "Portal del contribuyente para subida de fotos y documentos",
-  "Firmas electrónicas digitales integradas (IRS compliant)",
-  "Integración con los 5 bancos de reembolso y adelantos",
-  "Asistente de IA para extracción de W-2s y 1099s",
-  "Importación directa de Schedule K-1",
-  "Plataforma y soporte 100% bilingüe (Español e Inglés)",
-  "Curso completo del software con la marca Emprende 360",
-  "Asistencia técnica para configuración del ERO y transmisión",
-  "Garantía de devolución de 30 días sin riesgos",
-];
-
-/**
- * Las 3 modalidades de la temporada. Nombres y precios se completan
- * al recibir el tarifario oficial.
- */
+/** Los 3 Caminos Oficiales de Emprende 360 */
 export const TAX_PLANS: TaxPlan[] = [
   {
-    id: "modalidad-1",
-    name: "Modalidad 1",
-    tagline: "Ideal para preparadores independientes o que inician",
-    price: null,
+    id: "camino-1-software",
+    name: "Software Emprende 360",
+    profile: "YA PREPARAS (Tienes PTIN y EFIN propio)",
+    tagline: "Para quien trabaja por su cuenta, con su propia oficina y equipo.",
+    priceDisplay: "$899",
+    priceDetail: "Precio especial de Noviembre y Diciembre (Sube a $1,400 en Enero)",
+    priceBadge: "Precio Fundador / Prelanzamiento",
     highlights: [
-      "Acceso completo a la plataforma en la nube",
-      "Declaraciones individuales y corporativas",
-      "E-file a los 50 estados incluido",
-      "Portal del cliente y firmas digitales",
-      "Capacitación inicial del software",
+      "Software 100% en la nube (computadora, laptop, tablet o celular)",
+      "Preparadores ilimitados sin costo extra por usuario",
+      "Declaraciones personales y de empresa ilimitadas a los 50 estados",
+      "Asistente de IA: lee W-2, 1099 y K-1 automáticamente",
+      "Años anteriores desde 2019 (últimos 3 años al IRS)",
+      "Firmas electrónicas ilimitadas directo al celular del cliente",
+      "4 Bancos integrados (Adelantos de dinero y cobro de honorarios)",
+      "Soporte oficial de 9 AM a 6 PM EST con Fernando (equipo de Gabriela)",
+      "Clases en vivo los jueves a las 12 PM EST y clases grabadas de uso",
+      "Convención de Enero en New Jersey (online o presencial) de regalo",
     ],
-  },
-  {
-    id: "modalidad-2",
-    name: "Modalidad 2",
-    tagline: "La opción más popular para oficinas en crecimiento",
-    price: null,
-    highlights: [
-      "Todo lo de la Modalidad 1",
-      "Multiusuario para todo tu equipo de trabajo",
-      "Productos bancarios y adelantos de dinero en 24h",
-      "Asistente de IA para extracción automática de documentos",
-      "Soporte técnico preferencial durante toda la temporada",
+    notIncluded: [
+      "No incluye revisión de declaraciones (preparas y transmites por tu cuenta)",
+      "El EFIN y PTIN los tramita el preparador ante el IRS",
     ],
+    ctaText: "Adquirir Licencia Software ($899)",
+    ctaType: "software",
     featured: true,
   },
   {
-    id: "modalidad-3",
-    name: "Modalidad 3",
-    tagline: "Para oficinas consolidadas de alto volumen y multiservicios",
-    price: null,
+    id: "camino-2-mentoria",
+    name: "Curso de Preparador + Mentoría",
+    profile: "ESTÁS EMPEZANDO (1ª o 2ª temporada, sin EFIN)",
+    tagline: "No estás solo. Montas la declaración, nosotros la revisamos y la enviamos.",
+    priceDisplay: "$150 + desde $60",
+    priceDetail: "Curso $150 (pago único) + Desde $60 por declaración revisada y enviada",
+    priceBadge: "Cero Riesgo de Multas",
     highlights: [
-      "Todo lo de la Modalidad 2",
-      "Capacidad ilimitada de preparadores y sedes",
-      "Acompañamiento VIP en configuración técnica ERO",
-      "Integración prioritaria con el ecosistema E360 Hub",
-      "Acceso prioritario a la futura Oficina Virtual E360",
+      "Curso en vivo de 12 horas para preparar Forma 1040 y tramitar tu PTIN",
+      "Uso completo del software Emprende 360 con Asistente de IA",
+      "Revisión de cada declaración por nuestro equipo antes de salir al IRS",
+      "Transmisión legal bajo el EFIN de Emprende 360 (sin esperar 45 días)",
+      "Modo entrevista guiado paso a paso para no cometer errores",
+      "Pagas solo lo que usas (se descuenta del reembolso del cliente)",
+      "Clases de los jueves 12 PM EST (actualizaciones IRS, marketing y ventas)",
+      "Convención obligatoria de Enero en New Jersey (o virtual) antes de iniciar",
+      "Evitas multas y sanciones del IRS teniendo una segunda mirada experta",
     ],
+    notIncluded: [
+      "No incluye software independiente (transmite el equipo central E360)",
+    ],
+    ctaText: "Inscribirme al Curso + Mentoría ($150)",
+    ctaType: "mentoria",
+  },
+  {
+    id: "camino-3-service-bureau",
+    name: "Service Bureau (Tu Propia Marca)",
+    profile: "QUIERES VENDER SOFTWARE A OTRAS OFICINAS",
+    tagline: "Monta tu propio negocio revendiendo software con tu logotipo y tus precios.",
+    priceDisplay: "Llamada Estratégica",
+    priceDetail: "Evaluación personalizada con Yampiero de Dios para tu plan de negocio",
+    priceBadge: "Marca Blanca Completa",
+    highlights: [
+      "Software de taxes con tu propio nombre, marca y colores corporativos",
+      "Licencias ilimitadas para revender a tus clientes y oficinas aliadas",
+      "Transmisiones personales y de empresa gratis e ilimitadas",
+      "Firmas electrónicas gratis y años anteriores de 2019 a 2026",
+      "5 Clases maestras: estructura de ingresos, contratos, reventa y soporte",
+      "6 Meses de comunidad exclusiva con clases grabadas y webinars",
+      "Soporte directo para tu software y la administración de tus licencias",
+      "Tú defines el precio de reventa y conservas las ganancias de tus clientes",
+    ],
+    notIncluded: [
+      "No incluye PTIN ni EFIN (cada oficina aliada debe tener el suyo)",
+    ],
+    ctaText: "Agendar Llamada con Yampiero",
+    ctaType: "bureau",
   },
 ];
 
 export const TAX_OFFICE_TEASER = {
-  eyebrow: "Próximamente Integrado al Hub",
+  eyebrow: "Próximamente Integrado al E360 Hub",
   title: "Oficina Virtual E360: Tu Centro de Control de la Temporada",
   description:
-    "Estamos construyendo dentro del mismo E360 Hub la oficina virtual definitiva para preparadores: un panel en vivo donde podrás auditar honorarios colectados, cheques de reembolso emitidos por los bancos, casos abiertos, seguimiento de leads y gestión automatizada de comisiones y pagos.",
+    "Muy pronto dentro del mismo Hub: un panel en vivo donde podrás auditar honorarios colectados, cheques de reembolso emitidos por los bancos, casos abiertos, seguimiento de leads y clientes, y liquidación de comisiones con la marca Emprende 360.",
   items: [
-    "Dashboard de Reembolsos y Cobros",
-    "Monitoreo de Casos y E-file Status",
+    "Dashboard de Reembolsos y Honorarios Colectados",
+    "Monitoreo de Casos y E-file Status en Vivo",
     "Gestión de Comisiones por Preparador",
-    "CRM de Clientes y Leads de Impuestos",
-    "Soporte Directo con el Equipo Central E360",
+    "CRM de Clientes y Documentos Fiscales",
+    "Soporte Técnico Directo Integrado",
   ],
 };
 
 export const TAX_TRAINING = {
-  title: "Acompañamiento Profesional: No Estás Solo en la Temporada",
+  title: "Acompañamiento Real: Aquí No Estás Solo",
   description:
-    "El éxito de tu oficina de taxes no solo depende del software, sino del respaldo técnico y operativo detrás. Te capacitamos desde el día uno.",
+    "El éxito de tu oficina en la temporada no depende solo de un programa, sino del soporte que tienes cuando surgen dudas.",
   items: [
     {
-      title: "Curso del Software Emprende 360",
+      title: "Soporte en Español: Atiende Fernando",
       description:
-        "Entrenamiento exhaustivo paso a paso grabado con la nueva identidad de Emprende 360 para que tú y tus preparadores dominen el sistema en días.",
+        "Atención de 9 AM a 6 PM EST por el equipo de Gabriela (Emprende 360). Resolvemos dudas de la plataforma y configuración técnica.",
     },
     {
-      title: "Configuración Técnica del ERO / EFIN",
+      title: "Clases de los Jueves a las 12 PM EST",
       description:
-        "Te guiamos en el enrutamiento de tu Electronic Return Originator (ERO), configuración de credenciales del IRS y validación de software para transmitir legalmente.",
+        "Sesiones semanales en vivo sobre actualizaciones de ley del IRS, estrategias de marketing, captación de clientes y seguridad de datos.",
     },
     {
-      title: "Soporte Técnico Especializado en Español",
+      title: "Convención de Enero en New Jersey",
       description:
-        "Un equipo de soporte técnico dedicado a resolver cualquier bloqueo con la plataforma, códigos de rechazo del IRS o dudas operativas de la temporada.",
+        "Evento presencial y online antes de abrir la temporada para revisar protocolos del IRS, reglas operativas y arranque de campaña.",
     },
   ],
 };
 
 export const TAX_FAQS: TaxFaq[] = [
   {
-    question: "¿Qué es el Software de Taxes E360 y en qué se diferencia?",
+    question: "¿Por qué sube el precio del software en enero?",
     answer:
-      "Es una plataforma profesional de preparación tributaria en la nube personalizada con la marca Emprende 360. A diferencia de programas tradicionales que requieren descargas lentas o cobros por cada usuario, E360 funciona 100% en el navegador, incluye asistente de IA para lectura de W-2s, soporte en español y convenios directos con bancos de reembolso.",
+      "Estamos en etapa de prelanzamiento. Al igual que los grandes proveedores de la industria, las tarifas son escalonadas por fecha: $899 durante noviembre y diciembre, y $1,400 en enero. Al adquirirlo hoy aseguras el precio de prelanzamiento para toda la temporada.",
   },
   {
-    question: "¿Necesito instalar algún software o tener un servidor en mi oficina?",
+    question: "Si compro el software, ¿el equipo de E360 me revisa los taxes?",
     answer:
-      "No. Cero instalaciones y cero requerimientos de redes locales. Funciona en Windows, Mac, iPads, tablets y teléfonos con cualquier navegador moderno.",
+      "No. Mentoría y software son dos caminos completamente separados. Quien compra el software trabaja de forma 100% independiente con su propio EFIN. Si estás empezando y deseas que nuestro equipo revise y transmita cada declaración por ti, tu camino ideal es el de Curso + Mentoría.",
   },
   {
-    question: "¿Cómo funcionan los Productos Bancarios y Adelantos de Reembolso?",
+    question: "¿Y qué pasa el próximo año con el software?",
     answer:
-      "El software está integrado directamente con las 5 instituciones bancarias líderes (SBTPG, Republic Bank, Refundo, Refund Advantage y EPS). Esto te permite ofrecer a tus clientes adelantos de reembolso (Refund Loans) desembolsados en 24 horas y cobrar tus honorarios automáticamente del cheque de reembolso, sin que el cliente deba pagar de su bolsillo.",
+      "El software se paga una vez por temporada fiscal y te da acceso completo durante todo el año. En la siguiente temporada renuevas a un precio preferencial parecido.",
   },
   {
-    question: "¿La inteligencia artificial compromete los datos privados de mis clientes?",
+    question: "¿Por qué me conviene entrar a Mentoría en vez de comprar el software si estoy empezando?",
     answer:
-      "Absolutamente no. La función de IA solo extrae datos visuales de las fotos de los W-2 o 1099s para pre-llenar los formularios. La información personal (como Números de Seguro Social e ingresos) nunca se almacena para entrenar modelos de IA ni sale de los servidores protegidos con cifrado de grado bancario.",
+      "Porque quien prepara impuestos responde legalmente ante el IRS. Un error u omisión puede acarrear multas costosas. Además, si estás en tu primera temporada y haces pocas declaraciones, pagar $899 no se amortiza tan fácil; con la mentoría pagas solo $150 de curso y luego pagas solo por cada declaración que realmente prepares y envíes, con el respaldo de que un experto revisa todo antes de que salga.",
   },
   {
-    question: "¿Qué requisitos necesito para empezar a preparar y transmitir?",
+    question: "¿Cómo funciona el cobro de 'desde $60' en la Mentoría?",
     answer:
-      "Necesitas contar con tu PTIN activo como preparador. Para transmitir como oficina necesitas tu EFIN (Electronic Filing Identification Number) otorgado por el IRS. Si estás en proceso de obtenerlo, nuestro equipo te asesora durante la inducción.",
+      "Tú cobras tus honorarios al cliente (por ejemplo, $150 o $200). A Emprende 360 le pagas desde $60 por la revisión y envío bajo nuestro EFIN, y el resto es tu ganancia neta. Si el cliente usa producto bancario, los $60 se descuentan directamente del reembolso; si no, se abonan al enviar el expediente.",
   },
   {
-    question: "¿Puedo agregar a otros preparadores de mi oficina?",
+    question: "¿Cómo funcionan los Productos Bancarios y qué costo tienen?",
     answer:
-      "Sí. El sistema permite crear perfiles multiusuario y establecer niveles de acceso y permisos según el rol de cada persona en tu oficina.",
+      "El sistema está integrado con TPG, Refund Advantage, Republic Bank y EPS. Permiten ofrecer adelantos de dinero en 24 horas y cobrar tus honorarios directo del reembolso. Hay un costo bancario y de transmisión de aproximadamente $37 a $47 que se cobra ÚNICAMENTE cuando el cliente decide usar el producto bancario. Si el cliente no usa banco, ¡no hay costo extra de transmisión!",
   },
   {
-    question: "¿Qué pasa si tengo dudas técnicas en plena temporada de taxes?",
+    question: "¿Qué pasa si me arrepiento después de pagar? ¿Hay devolución?",
     answer:
-      "Contamos con un equipo de soporte técnico en español disponible para ayudarte a resolver dudas sobre el uso de la plataforma, transmisión de declaraciones y resolución de códigos de error.",
+      "No hay devolución de dinero. Al ser software en la nube y servicios de capacitación y credenciales con entrega inmediata, todo queda estipulado de forma transparente en el contrato de servicio firmado.",
   },
   {
-    question: "¿Ofrecen garantía de reembolso?",
+    question: "¿El software incluye declaraciones de años anteriores?",
     answer:
-      "Sí. Respaldamos la plataforma con una garantía de devolución de 30 días. Si el software no cumple con las exigencias de tu oficina, te devolvemos tu inversión.",
+      "Sí. Puedes preparar declaraciones de años anteriores desde 2019 hasta 2026. Los últimos 3 años se pueden enviar electrónicamente al IRS sin costo extra.",
   },
 ];
