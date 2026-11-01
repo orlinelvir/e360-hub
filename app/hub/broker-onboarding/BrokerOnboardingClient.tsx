@@ -32,6 +32,7 @@ import GHLOnboardingWizardModal from "./components/GHLOnboardingWizardModal";
 import AdmisionFormModal from "./components/AdmisionFormModal";
 import CreditRepairIntakeModal from "./components/CreditRepairIntakeModal";
 import NotificationBell from "./components/NotificationBell";
+import TaxSoftwareContent from "@/components/taxes/TaxSoftwareContent";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 import { isMasterAdminEmail } from "@/lib/roles";
@@ -517,6 +518,7 @@ export default function BrokerOnboardingClient() {
                   {[
                     { id: "inicio", label: "Inicio / Servicios" },
                     { id: "clientes", label: "Mis Clientes (CRM)" },
+                    { id: "taxes", label: "Software Taxes" },
                     { id: "soporte", label: "Soporte VIP" },
                     { id: "recursos", label: "Recursos" },
                     { id: "perfil", label: "Mi Perfil" },
@@ -585,6 +587,7 @@ export default function BrokerOnboardingClient() {
                 {[
                   { id: "inicio", label: "Inicio" },
                   { id: "clientes", label: "Clientes" },
+                  { id: "taxes", label: "Taxes" },
                   { id: "soporte", label: "Soporte" },
                   { id: "recursos", label: "Recursos" },
                   { id: "perfil", label: "Perfil" },
@@ -765,6 +768,12 @@ export default function BrokerOnboardingClient() {
                   crmLocationId={userLocationId}
                   crmApiKey={userApiKey}
                 />
+              </main>
+            )}
+
+            {activeTab === "taxes" && (
+              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+                <TaxSoftwareContent variant="hub" />
               </main>
             )}
 

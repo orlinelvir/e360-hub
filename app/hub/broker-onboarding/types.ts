@@ -1,4 +1,4 @@
-export type ActiveTab = "inicio" | "clientes" | "soporte" | "perfil" | "admin" | "recursos";
+export type ActiveTab = "inicio" | "clientes" | "taxes" | "soporte" | "perfil" | "admin" | "recursos";
 
 export type PipelineStage =
   | "lead"

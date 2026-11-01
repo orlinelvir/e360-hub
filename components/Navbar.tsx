@@ -22,6 +22,7 @@ export default function Navbar() {
     { name: "Fondeo", path: "/funding" },
     { name: "Reparación", path: "/credit-repair" },
     { name: "Software (CRM)", path: "/crm" },
+    { name: "Taxes", path: "/taxes" },
     { name: "Incorporación", path: "/incorporation" },
     { name: "Live Training", path: "/live-training" },
   ];
