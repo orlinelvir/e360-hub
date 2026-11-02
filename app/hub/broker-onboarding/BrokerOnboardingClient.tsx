@@ -537,7 +537,7 @@ export default function BrokerOnboardingClient() {
                     >
                       <span>{tab.label}</span>
                       {"badge" in tab && (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-gradient-to-r from-amber-500/20 to-amber-400/20 text-amber-300 border border-amber-500/40">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,224,240,0.2)]">
                           {tab.badge}
                         </span>
                       )}

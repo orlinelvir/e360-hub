@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Lock, Sparkles, CheckCircle2, Shield, DollarSign, Users, FileText, ArrowRight, Eye, PhoneCall } from "lucide-react";
+import { Lock, Sparkles, Shield, DollarSign, Users, FileText, ArrowRight, Eye, PhoneCall } from "lucide-react";
 
 interface TaxOfficePaywallProps {
   onEnableDemo: () => void;
@@ -39,22 +39,22 @@ export default function TaxOfficePaywall({ onEnableDemo, brokerName }: TaxOffice
   ];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-b from-[#0A182D] via-[#05101F] to-[#030914] p-8 md:p-14 shadow-2xl">
-      {/* Glow ambiental dorado / cyan */}
-      <div className="absolute top-0 right-1/4 -z-0 h-96 w-96 rounded-full bg-amber-500/10 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 -z-0 h-96 w-96 rounded-full bg-cyan-500/10 blur-[130px] pointer-events-none" />
+    <div className="relative w-full overflow-hidden rounded-3xl border border-cyan-500/30 bg-gradient-to-b from-[#0A182D] via-[#05101F] to-[#030914] p-8 md:p-14 shadow-2xl">
+      {/* Glow ambiental E360 (Electric Cyan & Deep Blue) */}
+      <div className="absolute top-0 right-1/4 -z-0 h-96 w-96 rounded-full bg-cyan-500/15 blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 -z-0 h-96 w-96 rounded-full bg-blue-600/15 blur-[140px] pointer-events-none" />
 
       {/* Contenido Superior */}
       <div className="relative z-10 max-w-4xl mx-auto text-center">
-        {/* Badge Dorado */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-extrabold uppercase tracking-widest mb-6">
-          <Sparkles size={14} className="text-amber-400" />
+        {/* Badge Cyan E360 */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 text-xs font-extrabold uppercase tracking-widest mb-6 shadow-[0_0_15px_rgba(0,224,240,0.15)]">
+          <Sparkles size={14} className="text-cyan-400" />
           <span>Módulo Pro • Temporada Fiscal 2025 - 2026</span>
         </div>
 
         <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
           Tu Oficina Virtual de Taxes{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-200 to-amber-500">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-cyan-400 to-blue-500">
             en un Solo Lugar.
           </span>
         </h1>
@@ -63,13 +63,13 @@ export default function TaxOfficePaywall({ onEnableDemo, brokerName }: TaxOffice
           Diseñado exclusivamente para que los brokers y preparadores de Emprende 360 gestionen cientos de declaraciones sin hojas de cálculo desorganizadas, con cobro bancario automático y reparto de comisiones.
         </p>
 
-        {/* Acciones Principales */}
+        {/* Acciones Principales con Estilo Cyan Oficial E360 */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-black text-sm uppercase tracking-wider rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.3)] flex items-center justify-center gap-2.5 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+            className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-black font-black text-sm uppercase tracking-wider rounded-2xl shadow-[0_0_30px_rgba(0,224,240,0.35)] flex items-center justify-center gap-2.5 transition-all transform hover:-translate-y-0.5 cursor-pointer"
           >
             <Lock size={16} />
             <span>Desbloquear Oficina Virtual</span>
@@ -100,9 +100,9 @@ export default function TaxOfficePaywall({ onEnableDemo, brokerName }: TaxOffice
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
-              className="bg-[#05101F]/80 border border-gray-800/80 hover:border-amber-500/30 p-5 rounded-2xl transition-all flex items-start gap-4"
+              className="bg-[#05101F]/80 border border-gray-800/80 hover:border-cyan-500/30 p-5 rounded-2xl transition-all flex items-start gap-4"
             >
-              <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
                 <Icon size={20} />
               </div>
               <div>
@@ -115,7 +115,7 @@ export default function TaxOfficePaywall({ onEnableDemo, brokerName }: TaxOffice
       </div>
 
       {/* Tarjeta de Planes / Formas de Acceso */}
-      <div className="relative z-10 max-w-4xl mx-auto mt-10 p-6 rounded-2xl bg-gradient-to-r from-blue-950/40 via-cyan-950/30 to-blue-950/40 border border-cyan-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="relative z-10 max-w-4xl mx-auto mt-10 p-6 rounded-2xl bg-gradient-to-r from-blue-950/40 via-cyan-950/30 to-blue-950/40 border border-cyan-500/25 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
             <Shield size={24} />
@@ -134,7 +134,7 @@ export default function TaxOfficePaywall({ onEnableDemo, brokerName }: TaxOffice
           href="https://wa.me/17869680370?text=Hola%20E360,%20deseo%20activar%20mi%20Oficina%20Virtual%20de%20Taxes"
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 px-5 py-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer"
+          className="shrink-0 px-5 py-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer"
         >
           <PhoneCall size={14} />
           <span>Hablar con un Asesor</span>

@@ -164,7 +164,28 @@ export default function TaxOfficeCasesTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/60">
-              {filteredCases.length === 0 ? (
+              {cases.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 mx-auto flex items-center justify-center">
+                        <FileText size={22} />
+                      </div>
+                      <p className="text-white font-bold text-sm">Tu oficina no tiene declaraciones registradas aún</p>
+                      <p className="text-gray-400 text-xs leading-relaxed">
+                        Inicia el registro de tus clientes fiscales con el botón &ldquo;Nuevo Caso de Tax&rdquo;. Podrás dar seguimiento a formularios 1040, Schedule C, 1120-S y cobros de reembolso.
+                      </p>
+                      <button
+                        onClick={onNewCase}
+                        className="px-4 py-2 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-extrabold text-xs rounded-xl shadow-[0_0_15px_rgba(0,224,240,0.25)] cursor-pointer inline-flex items-center gap-1.5 transition-all"
+                      >
+                        <Plus size={14} />
+                        <span>Crear Primer Expediente</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredCases.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-gray-500 italic">
                     No se encontraron casos fiscales que coincidan con la búsqueda.

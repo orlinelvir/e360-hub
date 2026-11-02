@@ -18,6 +18,24 @@ export interface TaxOfficeStats {
   };
 }
 
+export const EMPTY_TAX_STATS: TaxOfficeStats = {
+  totalCollected: 0,
+  outstandingBalance: 0,
+  refundAdvances: 0,
+  paidInvoicesCount: 0,
+  averageFee: 0,
+  totalCasesCount: 0,
+  stageCounts: {
+    new: 0,
+    docs_pending: 0,
+    in_review: 0,
+    ready_to_file: 0,
+    transmitted: 0,
+    accepted: 0,
+    rejected: 0,
+  },
+};
+
 export const INITIAL_TAX_STATS: TaxOfficeStats = {
   totalCollected: 68450,
   outstandingBalance: 12300,
