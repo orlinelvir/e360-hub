@@ -259,6 +259,16 @@ export interface CaseDocument {
   documentType?: "signed_agreement";
 }
 
+export interface CaseTask {
+  id: string;
+  clientId: string;
+  title: string;
+  dueDate: string;
+  priority: "low" | "medium" | "high";
+  completed: boolean;
+  createdAt: string;
+}
+
 // ==========================================
 // OFICINA VIRTUAL E360 (TAX OFFICE SYSTEM)
 // ==========================================

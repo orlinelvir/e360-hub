@@ -4,17 +4,21 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Building, DollarSign, Phone, Mail, ArrowRight, ArrowLeft, 
-  ExternalLink, User, AlertCircle, CheckCircle2, ChevronRight, Eye 
+  ExternalLink, User, AlertCircle, CheckCircle2, ChevronRight, Eye,
+  MessageSquare, CheckSquare
 } from "lucide-react";
-import { ClientLead, PipelineStage } from "../types";
+import { ClientLead } from "../types";
+import { PipelineStage } from "../types";
 import { resolvePipelineCluster } from "@/lib/service-routing";
 import { deriveCaseStatus, REVIEW_STATUS_META } from "@/lib/services/case-status";
+import { getStoredTasksForClient } from "./crm-tools/CaseTasksSection";
 
 interface KanbanBoardProps {
   clients: ClientLead[];
   stageLabels: Record<PipelineStage, { label: string; color: string; bg: string }>;
   onUpdateStage: (id: string, newStage: PipelineStage) => void;
   onSelectClient: (client: ClientLead) => void;
+  onOpenWhatsAppScripts?: (client: ClientLead) => void;
   applicationStatusClusters: string[];
 }
 
@@ -33,6 +37,7 @@ export default function KanbanBoard({
   stageLabels,
   onUpdateStage,
   onSelectClient,
+  onOpenWhatsAppScripts,
   applicationStatusClusters,
 }: KanbanBoardProps) {
   const [draggedClientId, setDraggedClientId] = useState<string | null>(null);
@@ -196,6 +201,27 @@ export default function KanbanBoard({
                           </div>
                         )}
 
+                        {/* Badge de Tareas Pendientes */}
+                        {(() => {
+                          const clientTasks = getStoredTasksForClient(client.id);
+                          if (clientTasks.length === 0) return null;
+                          const pendingTasks = clientTasks.filter((t) => !t.completed).length;
+                          return (
+                            <div className="mt-2 flex items-center justify-between text-[10px]">
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-bold ${
+                                  pendingTasks > 0
+                                    ? "bg-cyan-500/10 text-cyan-300 border-cyan-500/30"
+                                    : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                }`}
+                              >
+                                <CheckSquare size={10} />
+                                <span>{pendingTasks > 0 ? `${pendingTasks} tareas pend.` : "Tareas listas"}</span>
+                              </span>
+                            </div>
+                          );
+                        })()}
+
                         {/* Badge de Estado Real E360 (Underwriting/Seguros) */}
                         {showApplicationStatus && (
                           <div
@@ -220,6 +246,21 @@ export default function KanbanBoard({
                           >
                             <ArrowLeft size={12} />
                           </button>
+
+                          {/* Botón WhatsApp Scripts */}
+                          {onOpenWhatsAppScripts && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenWhatsAppScripts(client);
+                              }}
+                              title="Plantillas de WhatsApp de 1 Clic"
+                              className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                            >
+                              <MessageSquare size={12} />
+                            </button>
+                          )}
 
                           {/* Botón Ver Detalle */}
                           <button

@@ -28,7 +28,8 @@ import {
   Save,
   Loader2,
   LayoutGrid,
-  Columns3
+  Columns3,
+  CheckSquare
 } from "lucide-react";
 import KanbanBoard from "./KanbanBoard";
 import { ClientLead, PipelineStage, CaseNote, CaseDocument } from "../types";
@@ -38,6 +39,9 @@ import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
 import { resolvePipelineCluster } from "@/lib/service-routing";
 import { deriveCaseStatus, REVIEW_STATUS_META } from "@/lib/services/case-status";
 import { servicesData } from "@/app/hub/broker-onboarding/data/services";
+import CrmDocumentPortalCard from "./crm-tools/CrmDocumentPortalCard";
+import CaseTasksSection, { getStoredTasksForClient } from "./crm-tools/CaseTasksSection";
+import WhatsAppQuickScriptsModal from "./crm-tools/WhatsAppQuickScriptsModal";
 
 interface MisClientesSectionProps {
   brokerName: string;
@@ -84,6 +88,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   const [selectedStage, setSelectedStage] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "kanban">("grid");
   const [selectedClient, setSelectedClient] = useState<ClientLead | null>(null);
+  const [whatsAppModalClient, setWhatsAppModalClient] = useState<ClientLead | null>(null);
   const [brokerNotes, setBrokerNotes] = useState<CaseNote[]>([]);
   const [loadingBrokerNotes, setLoadingBrokerNotes] = useState<boolean>(false);
   const [caseDocuments, setCaseDocuments] = useState<(CaseDocument & { downloadUrl: string | null })[]>([]);
@@ -811,6 +816,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
           stageLabels={stageLabels}
           onUpdateStage={handleUpdateStage}
           onSelectClient={setSelectedClient}
+          onOpenWhatsAppScripts={(client) => setWhatsAppModalClient(client)}
           applicationStatusClusters={APPLICATION_STATUS_CLUSTERS}
         />
       ) : filteredClients.length === 0 ? (
@@ -909,20 +915,40 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     <span className="truncate">{client.lastActivity}</span>
                   </p>
 
+                  {/* Badge de Tareas Pendientes */}
+                  {(() => {
+                    const clientTasks = getStoredTasksForClient(client.id);
+                    if (clientTasks.length === 0) return null;
+                    const pendingTasks = clientTasks.filter((t) => !t.completed).length;
+                    return (
+                      <div className="flex items-center gap-1.5 pt-2 border-t border-gray-800/50">
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
+                            pendingTasks > 0
+                              ? "bg-cyan-500/10 text-cyan-300 border-cyan-500/30"
+                              : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          }`}
+                        >
+                          <CheckSquare size={11} />
+                          <span>{pendingTasks > 0 ? `${pendingTasks} tareas pendientes` : "Tareas listas"}</span>
+                        </span>
+                      </div>
+                    );
+                  })()}
+
                 </div>
 
                 {/* Acciones de la Tarjeta */}
                 <div className="mt-5 pt-3 border-t border-gray-800/80 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <a
-                      href={`https://wa.me/${client.phone.replace(/[^0-9]/g, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/20 transition-colors"
-                      title="Contactar por WhatsApp"
+                    <button
+                      type="button"
+                      onClick={() => setWhatsAppModalClient(client)}
+                      className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/20 transition-colors cursor-pointer"
+                      title="Plantillas WhatsApp de 1 Clic (Auto-rellenadas con CRM)"
                     >
                       <MessageSquare size={14} />
-                    </a>
+                    </button>
                     <a
                       href={`tel:${client.phone}`}
                       className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/20 transition-colors"
@@ -962,7 +988,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 m-auto z-50 w-full max-w-xl max-h-[90vh] bg-[#0A182D] border border-gray-800 rounded-3xl p-6 md:p-8 overflow-y-auto shadow-2xl flex flex-col justify-between"
+              className="fixed inset-0 m-auto z-50 w-full max-w-3xl max-h-[90vh] bg-[#0A182D] border border-gray-800 rounded-3xl p-6 md:p-8 overflow-y-auto shadow-2xl flex flex-col justify-between"
             >
               <div>
                 {/* Header Modal */}
@@ -971,12 +997,23 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     <span className="text-xs font-mono text-cyan-400 font-bold">{selectedClient.id}</span>
                     <h2 className="text-xl font-extrabold text-white">{selectedClient.name}</h2>
                   </div>
-                  <button
-                    onClick={() => setSelectedClient(null)}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-full"
-                  >
-                    <X size={20} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setWhatsAppModalClient(selectedClient)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-colors cursor-pointer"
+                      title="Abrir plantillas de WhatsApp auto-rellenadas"
+                    >
+                      <MessageSquare size={13} />
+                      <span className="hidden sm:inline">Scripts WhatsApp</span>
+                    </button>
+                    <button
+                      onClick={() => setSelectedClient(null)}
+                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-full"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Info CRM Sync */}
@@ -1283,6 +1320,16 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                   </div>
                 </div>
 
+                {/* Portal Oficial de Documentos CRM (#2) */}
+                <div className="mt-6">
+                  <CrmDocumentPortalCard client={selectedClient} brokerName={brokerName} />
+                </div>
+
+                {/* Gestor de Tareas y Recordatorios por Caso (#3) */}
+                <div className="mt-6">
+                  <CaseTasksSection clientId={selectedClient.id} clientName={selectedClient.name} />
+                </div>
+
               </div>
 
               {/* Footer Modal */}
@@ -1443,6 +1490,14 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
           </>
         )}
       </AnimatePresence>
+
+      {/* MODAL PLANTILLAS WHATSAPP 1-CLIC (#4) */}
+      <WhatsAppQuickScriptsModal
+        client={whatsAppModalClient}
+        brokerName={brokerName}
+        isOpen={Boolean(whatsAppModalClient)}
+        onClose={() => setWhatsAppModalClient(null)}
+      />
 
     </div>
   );
