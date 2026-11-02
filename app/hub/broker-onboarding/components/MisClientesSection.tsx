@@ -26,8 +26,11 @@ import {
   Upload,
   Edit3,
   Save,
-  Loader2
+  Loader2,
+  LayoutGrid,
+  Columns3
 } from "lucide-react";
+import KanbanBoard from "./KanbanBoard";
 import { ClientLead, PipelineStage, CaseNote, CaseDocument } from "../types";
 import { useAuth } from "@/components/AuthProvider";
 import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
@@ -79,6 +82,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   const clientsRef = useRef<ClientLead[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStage, setSelectedStage] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "kanban">("grid");
   const [selectedClient, setSelectedClient] = useState<ClientLead | null>(null);
   const [brokerNotes, setBrokerNotes] = useState<CaseNote[]>([]);
   const [loadingBrokerNotes, setLoadingBrokerNotes] = useState<boolean>(false);
@@ -748,9 +752,37 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
           })}
         </div>
 
-        {/* Buscador & Nuevo Cliente */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="relative flex-grow sm:w-64">
+        {/* Buscador, Selector de Vista & Nuevo Cliente */}
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          {/* Selector de Vista: Tarjetas vs Kanban */}
+          <div className="flex items-center bg-[#05101F] p-1 rounded-xl border border-gray-800">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <LayoutGrid size={14} />
+              <span className="hidden sm:inline">Tarjetas</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("kanban")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === "kanban"
+                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <Columns3 size={14} />
+              <span>Tablero Kanban</span>
+            </button>
+          </div>
+
+          <div className="relative flex-grow sm:w-56">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
             <input
               type="text"
@@ -763,7 +795,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold rounded-xl text-xs transition-all flex items-center gap-2 shrink-0 shadow-[0_0_15px_rgba(0,224,240,0.15)]"
+            className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold rounded-xl text-xs transition-all flex items-center gap-2 shrink-0 shadow-[0_0_15px_rgba(0,224,240,0.15)] cursor-pointer"
           >
             <Plus size={16} />
             <span>Referir Cliente</span>
@@ -772,8 +804,16 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
       </div>
 
-      {/* LISTA DE CLIENTES */}
-      {filteredClients.length === 0 ? (
+      {/* LISTA DE CLIENTES: VISTA KANBAN VS VISTA TARJETAS */}
+      {viewMode === "kanban" ? (
+        <KanbanBoard
+          clients={filteredClients}
+          stageLabels={stageLabels}
+          onUpdateStage={handleUpdateStage}
+          onSelectClient={setSelectedClient}
+          applicationStatusClusters={APPLICATION_STATUS_CLUSTERS}
+        />
+      ) : filteredClients.length === 0 ? (
         <div className="bg-[#0A182D]/30 border border-gray-800/80 rounded-3xl p-12 text-center">
           <AlertCircle size={36} className="mx-auto text-gray-600 mb-3" />
           <h3 className="text-base font-bold text-gray-300">No se encontraron clientes</h3>
