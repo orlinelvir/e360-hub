@@ -1,4 +1,4 @@
-export type ActiveTab = "inicio" | "clientes" | "taxes" | "soporte" | "perfil" | "admin" | "recursos";
+export type ActiveTab = "inicio" | "clientes" | "oficina-virtual" | "taxes" | "soporte" | "perfil" | "admin" | "recursos";
 
 export type PipelineStage =
   | "lead"
@@ -75,6 +75,7 @@ export interface BrokerProfileData {
   // Reflejo del tag "payment completed (spanish)" en la subcuenta GHL de Emprende 360,
   // verificado manualmente por el staff (botón "Verificar Pago"), no sincronizado en vivo.
   packagePaid?: boolean;
+  taxOfficeAccess?: boolean;
   ghlLocationId?: string;
   ghlApiKey?: string;
   ghlSubaccountEmail?: string;
@@ -256,5 +257,78 @@ export interface CaseDocument {
   // ("Documentos" los mezcla todos). Por ahora solo distingue el PDF firmado
   // de Reparación de Crédito (ver CreditRepairIntakeModal.tsx) del resto.
   documentType?: "signed_agreement";
+}
+
+// ==========================================
+// OFICINA VIRTUAL E360 (TAX OFFICE SYSTEM)
+// ==========================================
+
+export type TaxCaseStage =
+  | "new"              // Nuevo Lead / Expediente Creado
+  | "docs_pending"     // Esperando W-2s, 1099, IDs
+  | "in_review"        // En revisión / preparación
+  | "ready_to_file"    // Listo para e-file / firmado
+  | "transmitted"      // Transmitido al IRS
+  | "accepted"         // Aprobado por el IRS
+  | "rejected";        // Rechazado (requiere corrección)
+
+export type TaxServiceType =
+  | "1040_personal"    // Declaración Personal (W-2, 1099)
+  | "schedule_c"       // 1040 con Anexo C (Trabajador Independiente / Sole Prop)
+  | "1120_corp"        // Corporación C (Form 1120)
+  | "1120s_scorp"      // Corporación S (Form 1120-S)
+  | "1065_partnership" // Sociedad Comercial (Form 1065)
+  | "amendment_1040x"  // Enmienda de Año Anterior (1040-X)
+  | "itin_application"; // Solicitud o Renovación W-7 / ITIN
+
+export interface TaxCase {
+  id: string;
+  brokerId: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  taxYear: number;
+  serviceType: TaxServiceType;
+  stage: TaxCaseStage;
+  filingStatus?: "single" | "married_joint" | "married_separate" | "head_of_household" | "qualifying_widow";
+  agreedFee: number;
+  bankProduct: boolean;
+  bankPartner?: "sbtpg" | "refund_advantage" | "republic" | "eps" | "none";
+  refundAdvanceRequested?: boolean;
+  estimatedRefund?: number;
+  assignedPreparer?: string;
+  documentsCount: number;
+  notes?: string;
+  irsAckCode?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaxInvoice {
+  id: string;
+  invoiceNumber: string;
+  caseId?: string;
+  clientName: string;
+  clientEmail: string;
+  amount: number;
+  status: "paid" | "pending" | "overdue" | "cancelled";
+  paymentMethod: "refund_deduction" | "card" | "zelle" | "cash";
+  taxYear: number;
+  dueDate: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface TaxCommissionItem {
+  id: string;
+  preparerName: string;
+  preparerEmail: string;
+  totalReturns: number;
+  grossVolume: number;
+  splitPercentage: number;
+  e360FeeDeduction: number; // $60 si está bajo mentoría / EFIN E360
+  netCommission: number;
+  status: "pending" | "paid";
+  lastPayoutDate?: string;
 }
 

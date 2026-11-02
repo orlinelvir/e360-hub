@@ -27,6 +27,7 @@ interface BrokerUserProfile {
   nmlsId?: string;
   createdAt?: string;
   brokerId?: string;
+  taxOfficeAccess?: boolean;
 }
 
 // Llamado tras cualquier creación/carga del perfil — asigna (o confirma)

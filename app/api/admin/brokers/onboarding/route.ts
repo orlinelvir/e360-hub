@@ -83,7 +83,8 @@ export async function GET(request: Request) {
         ghlSubaccountEmail: data.ghlSubaccountEmail || "",
         ghlConnected: Boolean(data.ghlConnected),
         ghlApiKeyPreview
-      }
+      },
+      taxOfficeAccess: Boolean(data.taxOfficeAccess)
     });
   } catch (error) {
     console.error("Admin brokers onboarding GET error:", error);
@@ -298,6 +299,13 @@ export async function PATCH(request: Request) {
         console.error("Error verificando credenciales GHL del broker:", err);
         return NextResponse.json({ valid: false, error: "No se pudo verificar la conexión." });
       }
+    }
+
+    if (action === "toggle_tax_office") {
+      const { enabled } = body;
+      const isEnabled = Boolean(enabled);
+      await brokerRef.update({ taxOfficeAccess: isEnabled });
+      return NextResponse.json({ success: true, taxOfficeAccess: isEnabled });
     }
 
     return NextResponse.json({ error: "action no reconocida" }, { status: 400 });

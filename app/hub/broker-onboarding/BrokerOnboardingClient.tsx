@@ -33,6 +33,7 @@ import AdmisionFormModal from "./components/AdmisionFormModal";
 import CreditRepairIntakeModal from "./components/CreditRepairIntakeModal";
 import NotificationBell from "./components/NotificationBell";
 import TaxSoftwareContent from "@/components/taxes/TaxSoftwareContent";
+import TaxOfficeSection from "./components/TaxOfficeSection";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 import { isMasterAdminEmail } from "@/lib/roles";
@@ -518,6 +519,7 @@ export default function BrokerOnboardingClient() {
                   {[
                     { id: "inicio", label: "Inicio / Servicios" },
                     { id: "clientes", label: "Mis Clientes (CRM)" },
+                    { id: "oficina-virtual", label: "Oficina Virtual", badge: "PRO" },
                     { id: "taxes", label: "Software Taxes" },
                     { id: "soporte", label: "Soporte VIP" },
                     { id: "recursos", label: "Recursos" },
@@ -527,13 +529,18 @@ export default function BrokerOnboardingClient() {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as ActiveTab)}
-                      className={`text-xs uppercase tracking-widest py-1 transition-all ${
+                      className={`text-xs uppercase tracking-widest py-1 transition-all flex items-center gap-1.5 ${
                         activeTab === tab.id
                           ? "font-extrabold text-cyan-400 border-b-2 border-cyan-400"
                           : "font-semibold text-gray-400 hover:text-white"
                       }`}
                     >
-                      {tab.label}
+                      <span>{tab.label}</span>
+                      {"badge" in tab && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-gradient-to-r from-amber-500/20 to-amber-400/20 text-amber-300 border border-amber-500/40">
+                          {tab.badge}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -587,6 +594,7 @@ export default function BrokerOnboardingClient() {
                 {[
                   { id: "inicio", label: "Inicio" },
                   { id: "clientes", label: "Clientes" },
+                  { id: "oficina-virtual", label: "Oficina Tax" },
                   { id: "taxes", label: "Taxes" },
                   { id: "soporte", label: "Soporte" },
                   { id: "recursos", label: "Recursos" },
@@ -768,6 +776,12 @@ export default function BrokerOnboardingClient() {
                   crmLocationId={userLocationId}
                   crmApiKey={userApiKey}
                 />
+              </main>
+            )}
+
+            {activeTab === "oficina-virtual" && (
+              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+                <TaxOfficeSection brokerName={brokerName} />
               </main>
             )}
 
