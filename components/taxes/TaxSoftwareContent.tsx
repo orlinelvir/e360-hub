@@ -14,7 +14,6 @@ import {
   Lock,
   PenLine,
   ScanLine,
-  Settings,
   Smartphone,
   Sparkles,
   Users,

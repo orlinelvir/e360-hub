@@ -69,6 +69,10 @@ export interface BrokerProfileData {
   email: string;
   name?: string;
   brokerId?: string;
+  // Entero crudo detrás de brokerId (ej. 123 para "E360-000123") — se guarda
+  // junto a brokerId en la misma transacción (ver
+  // lib/services/broker-registration.ts) para no tener que parsear el string.
+  brokerSequence?: number;
   phone?: string;
   tier?: "Junior Broker" | "Senior Broker VIP" | "Master Broker" | string;
   onboardingStage?: OnboardingStage;
@@ -340,5 +344,24 @@ export interface TaxCommissionItem {
   netCommission: number;
   status: "pending" | "paid";
   lastPayoutDate?: string;
+}
+
+// Datos de entrada que el broker llena en los formularios de creación — el
+// servidor asigna id/brokerId/stage/documentsCount/timestamps (TaxCase) o
+// invoiceNumber/dueDate/createdAt (TaxInvoice), y calcula e360FeeDeduction/
+// netCommission a partir de los campos crudos (TaxCommissionItem).
+export type NewTaxCaseInput = Omit<TaxCase, "id" | "brokerId" | "stage" | "documentsCount" | "createdAt" | "updatedAt">;
+
+export type NewTaxInvoiceInput = Pick<TaxInvoice, "clientName" | "clientEmail" | "amount" | "paymentMethod" | "taxYear"> & {
+  caseId?: string;
+};
+
+export interface NewTaxCommissionInput {
+  preparerName: string;
+  preparerEmail: string;
+  totalReturns: number;
+  grossVolume: number;
+  splitPercentage: number;
+  underMentorship: boolean;
 }
 

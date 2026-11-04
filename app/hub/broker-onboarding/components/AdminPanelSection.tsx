@@ -476,6 +476,7 @@ export default function AdminPanelSection() {
               onRefresh={fetchCases}
               focusCase={focusCase}
               onFocusCaseHandled={() => setFocusCase(null)}
+              isFullAdmin={isFullAdmin}
             />
           )}
           {activeTab === "roles" && (

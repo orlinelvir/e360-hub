@@ -37,7 +37,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
 import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
 import { resolvePipelineCluster } from "@/lib/service-routing";
-import { deriveCaseStatus, REVIEW_STATUS_META } from "@/lib/services/case-status";
+import { deriveCaseStatus, REVIEW_STATUS_META, CREDIT_REPAIR_STATUS_META } from "@/lib/services/case-status";
 import { servicesData } from "@/app/hub/broker-onboarding/data/services";
 import CrmDocumentPortalCard from "./crm-tools/CrmDocumentPortalCard";
 import CaseTasksSection, { getStoredTasksForClient } from "./crm-tools/CaseTasksSection";
@@ -834,7 +834,14 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
             const safeAmount = Number(client.amount) || 0;
             const safeCommission = Number(client.estimatedCommission) || 0;
             const cluster = resolvePipelineCluster(client.serviceId, client.serviceName);
-            const applicationStatusInfo = REVIEW_STATUS_META[deriveCaseStatus(client).reviewStatus];
+            // Reparación de Crédito tiene su propio vocabulario (Activo/Pausado/
+            // Cancelado) — sin pasar el cluster, un cliente pausado se mostraba
+            // como "Declinado" y uno activo como "Fondeado / Pagado".
+            const { reviewStatus: clientReviewStatus, creditRepairStatus: clientCreditRepairStatus } = deriveCaseStatus(client, cluster);
+            const applicationStatusInfo =
+              cluster === "credit_repair"
+                ? CREDIT_REPAIR_STATUS_META[clientCreditRepairStatus || "pending_verification"]
+                : REVIEW_STATUS_META[clientReviewStatus];
             const showApplicationStatus = APPLICATION_STATUS_CLUSTERS.includes(cluster);
             return (
               <motion.div
@@ -1039,7 +1046,11 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                 {(() => {
                   const cluster = resolvePipelineCluster(selectedClient.serviceId, selectedClient.serviceName);
                   if (!APPLICATION_STATUS_CLUSTERS.includes(cluster)) return null;
-                  const info = REVIEW_STATUS_META[deriveCaseStatus(selectedClient).reviewStatus];
+                  const { reviewStatus: selectedReviewStatus, creditRepairStatus: selectedCreditRepairStatus } = deriveCaseStatus(selectedClient, cluster);
+                  const info =
+                    cluster === "credit_repair"
+                      ? CREDIT_REPAIR_STATUS_META[selectedCreditRepairStatus || "pending_verification"]
+                      : REVIEW_STATUS_META[selectedReviewStatus];
                   return (
                     <div className="mb-6 bg-[#05101F] border border-gray-800 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center justify-between">
@@ -1322,12 +1333,15 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
 
                 {/* Portal Oficial de Documentos CRM (#2) */}
                 <div className="mt-6">
-                  <CrmDocumentPortalCard client={selectedClient} brokerName={brokerName} />
+                  <CrmDocumentPortalCard client={selectedClient} />
                 </div>
 
                 {/* Gestor de Tareas y Recordatorios por Caso (#3) */}
                 <div className="mt-6">
-                  <CaseTasksSection clientId={selectedClient.id} clientName={selectedClient.name} />
+                  {/* key=clientId: fuerza que React remonte el componente al
+                      cambiar de cliente, en vez de reutilizar la instancia y
+                      depender de un efecto para resincronizar el estado. */}
+                  <CaseTasksSection key={selectedClient.id} clientId={selectedClient.id} clientName={selectedClient.name} />
                 </div>
 
               </div>

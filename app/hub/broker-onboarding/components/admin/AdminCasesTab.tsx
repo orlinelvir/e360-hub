@@ -31,7 +31,8 @@ import {
   Eye,
   EyeOff,
   PauseCircle,
-  PlayCircle
+  PlayCircle,
+  Trash2
 } from "lucide-react";
 import { CaseNote, CaseNoteCategory, CaseDocument } from "../../types";
 import {
@@ -100,6 +101,10 @@ interface AdminCasesTabProps {
   // en Actividad del Staff) en vez de solo mostrar el nombre sin acción posible.
   focusCase?: { brokerId: string; clientId: string } | null;
   onFocusCaseHandled?: () => void;
+  // Borrar una admisión es irreversible — se oculta por completo para
+  // cualquier rol que no sea admin estricto, igual que ya exige
+  // DELETE /api/admin/cases server-side.
+  isFullAdmin?: boolean;
 }
 
 const CLUSTER_META: Record<string, { emoji: string; label: string }> = {
@@ -169,7 +174,7 @@ function RowGroup({
   );
 }
 
-export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, onFocusCaseHandled }: AdminCasesTabProps) {
+export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, onFocusCaseHandled, isFullAdmin }: AdminCasesTabProps) {
   const [search, setSearch] = useState<string>("");
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
   const [selectedServiceId, setSelectedServiceId] = useState<string>("all");
@@ -201,6 +206,12 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
   const [editCommission, setEditCommission] = useState<string>("");
   const [statusReason, setStatusReason] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
+
+  // Borrado de admisión duplicada (solo admin — ver isFullAdmin arriba)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState<string>("");
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string>("");
   const [saveError, setSaveError] = useState<string>("");
 
   // Expediente de Caso: notas segmentadas por audiencia + documentos
@@ -414,6 +425,9 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
     setCredentials(null);
     setCredentialsError("");
     setRevealSecret(false);
+    setShowDeleteConfirm(false);
+    setDeleteConfirmName("");
+    setDeleteError("");
     fetchCaseNotes(c.brokerId, c.id);
     fetchCaseDocuments(c.brokerId, c.id);
   };
@@ -482,6 +496,34 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
       setSaveError(msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteCase = async () => {
+    if (!activeCase) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch("/api/admin/cases", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brokerId: activeCase.brokerId,
+          clientId: activeCase.id,
+          confirmName: deleteConfirmName
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al eliminar el caso");
+
+      setShowDeleteConfirm(false);
+      setDeleteConfirmName("");
+      setActiveCase(null);
+      onRefresh();
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -1390,25 +1432,110 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
               </div>
 
               {/* Botones de Acción */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-800">
-                <button
-                  type="button"
-                  onClick={() => setActiveCase(null)}
-                  className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-bold transition-colors"
-                >
-                  Cerrar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSaveCase()}
-                  disabled={saving}
-                  className="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-extrabold transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(0,224,240,0.3)] disabled:opacity-50"
-                >
-                  {saving ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
-                  <span>{saving ? "Guardando..." : "Guardar Estado y Comisión"}</span>
-                </button>
+              <div className="flex items-center justify-between gap-3 pt-4 border-t border-gray-800">
+                {isFullAdmin ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
+                  >
+                    <Trash2 size={14} />
+                    <span>Eliminar Caso</span>
+                  </button>
+                ) : (
+                  <span />
+                )}
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveCase(null)}
+                    className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-bold transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveCase()}
+                    disabled={saving}
+                    className="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-extrabold transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(0,224,240,0.3)] disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                    <span>{saving ? "Guardando..." : "Guardar Estado y Comisión"}</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
+
+            {/* Confirmación de Borrado — escribir el nombre exacto evita borrar
+                el duplicado equivocado cuando hay varias admisiones similares. */}
+            {showDeleteConfirm && activeCase && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-[#0A182D] border border-red-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
+                >
+                  <div className="flex items-center gap-2 text-red-400">
+                    <AlertTriangle size={18} />
+                    <h4 className="font-extrabold text-sm">Eliminar admisión permanentemente</h4>
+                  </div>
+
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Esto borra el caso de <strong className="text-white">{activeCase.name}</strong> ({activeCase.serviceName}) y todas
+                    sus notas, documentos y archivos adjuntos. <strong className="text-red-300">No se puede deshacer.</strong>
+                  </p>
+
+                  {(activeCase.ghlContactId || activeCase.ghlOpportunityId) && (
+                    <p className="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5 leading-relaxed">
+                      Este caso tiene contacto/oportunidad sincronizados en GHL (ID: {activeCase.ghlContactId || activeCase.ghlOpportunityId}).
+                      Esta acción NO borra nada en GHL — revísalo ahí manualmente si corresponde.
+                    </p>
+                  )}
+
+                  {deleteError && (
+                    <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg p-2.5">{deleteError}</p>
+                  )}
+
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">
+                      Escribe el nombre exacto del cliente para confirmar
+                    </label>
+                    <input
+                      type="text"
+                      value={deleteConfirmName}
+                      onChange={(e) => setDeleteConfirmName(e.target.value)}
+                      placeholder={activeCase.name}
+                      className="w-full bg-[#05101F] border border-gray-800 focus:border-red-400 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-600 outline-none transition-colors text-xs"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setDeleteConfirmName("");
+                        setDeleteError("");
+                      }}
+                      className="px-4 py-2 rounded-xl border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors text-xs font-semibold"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteCase}
+                      disabled={deleting || deleteConfirmName.trim().toLowerCase() !== activeCase.name.trim().toLowerCase()}
+                      className="px-4 py-2 bg-red-500 hover:bg-red-400 text-black rounded-xl text-xs font-extrabold transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                      <span>{deleting ? "Eliminando..." : "Eliminar Definitivamente"}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
           </div>
         )}
       </AnimatePresence>

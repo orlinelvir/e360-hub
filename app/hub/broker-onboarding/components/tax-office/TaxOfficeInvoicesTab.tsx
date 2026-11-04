@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign, Plus, CheckCircle2, Clock, AlertTriangle, FileText, Send, X } from "lucide-react";
-import { TaxInvoice } from "../../types";
+import { Plus, CheckCircle2, Clock, X } from "lucide-react";
+import { TaxInvoice, NewTaxInvoiceInput } from "../../types";
 
 interface TaxOfficeInvoicesTabProps {
   invoices: TaxInvoice[];
-  onAddInvoice: (inv: TaxInvoice) => void;
+  onAddInvoice: (input: NewTaxInvoiceInput) => Promise<boolean>;
 }
 
 export default function TaxOfficeInvoicesTab({ invoices, onAddInvoice }: TaxOfficeInvoicesTabProps) {
@@ -15,6 +15,7 @@ export default function TaxOfficeInvoicesTab({ invoices, onAddInvoice }: TaxOffi
   const [clientEmail, setClientEmail] = useState("");
   const [amount, setAmount] = useState<number>(350);
   const [paymentMethod, setPaymentMethod] = useState<TaxInvoice["paymentMethod"]>("refund_deduction");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatMoney = (val: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
@@ -23,27 +24,26 @@ export default function TaxOfficeInvoicesTab({ invoices, onAddInvoice }: TaxOffi
   const totalPaid = invoices.filter((i) => i.status === "paid").reduce((acc, curr) => acc + curr.amount, 0);
   const totalPending = invoices.filter((i) => i.status === "pending").reduce((acc, curr) => acc + curr.amount, 0);
 
-  const handleCreateInvoice = (e: React.FormEvent) => {
+  const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim()) return;
 
-    const newInv: TaxInvoice = {
-      id: `INV-${Date.now()}`,
-      invoiceNumber: `INV-${Math.floor(8000 + Math.random() * 1999)}`,
+    setIsSubmitting(true);
+    const input: NewTaxInvoiceInput = {
       clientName: clientName.trim(),
       clientEmail: clientEmail.trim() || "cliente@gmail.com",
       amount: Number(amount) || 0,
-      status: "pending",
       paymentMethod,
-      taxYear: 2025,
-      dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
-      createdAt: new Date().toISOString().split("T")[0],
+      taxYear: new Date().getFullYear(),
     };
 
-    onAddInvoice(newInv);
-    setIsModalOpen(false);
-    setClientName("");
-    setClientEmail("");
+    const success = await onAddInvoice(input);
+    setIsSubmitting(false);
+    if (success) {
+      setIsModalOpen(false);
+      setClientName("");
+      setClientEmail("");
+    }
   };
 
   return (
@@ -210,9 +210,10 @@ export default function TaxOfficeInvoicesTab({ invoices, onAddInvoice }: TaxOffi
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-cyan-500 text-black font-extrabold rounded-xl hover:bg-cyan-400"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-cyan-500 text-black font-extrabold rounded-xl hover:bg-cyan-400 disabled:opacity-50"
                 >
-                  Generar Factura
+                  {isSubmitting ? "Generando..." : "Generar Factura"}
                 </button>
               </div>
             </form>

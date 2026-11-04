@@ -1,16 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { 
-  Building, DollarSign, Phone, Mail, ArrowRight, ArrowLeft, 
-  ExternalLink, User, AlertCircle, CheckCircle2, ChevronRight, Eye,
-  MessageSquare, CheckSquare
-} from "lucide-react";
+import { ArrowRight, ArrowLeft, Eye, MessageSquare, CheckSquare } from "lucide-react";
 import { ClientLead } from "../types";
 import { PipelineStage } from "../types";
 import { resolvePipelineCluster } from "@/lib/service-routing";
-import { deriveCaseStatus, REVIEW_STATUS_META } from "@/lib/services/case-status";
+import { deriveCaseStatus, REVIEW_STATUS_META, CREDIT_REPAIR_STATUS_META } from "@/lib/services/case-status";
 import { getStoredTasksForClient } from "./crm-tools/CaseTasksSection";
 
 interface KanbanBoardProps {
@@ -158,7 +153,15 @@ export default function KanbanBoard({
                     const safeAmount = Number(client.amount) || 0;
                     const safeCommission = Number(client.estimatedCommission) || 0;
                     const cluster = resolvePipelineCluster(client.serviceId, client.serviceName);
-                    const applicationStatusInfo = REVIEW_STATUS_META[deriveCaseStatus(client).reviewStatus];
+                    // Reparación de Crédito tiene su propio vocabulario (Activo/Pausado/
+                    // Cancelado) — pasarle el cluster evita que un cliente pausado se
+                    // muestre como "Declinado" o uno activo como "Fondeado / Pagado",
+                    // que no aplica a una suscripción de $10/mes. Ver AdminCasesTab.tsx.
+                    const { reviewStatus, creditRepairStatus } = deriveCaseStatus(client, cluster);
+                    const applicationStatusInfo =
+                      cluster === "credit_repair"
+                        ? CREDIT_REPAIR_STATUS_META[creditRepairStatus || "pending_verification"]
+                        : REVIEW_STATUS_META[reviewStatus];
                     const showApplicationStatus = applicationStatusClusters.includes(cluster);
 
                     const currentIndex = STAGE_ORDER.indexOf(client.stage);

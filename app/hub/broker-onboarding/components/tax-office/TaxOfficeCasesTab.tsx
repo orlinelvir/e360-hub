@@ -1,11 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { 
-  Search, Plus, Filter, FileText, CheckCircle2, Clock, Landmark, 
-  Send, AlertTriangle, Eye, X, ChevronRight, User, Phone, Mail 
-} from "lucide-react";
-import { TaxCase, TaxCaseStage, TaxServiceType } from "../../types";
+import { Search, Plus, FileText, X } from "lucide-react";
+import { TaxCase, TaxCaseStage } from "../../types";
 
 interface TaxOfficeCasesTabProps {
   cases: TaxCase[];
@@ -23,6 +20,7 @@ const STAGES: { id: TaxCaseStage | "all"; label: string }[] = [
   { id: "ready_to_file", label: "Listos para E-File" },
   { id: "transmitted", label: "Transmitidos al IRS" },
   { id: "accepted", label: "Aceptados / Pagados" },
+  { id: "rejected", label: "Rechazados" },
 ];
 
 export default function TaxOfficeCasesTab({
@@ -68,6 +66,8 @@ export default function TaxOfficeCasesTab({
         return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       case "accepted":
         return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      case "rejected":
+        return "bg-red-500/10 text-red-400 border-red-500/20";
       default:
         return "bg-gray-500/10 text-gray-400 border-gray-500/20";
     }
@@ -87,6 +87,8 @@ export default function TaxOfficeCasesTab({
         return "Transmitido";
       case "accepted":
         return "Aceptado IRS";
+      case "rejected":
+        return "Rechazado IRS";
       default:
         return stage;
     }
@@ -289,13 +291,15 @@ export default function TaxOfficeCasesTab({
               <div>
                 <span className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider">Avanzar Estado del Expediente</span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                  {(["new", "docs_pending", "in_review", "ready_to_file", "transmitted", "accepted"] as TaxCaseStage[]).map((st) => (
+                  {(["new", "docs_pending", "in_review", "ready_to_file", "transmitted", "accepted", "rejected"] as TaxCaseStage[]).map((st) => (
                     <button
                       key={st}
                       onClick={() => onUpdateCaseStage(selectedCase.id, st)}
                       className={`p-2 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
                         selectedCase.stage === st
-                          ? "bg-cyan-500/20 text-cyan-300 border-cyan-400 ring-1 ring-cyan-400"
+                          ? st === "rejected"
+                            ? "bg-red-500/20 text-red-300 border-red-400 ring-1 ring-red-400"
+                            : "bg-cyan-500/20 text-cyan-300 border-cyan-400 ring-1 ring-cyan-400"
                           : "bg-gray-900/40 text-gray-400 border-gray-800 hover:border-gray-700"
                       }`}
                     >

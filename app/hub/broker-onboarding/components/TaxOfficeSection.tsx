@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { LayoutDashboard, FolderKanban, Receipt, Users, FileText, Sparkles, Plus, Eye } from "lucide-react";
 import TaxOfficePaywall from "./tax-office/TaxOfficePaywall";
@@ -10,14 +10,22 @@ import TaxOfficeInvoicesTab from "./tax-office/TaxOfficeInvoicesTab";
 import TaxOfficeCommissionsTab from "./tax-office/TaxOfficeCommissionsTab";
 import TaxOfficeTemplatesTab from "./tax-office/TaxOfficeTemplatesTab";
 import NewTaxCaseModal from "./tax-office/NewTaxCaseModal";
-import { 
-  INITIAL_TAX_CASES, 
-  INITIAL_TAX_INVOICES, 
-  INITIAL_TAX_COMMISSIONS, 
-  INITIAL_TAX_STATS, 
-  TaxOfficeStats 
+import {
+  INITIAL_TAX_CASES,
+  INITIAL_TAX_INVOICES,
+  INITIAL_TAX_COMMISSIONS,
+  INITIAL_TAX_STATS,
+  TaxOfficeStats
 } from "./tax-office/mock-tax-data";
-import { TaxCase, TaxCaseStage, TaxInvoice } from "../types";
+import {
+  TaxCase,
+  TaxCaseStage,
+  TaxInvoice,
+  TaxCommissionItem,
+  NewTaxCaseInput,
+  NewTaxInvoiceInput,
+  NewTaxCommissionInput
+} from "../types";
 
 type SubTab = "dashboard" | "cases" | "invoices" | "commissions" | "templates";
 
@@ -26,7 +34,7 @@ interface TaxOfficeSectionProps {
 }
 
 export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const isAdmin = profile?.role === "admin";
   const hasAccess = Boolean(profile?.taxOfficeAccess || isAdmin);
 
@@ -35,19 +43,50 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
   const isViewingSample = isDemoMode || showSampleData;
 
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("dashboard");
-  
-  // Casos reales del broker vs datos de demostración
+
+  // Casos reales del broker (persistidos vía API) vs datos de demostración
   const [realCases, setRealCases] = useState<TaxCase[]>([]);
   const [realInvoices, setRealInvoices] = useState<TaxInvoice[]>([]);
+  const [realCommissions, setRealCommissions] = useState<TaxCommissionItem[]>([]);
   const [demoCases, setDemoCases] = useState<TaxCase[]>(INITIAL_TAX_CASES);
   const [demoInvoices, setDemoInvoices] = useState<TaxInvoice[]>(INITIAL_TAX_INVOICES);
+  const [demoCommissions, setDemoCommissions] = useState<TaxCommissionItem[]>(INITIAL_TAX_COMMISSIONS);
 
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<TaxCase | null>(null);
 
   const activeCases = isViewingSample ? demoCases : realCases;
   const activeInvoices = isViewingSample ? demoInvoices : realInvoices;
-  const activeCommissions = isViewingSample ? INITIAL_TAX_COMMISSIONS : [];
+  const activeCommissions = isViewingSample ? demoCommissions : realCommissions;
+
+  // Carga los datos reales una sola vez cuando la cuenta tiene acceso pagado —
+  // independiente de si en ese momento se está viendo la muestra de demo.
+  useEffect(() => {
+    if (!hasAccess || !user) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const token = await user.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` };
+        const [casesRes, invoicesRes, commissionsRes] = await Promise.all([
+          fetch("/api/tax-office/cases", { headers }),
+          fetch("/api/tax-office/invoices", { headers }),
+          fetch("/api/tax-office/commissions", { headers })
+        ]);
+        if (cancelled) return;
+        if (casesRes.ok) setRealCases((await casesRes.json()).cases);
+        if (invoicesRes.ok) setRealInvoices((await invoicesRes.json()).invoices);
+        if (commissionsRes.ok) setRealCommissions((await commissionsRes.json()).commissions);
+      } catch (error) {
+        console.error("Error cargando datos de Oficina Virtual E360:", error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAccess, user]);
 
   // Cálculo dinámico de métricas para datos reales
   const activeStats: TaxOfficeStats = useMemo(() => {
@@ -97,36 +136,145 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
     };
   }, [isViewingSample, activeCases, activeInvoices]);
 
-  const handleCaseCreated = (newCase: TaxCase) => {
-    if (isViewingSample) {
-      setDemoCases((prev) => [newCase, ...prev]);
-    } else {
-      setRealCases((prev) => [newCase, ...prev]);
-    }
-  };
+  const handleCaseCreated = useCallback(
+    async (input: NewTaxCaseInput): Promise<boolean> => {
+      if (isViewingSample) {
+        const now = new Date().toISOString();
+        const newCase: TaxCase = {
+          ...input,
+          id: `TC-DEMO-${Math.floor(100 + Math.random() * 900)}`,
+          brokerId: "demo",
+          stage: "new",
+          documentsCount: 0,
+          createdAt: now,
+          updatedAt: now
+        };
+        setDemoCases((prev) => [newCase, ...prev]);
+        return true;
+      }
 
-  const handleUpdateCaseStage = (caseId: string, newStage: TaxCaseStage) => {
-    const updater = (prev: TaxCase[]) =>
-      prev.map((c) => (c.id === caseId ? { ...c, stage: newStage, updatedAt: new Date().toISOString() } : c));
+      if (!user) return false;
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("/api/tax-office/cases", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(input)
+        });
+        if (!res.ok) return false;
+        const { case: newCase } = (await res.json()) as { case: TaxCase };
+        setRealCases((prev) => [newCase, ...prev]);
+        return true;
+      } catch (error) {
+        console.error("Error creando caso fiscal:", error);
+        return false;
+      }
+    },
+    [isViewingSample, user]
+  );
 
-    if (isViewingSample) {
-      setDemoCases(updater);
-    } else {
-      setRealCases(updater);
-    }
+  const handleUpdateCaseStage = useCallback(
+    (caseId: string, newStage: TaxCaseStage) => {
+      const updater = (prev: TaxCase[]) =>
+        prev.map((c) => (c.id === caseId ? { ...c, stage: newStage, updatedAt: new Date().toISOString() } : c));
 
-    if (selectedCase && selectedCase.id === caseId) {
-      setSelectedCase((prev) => (prev ? { ...prev, stage: newStage } : null));
-    }
-  };
+      if (isViewingSample) {
+        setDemoCases(updater);
+      } else {
+        setRealCases(updater);
+        if (user) {
+          user.getIdToken().then((token) => {
+            fetch(`/api/tax-office/cases/${caseId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ stage: newStage })
+            }).catch((error) => console.error("Error actualizando etapa del caso fiscal:", error));
+          });
+        }
+      }
 
-  const handleAddInvoice = (newInv: TaxInvoice) => {
-    if (isViewingSample) {
-      setDemoInvoices((prev) => [newInv, ...prev]);
-    } else {
-      setRealInvoices((prev) => [newInv, ...prev]);
-    }
-  };
+      if (selectedCase && selectedCase.id === caseId) {
+        setSelectedCase((prev) => (prev ? { ...prev, stage: newStage } : null));
+      }
+    },
+    [isViewingSample, user, selectedCase]
+  );
+
+  const handleAddInvoice = useCallback(
+    async (input: NewTaxInvoiceInput): Promise<boolean> => {
+      if (isViewingSample) {
+        const now = new Date();
+        const newInv: TaxInvoice = {
+          id: `INV-DEMO-${Math.floor(8000 + Math.random() * 1999)}`,
+          invoiceNumber: `INV-${Math.floor(8000 + Math.random() * 1999)}`,
+          ...input,
+          status: "pending",
+          dueDate: new Date(now.getTime() + 7 * 86400000).toISOString().split("T")[0],
+          createdAt: now.toISOString().split("T")[0]
+        };
+        setDemoInvoices((prev) => [newInv, ...prev]);
+        return true;
+      }
+
+      if (!user) return false;
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("/api/tax-office/invoices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(input)
+        });
+        if (!res.ok) return false;
+        const { invoice: newInvoice } = (await res.json()) as { invoice: TaxInvoice };
+        setRealInvoices((prev) => [newInvoice, ...prev]);
+        return true;
+      } catch (error) {
+        console.error("Error creando factura fiscal:", error);
+        return false;
+      }
+    },
+    [isViewingSample, user]
+  );
+
+  const handleAddCommission = useCallback(
+    async (input: NewTaxCommissionInput): Promise<boolean> => {
+      if (isViewingSample) {
+        const e360FeeDeduction = input.underMentorship ? input.totalReturns * 60 : 0;
+        const netCommission = Math.round(input.grossVolume * (input.splitPercentage / 100)) - e360FeeDeduction;
+        const newCommission: TaxCommissionItem = {
+          id: `COMM-DEMO-${Math.floor(100 + Math.random() * 900)}`,
+          preparerName: input.preparerName,
+          preparerEmail: input.preparerEmail,
+          totalReturns: input.totalReturns,
+          grossVolume: input.grossVolume,
+          splitPercentage: input.splitPercentage,
+          e360FeeDeduction,
+          netCommission,
+          status: "pending"
+        };
+        setDemoCommissions((prev) => [newCommission, ...prev]);
+        return true;
+      }
+
+      if (!user) return false;
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("/api/tax-office/commissions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(input)
+        });
+        if (!res.ok) return false;
+        const { commission: newCommission } = (await res.json()) as { commission: TaxCommissionItem };
+        setRealCommissions((prev) => [newCommission, ...prev]);
+        return true;
+      } catch (error) {
+        console.error("Error creando comisión fiscal:", error);
+        return false;
+      }
+    },
+    [isViewingSample, user]
+  );
 
   // Si no tiene acceso pagado y no activó el modo demo, mostramos el Paywall
   if (!hasAccess && !isDemoMode) {
@@ -177,7 +325,7 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
           <div className="flex items-center gap-2">
             <Sparkles size={14} className="text-cyan-400 shrink-0" />
             <span>
-              <strong>Viendo datos de ejemplo:</strong> Estas cifras corresponden a la demostración comercial de MyOffice.
+              <strong>Viendo datos de ejemplo:</strong> Estas cifras corresponden a la demostración comercial de Oficina Virtual E360.
             </span>
           </div>
           <button
@@ -266,7 +414,7 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
       )}
 
       {activeSubTab === "commissions" && (
-        <TaxOfficeCommissionsTab commissions={activeCommissions} />
+        <TaxOfficeCommissionsTab commissions={activeCommissions} onAddCommission={handleAddCommission} />
       )}
 
       {activeSubTab === "templates" && <TaxOfficeTemplatesTab />}

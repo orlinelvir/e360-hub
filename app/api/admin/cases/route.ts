@@ -6,6 +6,7 @@ import { sendCaseStatusEmail, sendCreditRepairStatusEmail, sendWelcomeApplicatio
 import { CaseEmailStatus } from "@/lib/email/templates/CaseStatusEmail";
 import { CreditRepairEmailStatus } from "@/lib/email/templates/CreditRepairStatusEmail";
 import { createNotification } from "@/lib/services/notification-service";
+import { deleteBrokerClient } from "@/lib/services/case-service";
 import {
   deriveCaseStatus,
   justGotVerified,
@@ -391,6 +392,81 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: true, updated: updatePayload });
   } catch (error) {
     console.error("Admin cases PATCH error:", error);
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+// Borrado de admisiones/casos — más sensible e irreversible que PATCH, así que
+// se exige rol admin estricto (no solo el permiso "edit_cases", que también
+// tienen los especialistas de vertical). Caso de uso real: admisiones
+// duplicadas por doble envío del formulario de intake (sin validación contra
+// duplicados — ver lib/services/case-service.ts). Pensado para usarse desde
+// el panel de admin, nunca por el broker.
+export async function DELETE(request: Request) {
+  const user = await verifyAuthToken(request);
+  if (!user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  if (!adminDb) {
+    return NextResponse.json({ error: "Servidor no configurado" }, { status: 500 });
+  }
+
+  try {
+    const role = await resolveUserRole(adminDb, user.uid, user.email);
+    if (role !== "admin") {
+      return NextResponse.json({ error: "Solo un administrador puede eliminar una admisión." }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { brokerId, clientId, confirmName } = body;
+
+    if (!brokerId || !clientId || !confirmName) {
+      return NextResponse.json({ error: "brokerId, clientId y confirmName son requeridos" }, { status: 400 });
+    }
+
+    const clientRef = adminDb.collection("brokers").doc(brokerId).collection("clients").doc(clientId);
+    const clientSnap = await clientRef.get();
+    if (!clientSnap.exists) {
+      return NextResponse.json({ error: "Caso no encontrado" }, { status: 404 });
+    }
+
+    const actualName = (clientSnap.data()!.name || "").trim().toLowerCase();
+    // Defensa contra borrar el duplicado equivocado: el admin debe escribir
+    // el nombre exacto del cliente que está viendo antes de que el botón se
+    // active (ver AdminCasesTab.tsx) — esto solo confirma que el servidor
+    // recibió ese mismo nombre, no reemplaza esa verificación visual.
+    if (actualName !== String(confirmName).trim().toLowerCase()) {
+      return NextResponse.json({ error: "El nombre de confirmación no coincide con el del caso." }, { status: 400 });
+    }
+
+    const actingStaffSnap = await adminDb.collection("brokers").doc(user.uid).get();
+    const actingStaffName = actingStaffSnap.data()?.displayName || actingStaffSnap.data()?.name || user.email || "Staff";
+
+    const result = await deleteBrokerClient(brokerId, clientId);
+
+    try {
+      await adminDb.collection("adminDeletionLog").add({
+        brokerId,
+        clientId,
+        clientName: result.clientName,
+        ghlContactId: result.ghlContactId || null,
+        ghlOpportunityId: result.ghlOpportunityId || null,
+        notesDeleted: result.notesDeleted,
+        documentsDeleted: result.documentsDeleted,
+        storageFilesDeleted: result.storageFilesDeleted,
+        deletedByUid: user.uid,
+        deletedByName: actingStaffName,
+        deletedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error guardando bitácora de borrado (el borrado ya se completó):", error);
+    }
+
+    return NextResponse.json({ success: true, deleted: result });
+  } catch (error) {
+    console.error("Admin cases DELETE error:", error);
     const message = error instanceof Error ? error.message : "Error desconocido";
     return NextResponse.json({ error: message }, { status: 500 });
   }

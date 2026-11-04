@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { 
-  DollarSign, Clock, Landmark, CheckCircle2, TrendingUp, Users, 
-  FileText, ArrowUpRight, Plus, Send, AlertCircle, ShieldCheck, ChevronRight 
+import {
+  DollarSign, Clock, Landmark, TrendingUp, Users,
+  FileText, Plus, ChevronRight
 } from "lucide-react";
 import { TaxCase } from "../../types";
 import { TaxOfficeStats } from "./mock-tax-data";

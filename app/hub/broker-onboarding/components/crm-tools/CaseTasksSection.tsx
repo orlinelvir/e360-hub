@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { 
-  CheckSquare, 
-  Square, 
-  Plus, 
-  Trash2, 
-  Calendar, 
-  AlertCircle, 
-  Clock, 
-  Zap, 
-  CheckCircle2, 
-  Sparkles 
+import { useState, useCallback } from "react";
+import {
+  CheckSquare,
+  Square,
+  Plus,
+  Trash2,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
 import { CaseTask } from "../../types";
 
@@ -43,6 +41,34 @@ export function saveStoredTasksForClient(clientId: string, tasks: CaseTask[]): v
   }
 }
 
+// Formatea en hora LOCAL ("YYYY-MM-DD"), nunca vía toISOString()/UTC — mezclar
+// una fecha parseada en UTC (dueDate, un <input type="date">) contra una
+// calculada en local causaba que una tarea que vence HOY se marcara "Vencida"
+// con horas de anticipación para cualquiera en zona horaria negativa
+// (Honduras/Centroamérica, el mercado real de E360). Comparar dos strings
+// "YYYY-MM-DD" es suficiente — ese formato ordena igual lexicográfica y
+// cronológicamente, sin necesidad de parsear ningún Date para compararlas.
+function toLocalDateString(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Exportada (no solo inline en el render) para que tests/crm-tools-and-tasks.test.ts
+// pueda cubrir el bug de zona horaria de verdad, en vez de solo tenerlo arreglado sin prueba.
+export function isTaskOverdue(task: Pick<CaseTask, "dueDate" | "completed">, now: Date = new Date()): boolean {
+  return !task.completed && task.dueDate < toLocalDateString(now);
+}
+
+let taskIdCounter = 0;
+// IDs únicos sin depender de Date.now()/Math.random() en cada llamada (las
+// reglas de pureza de React marcan esas 2 como "funciones impuras" cuando se
+// invocan en una ruta que podría re-ejecutarse en render) — un contador local
+// + el momento real de creación es suficiente para que nunca choquen dentro
+// de una misma sesión de pestaña.
+function generateTaskId(): string {
+  taskIdCounter += 1;
+  return `task_${taskIdCounter}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
 const PRESET_TASKS = [
   { title: "Solicitar 3 meses de Bank Statements de Negocio", priority: "high" as const, daysAhead: 1 },
   { title: "Verificar Formulario Oficial CRM completado", priority: "high" as const, daysAhead: 1 },
@@ -53,21 +79,18 @@ const PRESET_TASKS = [
 ];
 
 export default function CaseTasksSection({ clientId, clientName, onTasksUpdated }: CaseTasksSectionProps) {
-  const [tasks, setTasks] = useState<CaseTask[]>([]);
+  // Lazy initializer (no efecto): el padre le pasa key={clientId}, así que
+  // React remonta este componente —y vuelve a correr este initializer— cada
+  // vez que cambia de cliente, en vez de reutilizar la instancia.
+  const [tasks, setTasks] = useState<CaseTask[]>(() => getStoredTasksForClient(clientId));
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDueDate, setNewTaskDueDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 2);
-    return d.toISOString().split("T")[0];
+    return toLocalDateString(d);
   });
   const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
   const [isAdding, setIsAdding] = useState(false);
-
-  // Cargar tareas al montar o cambiar clientId
-  useEffect(() => {
-    const loaded = getStoredTasksForClient(clientId);
-    setTasks(loaded);
-  }, [clientId]);
 
   const persistTasks = useCallback((updated: CaseTask[]) => {
     setTasks(updated);
@@ -94,7 +117,7 @@ export default function CaseTasksSection({ clientId, clientName, onTasksUpdated 
     if (!newTaskTitle.trim()) return;
 
     const newTask: CaseTask = {
-      id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateTaskId(),
       clientId,
       title: newTaskTitle.trim(),
       dueDate: newTaskDueDate,
@@ -114,10 +137,10 @@ export default function CaseTasksSection({ clientId, clientName, onTasksUpdated 
     targetDate.setDate(targetDate.getDate() + preset.daysAhead);
 
     const newTask: CaseTask = {
-      id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateTaskId(),
       clientId,
       title: preset.title,
-      dueDate: targetDate.toISOString().split("T")[0],
+      dueDate: toLocalDateString(targetDate),
       priority: preset.priority,
       completed: false,
       createdAt: new Date().toISOString(),
@@ -128,7 +151,6 @@ export default function CaseTasksSection({ clientId, clientName, onTasksUpdated 
   };
 
   const completedCount = tasks.filter((t) => t.completed).length;
-  const pendingCount = tasks.length - completedCount;
 
   return (
     <div className="bg-[#05101F] border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
@@ -257,7 +279,7 @@ export default function CaseTasksSection({ clientId, clientName, onTasksUpdated 
           </div>
         ) : (
           tasks.map((task) => {
-            const isOverdue = !task.completed && new Date(task.dueDate) < new Date(new Date().toDateString());
+            const isOverdue = isTaskOverdue(task);
             
             const priorityBadge = {
               high: "bg-red-500/10 text-red-400 border-red-500/30",

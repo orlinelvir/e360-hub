@@ -1,17 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { FileText, Copy, Check, ExternalLink, ShieldCheck, Sparkles } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { TAX_TEMPLATES_DATA } from "./mock-tax-data";
 
 export default function TaxOfficeTemplatesTab() {
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  const handleCopyLink = (tplId: string) => {
-    const link = `https://hub.emprende360.com/tax-forms/${tplId}`;
-    navigator.clipboard.writeText(link);
-    setCopiedId(tplId);
-    setTimeout(() => setCopiedId(null), 2500);
+  const handleRequestTemplate = (tplTitle: string, tplCode: string) => {
+    const text = `Hola E360, necesito el formulario digital "${tplTitle}" (${tplCode}) para enviárselo a un cliente de mi Oficina Virtual de Taxes.`;
+    window.open(`https://wa.me/17869680370?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -21,7 +16,7 @@ export default function TaxOfficeTemplatesTab() {
           Plantillas y Formularios Digitales para Clientes
         </h3>
         <p className="text-xs text-gray-400 mt-0.5">
-          Envía estos enlaces a tus clientes para captar su información y cumplir los requisitos del IRS sin papeleo físico.
+          Catálogo de formularios digitales disponibles para tus clientes. Solicita el que necesites a Soporte y te lo enviamos listo para compartir.
         </p>
       </div>
 
@@ -48,20 +43,11 @@ export default function TaxOfficeTemplatesTab() {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleCopyLink(tpl.id)}
+                  onClick={() => handleRequestTemplate(tpl.title, tpl.code)}
                   className="px-3 py-1.5 rounded-xl border border-gray-700 text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-800 transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
-                  {copiedId === tpl.id ? (
-                    <>
-                      <Check size={13} className="text-emerald-400" />
-                      <span className="text-emerald-400">Enlace Copiado</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={13} />
-                      <span>Copiar Enlace</span>
-                    </>
-                  )}
+                  <MessageSquare size={13} />
+                  <span>Solicitar a Soporte</span>
                 </button>
               </div>
             </div>

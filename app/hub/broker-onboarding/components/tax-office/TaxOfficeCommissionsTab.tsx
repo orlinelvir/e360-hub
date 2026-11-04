@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Users, DollarSign, Download, CheckCircle2, Clock, ShieldCheck, AlertCircle } from "lucide-react";
-import { TaxCommissionItem } from "../../types";
+import { Download, CheckCircle2, Clock, Plus } from "lucide-react";
+import { TaxCommissionItem, NewTaxCommissionInput } from "../../types";
+import NewTaxCommissionModal from "./NewTaxCommissionModal";
 
 interface TaxOfficeCommissionsTabProps {
   commissions: TaxCommissionItem[];
+  onAddCommission: (input: NewTaxCommissionInput) => Promise<boolean>;
 }
 
-export default function TaxOfficeCommissionsTab({ commissions }: TaxOfficeCommissionsTabProps) {
+export default function TaxOfficeCommissionsTab({ commissions, onAddCommission }: TaxOfficeCommissionsTabProps) {
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const formatMoney = (val: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
@@ -77,13 +80,23 @@ export default function TaxOfficeCommissionsTab({ commissions }: TaxOfficeCommis
             <p className="text-xs text-gray-400">Reporte para cálculo de nómina y 1099-NEC de colaboradores</p>
           </div>
 
-          <button
-            onClick={handleExportCSV}
-            className="px-4 py-2.5 bg-[#05101F] hover:bg-gray-800 border border-cyan-500/40 text-cyan-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
-          >
-            <Download size={15} />
-            <span>{downloadSuccess ? "Reporte Descargado" : "Exportar CSV (1099-NEC)"}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-3.5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-xs font-black uppercase tracking-wider rounded-xl shadow-[0_0_15px_rgba(0,224,240,0.25)] flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Plus size={15} />
+              <span>Nueva Comisión</span>
+            </button>
+
+            <button
+              onClick={handleExportCSV}
+              className="px-4 py-2.5 bg-[#05101F] hover:bg-gray-800 border border-cyan-500/40 text-cyan-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <Download size={15} />
+              <span>{downloadSuccess ? "Reporte Descargado" : "Exportar CSV (1099-NEC)"}</span>
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto mt-4">
@@ -132,6 +145,12 @@ export default function TaxOfficeCommissionsTab({ commissions }: TaxOfficeCommis
           </table>
         </div>
       </div>
+
+      <NewTaxCommissionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCommissionCreated={onAddCommission}
+      />
     </div>
   );
 }

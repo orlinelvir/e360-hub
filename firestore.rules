@@ -103,6 +103,23 @@ service cloud.firestore {
         match /caseDocuments/{docId} {
           allow read, write: if false;
         }
+
+        // Oficina Virtual E360 (Tax Office): el acceso pagado (taxOfficeAccess)
+        // vive en el doc del broker y no se puede releer de forma segura dentro
+        // de esta regla sin un get() adicional por cada subcolección, así que,
+        // igual que caseNotes/caseDocuments arriba, todo el acceso pasa por
+        // rutas API con Admin SDK (que sí valida taxOfficeAccess server-side).
+        match /taxCases/{caseId} {
+          allow read, write: if false;
+        }
+
+        match /taxInvoices/{invoiceId} {
+          allow read, write: if false;
+        }
+
+        match /taxCommissions/{commissionId} {
+          allow read, write: if false;
+        }
       }
 
       // Tickets de soporte scoped por Broker (Legacy & Enhanced V2)
@@ -176,6 +193,15 @@ service cloud.firestore {
     // valida el permiso manage_services. Todo por Admin SDK, nada por cliente.
     match /serviceOverrides/{serviceId} {
       allow read, write: if false;
+    }
+
+    // Bitácora de admisiones/casos eliminados (ver DELETE en
+    // app/api/admin/cases/route.ts) — escrita solo por Admin SDK, legible
+    // directo por un admin desde la consola de Firebase si hace falta
+    // auditar quién borró qué sin construir una pantalla nueva para eso.
+    match /adminDeletionLog/{logId} {
+      allow read: if request.auth != null && getRole() == 'admin';
+      allow write: if false;
     }
   }
 }

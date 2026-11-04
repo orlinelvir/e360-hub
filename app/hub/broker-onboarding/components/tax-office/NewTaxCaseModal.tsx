@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { X, UserPlus, CheckCircle2, DollarSign, Calendar, Landmark, FileText, Phone, Mail, User } from "lucide-react";
-import { TaxCase, TaxServiceType } from "../../types";
+import { TaxCase, TaxServiceType, NewTaxCaseInput } from "../../types";
 
 interface NewTaxCaseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCaseCreated: (newCase: TaxCase) => void;
+  onCaseCreated: (input: NewTaxCaseInput) => Promise<boolean>;
 }
 
 const SERVICE_LABELS: Record<TaxServiceType, string> = {
@@ -37,7 +37,7 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -52,31 +52,27 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
 
     setIsSubmitting(true);
 
-    const newCase: TaxCase = {
-      id: `TC-${taxYear}-${Math.floor(100 + Math.random() * 900)}`,
-      brokerId: "current_broker",
+    const input: NewTaxCaseInput = {
       clientName: clientName.trim(),
       clientEmail: clientEmail.trim() || "sin-correo@e360.com",
       clientPhone: clientPhone.trim() || "No especificado",
       taxYear,
       serviceType,
-      stage: "new",
       filingStatus,
       agreedFee: Number(agreedFee) || 0,
       bankProduct,
       bankPartner: bankProduct ? bankPartner : "none",
       refundAdvanceRequested: bankProduct && refundAdvanceRequested,
-      documentsCount: 0,
       notes: notes.trim(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
 
-    setTimeout(() => {
-      onCaseCreated(newCase);
-      setIsSubmitting(false);
+    const success = await onCaseCreated(input);
+    setIsSubmitting(false);
+    if (success) {
       onClose();
-    }, 300);
+    } else {
+      setError("No se pudo crear el expediente. Intenta de nuevo.");
+    }
   };
 
   return (

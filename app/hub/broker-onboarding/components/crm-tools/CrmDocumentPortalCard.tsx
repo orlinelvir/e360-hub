@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  FileText, 
-  ExternalLink, 
-  Copy, 
-  Check, 
-  AlertTriangle, 
-  ShieldCheck, 
-  Building2, 
-  CheckCircle2, 
+import {
+  FileText,
+  ExternalLink,
+  Copy,
+  Check,
+  AlertTriangle,
+  ShieldCheck,
+  CheckCircle2,
   Layers
 } from "lucide-react";
 import { ClientLead } from "../../types";
@@ -17,10 +16,9 @@ import { servicesData, ServiceDetail } from "../../data/services";
 
 interface CrmDocumentPortalCardProps {
   client: ClientLead;
-  brokerName?: string;
 }
 
-export default function CrmDocumentPortalCard({ client, brokerName }: CrmDocumentPortalCardProps) {
+export default function CrmDocumentPortalCard({ client }: CrmDocumentPortalCardProps) {
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Encontrar el servicio correspondiente para obtener su enlace oficial de CRM y requisitos
@@ -29,6 +27,10 @@ export default function CrmDocumentPortalCard({ client, brokerName }: CrmDocumen
   );
 
   const officialFormLink = matchedService?.formLink || "https://app.startpoint.biz";
+  // Algunos servicios en el catálogo todavía tienen "Formulario en desarrollo"
+  // en vez de un link real (ver data/services.ts) — sin este chequeo, el
+  // botón de copiar/abrir mandaba ese texto literal como si fuera una URL.
+  const isRealLink = /^https?:\/\//.test(officialFormLink);
 
   const handleCopy = async () => {
     try {
@@ -86,7 +88,7 @@ export default function CrmDocumentPortalCard({ client, brokerName }: CrmDocumen
               <div className="flex items-start gap-1.5 text-[10px] text-gray-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
                 <span>
-                  <strong className="text-white">Formularios con tu Logo:</strong> Si tienes subcuenta de CRM activa con tu branding de broker.
+                  <strong className="text-white">Formularios con tu Logo:</strong> si tienes tu propia subcuenta de CRM con branding de broker, úsala en vez del enlace de abajo — este siempre muestra el formulario central de E360.
                 </span>
               </div>
             </div>
@@ -100,39 +102,48 @@ export default function CrmDocumentPortalCard({ client, brokerName }: CrmDocumen
           Enlace Directo para {client.name} ({matchedService?.title || client.serviceName}):
         </label>
         
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <div className="flex-1 bg-[#0A182D] border border-gray-800 rounded-xl px-3 py-2 text-xs font-mono text-cyan-300 truncate select-all">
-            {officialFormLink}
-          </div>
-          
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black rounded-xl transition-colors cursor-pointer shrink-0"
-          >
-            {copiedLink ? (
-              <>
-                <Check size={14} className="text-black" />
-                <span>¡Copiado!</span>
-              </>
-            ) : (
-              <>
-                <Copy size={14} />
-                <span>Copiar Enlace</span>
-              </>
-            )}
-          </button>
+        {isRealLink ? (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex-1 bg-[#0A182D] border border-gray-800 rounded-xl px-3 py-2 text-xs font-mono text-cyan-300 truncate select-all">
+              {officialFormLink}
+            </div>
 
-          <a
-            href={officialFormLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[#0A182D] hover:bg-[#10233f] text-white border border-gray-700 hover:border-cyan-500 text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
-          >
-            <ExternalLink size={14} />
-            <span>Abrir Formulario</span>
-          </a>
-        </div>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black rounded-xl transition-colors cursor-pointer shrink-0"
+            >
+              {copiedLink ? (
+                <>
+                  <Check size={14} className="text-black" />
+                  <span>¡Copiado!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={14} />
+                  <span>Copiar Enlace</span>
+                </>
+              )}
+            </button>
+
+            <a
+              href={officialFormLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[#0A182D] hover:bg-[#10233f] text-white border border-gray-700 hover:border-cyan-500 text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
+            >
+              <ExternalLink size={14} />
+              <span>Abrir Formulario</span>
+            </a>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 bg-amber-500/5 border border-amber-500/30 rounded-xl px-3 py-2.5 text-[11px] text-amber-300">
+            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+            <span>
+              El formulario oficial de <strong>{matchedService?.title || client.serviceName}</strong> todavía no está disponible ({officialFormLink}). Contacta a soporte antes de admitir documentos por otro canal.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Requisitos Documentales sugeridos para este servicio */}

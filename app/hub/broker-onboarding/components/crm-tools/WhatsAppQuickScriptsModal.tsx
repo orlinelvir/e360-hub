@@ -2,18 +2,14 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  X, 
-  MessageSquare, 
-  Copy, 
-  Check, 
-  ExternalLink, 
-  Send, 
-  User, 
-  Phone, 
-  FileText, 
-  Sparkles,
-  ShieldCheck
+import {
+  X,
+  MessageSquare,
+  Copy,
+  Check,
+  Send,
+  ShieldCheck,
+  AlertTriangle
 } from "lucide-react";
 import { ClientLead } from "../../types";
 import { servicesData } from "../../data/services";
@@ -25,7 +21,7 @@ interface WhatsAppQuickScriptsModalProps {
   onClose: () => void;
 }
 
-interface ScriptTemplate {
+export interface ScriptTemplate {
   id: string;
   category: "intake" | "reminder" | "submitted" | "approved";
   categoryLabel: string;
@@ -34,7 +30,10 @@ interface ScriptTemplate {
   generateText: (clientName: string, brokerName: string, serviceName: string, crmLink: string) => string;
 }
 
-const TEMPLATES: ScriptTemplate[] = [
+// Exportado (no solo module-private) para que tests/crm-tools-and-tasks.test.ts
+// pueda verificar el texto real que se le manda al cliente, en vez de probar
+// una copia de este mismo string mantenida a mano en el archivo de pruebas.
+export const TEMPLATES: ScriptTemplate[] = [
   {
     id: "intake_crm",
     category: "intake",
@@ -73,6 +72,18 @@ const TEMPLATES: ScriptTemplate[] = [
   }
 ];
 
+// Formatea un teléfono para la URL de wa.me (quita todo lo que no sea
+// dígito). Exportado a nivel de módulo (no un closure dentro del componente)
+// para que tests/crm-tools-and-tasks.test.ts pueda probar la función real.
+export function cleanPhone(rawPhone: string): string {
+  let cleaned = rawPhone.replace(/\D/g, "");
+  // Si tiene 10 dígitos (formato estándar USA sin prefijo +1), anteponer 1
+  if (cleaned.length === 10) {
+    cleaned = `1${cleaned}`;
+  }
+  return cleaned;
+}
+
 export default function WhatsAppQuickScriptsModal({
   client,
   brokerName,
@@ -87,16 +98,10 @@ export default function WhatsAppQuickScriptsModal({
     (s) => s.id === client.serviceId || s.title.toLowerCase() === client.serviceName.toLowerCase()
   );
   const crmFormLink = matchedService?.formLink || "https://app.startpoint.biz";
-
-  // Formatear teléfono para wa.me (remover caracteres especiales)
-  const cleanPhone = (rawPhone: string) => {
-    let cleaned = rawPhone.replace(/\D/g, "");
-    // Si tiene 10 dígitos (formato estándar USA sin prefijo +1), anteponer 1
-    if (cleaned.length === 10) {
-      cleaned = `1${cleaned}`;
-    }
-    return cleaned;
-  };
+  // Algunos servicios en el catálogo todavía tienen "Formulario en desarrollo"
+  // en vez de un link real — sin este chequeo, una plantilla que lo incluye
+  // le mandaría ese texto literal al cliente real como si fuera su enlace.
+  const isRealCrmLink = /^https?:\/\//.test(crmFormLink);
 
   const targetPhone = cleanPhone(client.phone || "");
 
@@ -180,6 +185,10 @@ export default function WhatsAppQuickScriptsModal({
                 crmFormLink
               );
               const isCopied = copiedId === tmpl.id;
+              // Bloquear solo las plantillas que de verdad incluyen el enlace
+              // del CRM en su texto (la 1 y la 2) — las de "sometido"/"aprobado"
+              // no lo usan y no tienen ningún problema en enviarse igual.
+              const isBlocked = !isRealCrmLink && scriptText.includes(crmFormLink);
 
               return (
                 <div
@@ -197,8 +206,9 @@ export default function WhatsAppQuickScriptsModal({
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
+                        disabled={isBlocked}
                         onClick={() => handleCopy(tmpl.id, scriptText)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0A182D] hover:bg-[#10233F] text-gray-300 hover:text-white border border-gray-800 text-[11px] font-bold transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0A182D] hover:bg-[#10233F] text-gray-300 hover:text-white border border-gray-800 text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Copiar texto"
                       >
                         {isCopied ? (
@@ -216,14 +226,22 @@ export default function WhatsAppQuickScriptsModal({
 
                       <button
                         type="button"
+                        disabled={isBlocked}
                         onClick={() => handleOpenWhatsApp(scriptText)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-[11px] font-black transition-colors cursor-pointer shadow-md shadow-emerald-500/10"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-[11px] font-black transition-colors cursor-pointer shadow-md shadow-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Send size={12} />
                         <span>Abrir en WhatsApp</span>
                       </button>
                     </div>
                   </div>
+
+                  {isBlocked && (
+                    <div className="flex items-start gap-2 bg-amber-500/5 border border-amber-500/30 rounded-lg px-3 py-2 text-[11px] text-amber-300">
+                      <AlertTriangle size={13} className="shrink-0 mt-0.5" />
+                      <span>El formulario oficial de {client.serviceName} todavía no está disponible — este mensaje quedó deshabilitado para no mandarle al cliente un enlace inválido.</span>
+                    </div>
+                  )}
 
                   <p className="text-xs text-gray-300 bg-[#0A182D] p-3 rounded-xl border border-gray-850 leading-relaxed font-sans select-all whitespace-pre-wrap">
                     {scriptText}
