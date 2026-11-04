@@ -1,4 +1,4 @@
-export type ActiveTab = "inicio" | "clientes" | "oficina-virtual" | "taxes" | "soporte" | "perfil" | "admin" | "recursos";
+export type ActiveTab = "inicio" | "clientes" | "oficina-virtual" | "taxes" | "revisor-credito" | "soporte" | "perfil" | "admin" | "recursos";
 
 export type PipelineStage =
   | "lead"
@@ -363,5 +363,98 @@ export interface NewTaxCommissionInput {
   grossVolume: number;
   splitPercentage: number;
   underMentorship: boolean;
+}
+
+// ==========================================
+// REVISOR DE REPORTE DE CRÉDITO (IA)
+// ==========================================
+// Forma exacta del JSON que Gemini debe devolver — ver
+// lib/ai/credit-report-prompt.ts, que es la fuente de verdad real del schema
+// que se le pide al modelo. Los nombres de campo están en español a propósito:
+// son literalmente las claves del JSON que el modelo devuelve.
+
+export type CreditReportDisputable = "si" | "posible" | "no";
+export type CreditReportImpact = "alto" | "medio" | "bajo";
+export type CreditReportIssueType =
+  | "pago_tardio"
+  | "coleccion"
+  | "charge_off"
+  | "consulta_dura"
+  | "utilizacion_alta"
+  | "error_de_datos"
+  | "cuenta_duplicada"
+  | "cuenta_no_reconocida"
+  | "bancarrota_o_registro_publico"
+  | "historial_corto"
+  | "otro";
+
+export interface CreditReportScore {
+  buro: string;
+  score: number | null;
+}
+
+export interface CreditReportIssue {
+  prioridad: number;
+  tipo: CreditReportIssueType;
+  es_negativo: boolean;
+  acreedor: string | null;
+  cuenta_ultimos4: string | null;
+  buros: string[];
+  detalle: string | null;
+  impacto: CreditReportImpact;
+  disputable: CreditReportDisputable;
+  motivo: string | null;
+  accion: string | null;
+  explicacion_cliente: string | null;
+  verificar_con_cliente: string | null;
+}
+
+export interface CreditReportCard {
+  acreedor: string;
+  limite: number | null;
+  balance: number | null;
+  porcentaje: number | null;
+  pagar_para_llegar_a_30: number | null;
+  pagar_para_llegar_a_10: number | null;
+}
+
+export interface CreditReportUtilization {
+  porcentaje_global: number | null;
+  tarjetas: CreditReportCard[];
+  recomendacion: string | null;
+  explicacion_cliente: string | null;
+}
+
+export interface CreditReportPlanPhase {
+  fase: string;
+  titulo: string | null;
+  pasos: string[];
+  tiempo: string | null;
+}
+
+export interface CreditReportTradelines {
+  conviene: boolean;
+  motivo: string | null;
+  precaucion: string | null;
+}
+
+export interface CreditReportAnalysis {
+  scores: CreditReportScore[];
+  nivel_general: "Pobre" | "Regular" | "Bueno" | "Muy bueno" | "Excepcional" | "Desconocido";
+  conteos: {
+    elementos_negativos: number;
+    colecciones: number;
+    historial_insuficiente: boolean;
+  };
+  resumen_para_el_broker: string;
+  explicacion_para_el_cliente: string;
+  problemas: CreditReportIssue[];
+  utilizacion: CreditReportUtilization;
+  diferencias_entre_buros: string[];
+  cosas_positivas: string[];
+  plan: CreditReportPlanPhase[];
+  tradelines: CreditReportTradelines;
+  no_prometer: string[];
+  expectativa_realista: string;
 }
 

@@ -34,6 +34,7 @@ import CreditRepairIntakeModal from "./components/CreditRepairIntakeModal";
 import NotificationBell from "./components/NotificationBell";
 import TaxSoftwareContent from "@/components/taxes/TaxSoftwareContent";
 import TaxOfficeSection from "./components/TaxOfficeSection";
+import CreditReportReviewSection from "./components/credit-report/CreditReportReviewSection";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 import { isMasterAdminEmail } from "@/lib/roles";
@@ -521,6 +522,7 @@ export default function BrokerOnboardingClient() {
                     { id: "clientes", label: "Mis Clientes (CRM)" },
                     { id: "oficina-virtual", label: "Oficina Virtual", badge: "PRO" },
                     { id: "taxes", label: "Software Taxes" },
+                    { id: "revisor-credito", label: "Revisor de Crédito", badge: "IA" },
                     { id: "soporte", label: "Soporte VIP" },
                     { id: "recursos", label: "Recursos" },
                     { id: "perfil", label: "Mi Perfil" },
@@ -596,6 +598,7 @@ export default function BrokerOnboardingClient() {
                   { id: "clientes", label: "Clientes" },
                   { id: "oficina-virtual", label: "Oficina Tax" },
                   { id: "taxes", label: "Taxes" },
+                  { id: "revisor-credito", label: "Rev. Crédito" },
                   { id: "soporte", label: "Soporte" },
                   { id: "recursos", label: "Recursos" },
                   { id: "perfil", label: "Perfil" },
@@ -788,6 +791,12 @@ export default function BrokerOnboardingClient() {
             {activeTab === "taxes" && (
               <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
                 <TaxSoftwareContent variant="hub" />
+              </main>
+            )}
+
+            {activeTab === "revisor-credito" && (
+              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+                <CreditReportReviewSection brokerName={brokerName} />
               </main>
             )}
 

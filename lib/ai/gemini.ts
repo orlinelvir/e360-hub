@@ -3,6 +3,11 @@ export interface GeminiMessage {
   parts: { text: string }[];
 }
 
+export interface GeminiInlineImage {
+  mimeType: string;
+  data: string; // base64, sin el prefijo data:...;base64,
+}
+
 export interface GeminiResponse {
   answer: string;
   suggestEscalation: boolean;
@@ -127,6 +132,109 @@ IMPORTANTE: DEBES RESPONDER ÚNICAMENTE EN FORMATO JSON VÁLIDO CON LA SIGUIENTE
       }
       if (err instanceof Error && err.name === "AbortError") {
         console.warn(`Timeout (${PER_MODEL_TIMEOUT_MS}ms) esperando al modelo ${model}.`);
+        lastError = new Error(`Timeout esperando modelo ${model}`);
+      } else {
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw lastError || new Error("No se pudo conectar con el Asistente IA");
+}
+
+/**
+ * Versión genérica de generateGeminiResponse, sin el envoltorio
+ * answer/suggestEscalation específico del chat de soporte — devuelve el JSON
+ * crudo que el modelo generó (el caller valida/castea la forma esperada).
+ * Soporta imágenes (ej. páginas de un reporte escaneado) vía inline_data.
+ * Pensada para prompts grandes de salida (ej. el Revisor de Reporte de
+ * Crédito), así que usa menos modelos en la cadena y timeouts más largos que
+ * generateGeminiResponse — un JSON de varios KB tarda más en generarse que
+ * una respuesta de chat corta.
+ */
+export async function generateGeminiJson(
+  systemInstruction: string,
+  text: string,
+  images: GeminiInlineImage[] = [],
+  opts: { models?: string[]; timeoutMs?: number; maxOutputTokens?: number } = {}
+): Promise<unknown> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Falta la variable de entorno GEMINI_API_KEY");
+  }
+
+  const models = opts.models || ["gemini-3.6-flash", "gemini-3.7-flash"];
+  const timeoutMs = opts.timeoutMs || 55_000;
+
+  const parts: Array<Record<string, unknown>> = [];
+  if (text) parts.push({ text });
+  images.forEach((img) => parts.push({ inline_data: { mime_type: img.mimeType, data: img.data } }));
+
+  const payload = {
+    system_instruction: { parts: [{ text: systemInstruction }] },
+    contents: [{ role: "user", parts }],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: opts.maxOutputTokens || 8192,
+      responseMimeType: "application/json"
+    }
+  };
+
+  let lastError: Error | null = null;
+
+  for (const model of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          console.warn(`Rate limit alcanzado con modelo ${model}.`);
+          throw new Error("rate_limit");
+        }
+        const errorText = await response.text();
+        console.warn(`Aviso: Error con modelo ${model} (${response.status}):`, errorText);
+        lastError = new Error(`Error en API Gemini (${response.status})`);
+        continue;
+      }
+
+      const data = await response.json();
+      const candidate = data?.candidates?.[0];
+      const responseText = candidate?.content?.parts?.[0]?.text;
+
+      if (!responseText) {
+        // finishReason "MAX_TOKENS" significa que el JSON se cortó a medias —
+        // un reintento con el siguiente modelo de la cadena no lo arregla (el
+        // límite es el mismo), pero vale la pena distinguirlo en el log.
+        if (candidate?.finishReason === "MAX_TOKENS") {
+          console.warn(`Modelo ${model} cortó la respuesta por MAX_TOKENS.`);
+        }
+        lastError = new Error("Respuesta vacía de Gemini");
+        continue;
+      }
+
+      try {
+        const cleanJsonStr = responseText.replace(/^\s*```json/i, "").replace(/```\s*$/i, "").trim();
+        return JSON.parse(cleanJsonStr);
+      } catch {
+        lastError = new Error("invalid_json");
+        continue;
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message === "rate_limit") {
+        throw err;
+      }
+      if (err instanceof Error && err.name === "AbortError") {
+        console.warn(`Timeout (${timeoutMs}ms) esperando al modelo ${model}.`);
         lastError = new Error(`Timeout esperando modelo ${model}`);
       } else {
         lastError = err instanceof Error ? err : new Error(String(err));
