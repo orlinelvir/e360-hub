@@ -9,11 +9,15 @@ import {
   ExternalLink,
   Copy,
   Check,
-  MessageSquare,
+  Download,
+  Award,
   Image as ImageIcon,
   Phone
 } from "lucide-react";
 import { useState } from "react";
+import { GUIDES } from "@/lib/ai/guides";
+import { ONBOARDING_RECAP_VIDEOS } from "@/lib/ai/videos";
+import CrmQuizSection from "./quiz/CrmQuizSection";
 
 interface ResourceCardProps {
   icon: React.ReactNode;
@@ -102,8 +106,11 @@ const SALES_SCRIPTS = [
 ];
 
 export default function ResourcesSection() {
+  const [showQuiz, setShowQuiz] = useState(false);
+
   return (
     <div className="space-y-8">
+      {showQuiz && <CrmQuizSection onClose={() => setShowQuiz(false)} />}
       {/* Banner */}
       <div className="bg-gradient-to-r from-[#0A182D] via-[#102747] to-[#0A182D] border border-cyan-500/30 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
         <div className="absolute -bottom-10 -right-10 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
@@ -176,51 +183,99 @@ export default function ResourcesSection() {
             <ExternalLink size={16} className="text-gray-500 group-hover:text-cyan-400" />
           </a>
           <div className="text-xs text-gray-400 leading-relaxed">
-            <p className="mb-2"><strong className="text-gray-300">Horarios de clases en vivo:</strong></p>
+            <p className="mb-2"><strong className="text-gray-300">Horarios de clases en vivo (EST):</strong></p>
             <ul className="space-y-1 list-disc list-inside">
-              <li>Lunes 7:00 PM EST</li>
-              <li>Martes 7:00 PM EST</li>
-              <li>Miércoles 12:00 PM EST</li>
-              <li>Domingos 10:00 AM EST</li>
+              <li>Lunes y Martes 7:00 PM</li>
+              <li>Miércoles 12:00 PM</li>
+              <li>Jueves 5:00 PM <em>(sujeto a cambios)</em></li>
+              <li>Domingos 9:00 PM</li>
             </ul>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowQuiz(true)}
+            className="w-full flex items-center justify-between p-4 bg-cyan-500/10 border border-cyan-500/30 hover:border-cyan-400 rounded-xl transition-colors group cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <Award size={20} className="text-cyan-400" />
+              <div className="text-left">
+                <p className="text-sm font-bold text-white">Examen de Conocimiento del CRM</p>
+                <p className="text-[10px] text-gray-400">Pon a prueba lo que aprendiste en tu onboarding</p>
+              </div>
+            </div>
+          </button>
         </ResourceCard>
 
         {/* Guías y documentos */}
         <ResourceCard
           icon={<FileText size={22} />}
-          title="Guías Rápidas"
-          description="Documentos esenciales para operar."
+          title="Biblioteca de Guías"
+          description="Descarga el material oficial del catálogo E360."
         >
-          <div className="space-y-3">
-            <a
-              href="https://e360library.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-4 bg-[#05101F] border border-gray-800 hover:border-cyan-500/40 rounded-xl transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <FileText size={18} className="text-cyan-400" />
-                <span className="text-sm font-semibold text-gray-300 group-hover:text-white">Guía de Requisitos por Servicio</span>
-              </div>
-              <ExternalLink size={14} className="text-gray-500 group-hover:text-cyan-400" />
-            </a>
-            <a
-              href="https://e360library.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-4 bg-[#05101F] border border-gray-800 hover:border-cyan-500/40 rounded-xl transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <MessageSquare size={18} className="text-cyan-400" />
-                <span className="text-sm font-semibold text-gray-300 group-hover:text-white">Script de Seguimiento a Clientes</span>
-              </div>
-              <ExternalLink size={14} className="text-gray-500 group-hover:text-cyan-400" />
-            </a>
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+            {GUIDES.map((guide) => (
+              <a
+                key={guide.slug}
+                href={`/api/guides/${guide.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3.5 bg-[#05101F] border border-gray-800 hover:border-cyan-500/40 rounded-xl transition-colors group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileText size={18} className="text-cyan-400 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-300 group-hover:text-white truncate">{guide.title}</p>
+                    <p className="text-[10px] text-gray-500 truncate">{guide.description}</p>
+                  </div>
+                </div>
+                <Download size={14} className="text-gray-500 group-hover:text-cyan-400 shrink-0 ml-2" />
+              </a>
+            ))}
           </div>
           <p className="text-[11px] text-gray-500 leading-relaxed">
-            ¿Necesitas material específico? Abre un ticket en Soporte VIP → Marketing y Contenido.
+            ¿Necesitas material específico que no está aquí? Abre un ticket en Soporte VIP → Marketing y Contenido.
           </p>
+        </ResourceCard>
+
+        {/* Recapitulado en video — Hub + CRM */}
+        <ResourceCard
+          icon={<PlayCircle size={22} />}
+          title="Recapitulado: Hub + CRM"
+          description="Repasa cualquier parte de tu onboarding cuando quieras."
+        >
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+            {ONBOARDING_RECAP_VIDEOS.map((video) =>
+              video.url ? (
+                <a
+                  key={video.slug}
+                  href={video.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3.5 bg-[#05101F] border border-gray-800 hover:border-cyan-500/40 rounded-xl transition-colors group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <PlayCircle size={18} className="text-cyan-400 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-300 group-hover:text-white truncate">{video.title}</p>
+                      <p className="text-[10px] text-gray-500 truncate">{video.description}</p>
+                    </div>
+                  </div>
+                  <ExternalLink size={14} className="text-gray-500 group-hover:text-cyan-400 shrink-0 ml-2" />
+                </a>
+              ) : (
+                <div key={video.slug} className="flex items-center justify-between p-3.5 bg-[#05101F]/60 border border-gray-800/60 rounded-xl opacity-60">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <PlayCircle size={18} className="text-gray-600 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-400 truncate">{video.title}</p>
+                      <p className="text-[10px] text-gray-600 truncate">{video.description}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-500 shrink-0 ml-2">Próximamente</span>
+                </div>
+              )
+            )}
+          </div>
         </ResourceCard>
       </div>
     </div>

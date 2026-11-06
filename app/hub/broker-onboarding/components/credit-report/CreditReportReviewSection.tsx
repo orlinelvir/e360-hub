@@ -4,11 +4,15 @@ import { useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { FileText, Image as ImageIcon, ClipboardPaste, Upload, Loader2, AlertTriangle, ShieldCheck } from "lucide-react";
 import { CreditReportAnalysis } from "../../types";
-import { readPdfFile, looksScanned, pdfPagesToImages, blobToBase64 } from "./pdf-reader";
+import { readPdfFile, looksScanned, pdfPagesToImages, compressImageFile, blobToBase64 } from "./pdf-reader";
 import CreditReportResults from "./CreditReportResults";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 
 type Mode = "pdf" | "img" | "txt";
+
+// Reportes reales de 3 burós pueden llegar a 60+ páginas — este tope debe
+// coincidir con MAX_IMAGES en app/api/credit-repair/analyze-report/route.ts.
+const MAX_PAGES = 70;
 
 interface CreditReportReviewSectionProps {
   brokerName: string;
@@ -71,9 +75,9 @@ export default function CreditReportReviewSection({ brokerName }: CreditReportRe
   }
 
   function handleImgChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []).slice(0, 8);
+    const files = Array.from(e.target.files || []).slice(0, MAX_PAGES);
     setImgFiles(files);
-    setImgInfo(files.length ? `${files.length} imagen(es) seleccionada(s) (máximo 8)` : "");
+    setImgInfo(files.length ? `${files.length} imagen(es) seleccionada(s) (máximo ${MAX_PAGES})` : "");
   }
 
   function newAnalysis() {
@@ -109,7 +113,7 @@ export default function CreditReportReviewSection({ brokerName }: CreditReportRe
         const scanned = looksScanned(pdfText);
         if (scanned && pdfDoc) {
           setProgressMsg("Convirtiendo páginas a imágenes…");
-          const blobs = await pdfPagesToImages(pdfDoc, 8);
+          const blobs = await pdfPagesToImages(pdfDoc, MAX_PAGES);
           const images = await Promise.all(
             blobs.map(async (b) => ({ mimeType: "image/jpeg", data: await blobToBase64(b) }))
           );
@@ -118,9 +122,9 @@ export default function CreditReportReviewSection({ brokerName }: CreditReportRe
           body = { text: pdfText };
         }
       } else if (mode === "img") {
-        setProgressMsg("Procesando imágenes…");
+        setProgressMsg("Comprimiendo imágenes…");
         const images = await Promise.all(
-          imgFiles.map(async (f) => ({ mimeType: f.type || "image/jpeg", data: await blobToBase64(f) }))
+          imgFiles.map(async (f) => ({ mimeType: "image/jpeg", data: await blobToBase64(await compressImageFile(f)) }))
         );
         body = { images };
       } else {
@@ -208,7 +212,7 @@ export default function CreditReportReviewSection({ brokerName }: CreditReportRe
             <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-700 hover:border-cyan-500/50 rounded-xl p-8 text-center cursor-pointer transition-colors bg-[#05101F]">
               <Upload size={22} className="text-gray-500" />
               <strong className="text-white text-sm">Toca para elegir las fotos o capturas</strong>
-              <span className="text-xs text-gray-500">Sube todas las páginas del reporte (hasta 8 imágenes)</span>
+              <span className="text-xs text-gray-500">Sube todas las páginas del reporte (hasta {MAX_PAGES} imágenes)</span>
               <input type="file" accept="image/*" multiple onChange={handleImgChange} className="hidden" />
             </label>
             {imgInfo && <p className="text-xs text-gray-400 mt-2">{imgInfo}</p>}

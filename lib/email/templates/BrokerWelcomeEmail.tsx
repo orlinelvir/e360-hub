@@ -24,6 +24,14 @@ interface Step {
 // "payment completed (spanish)", 2026-10-29) — no inventados. Si este
 // Workflow cambia de contenido del lado de GHL, hay que actualizar esto a
 // mano; no hay una sola fuente de verdad compartida entre los dos sistemas.
+//
+// La Guía "Done For You" (paso 4) usa /api/guides/done-for-you en vez del
+// enlace directo al CDN de GHL (filesafe.space) que tenía originalmente —
+// ese enlace apuntaba a una copia estática subida una vez a GHL, que no se
+// actualizó cuando se reemplazó el PDF real en Firebase Storage (confirmado:
+// la copia de GHL seguía en 66KB/la versión vieja, mientras Storage ya tenía
+// los 11KB de la v2) — un broker real llegó a recibir la guía vieja por este
+// motivo. /api/guides/[slug] siempre sirve lo que hay en Storage ahora mismo.
 const STEPS: Step[] = [
   {
     number: 1,
@@ -54,15 +62,15 @@ const STEPS: Step[] = [
     title: 'Guía de Servicio "Hecho por Ti"',
     description: "Tú vendes el servicio y nuestro equipo de fulfillment hace el trabajo — Reparación de Crédito, Crédito Empresarial, Página Web y CRM para tu cliente.",
     ctaLabel: "Ver Guía Done For You",
-    ctaHref: "https://assets.cdn.filesafe.space/ZF5DfVEmMfEhmmJBEHjw/media/6a2a1390944ae1c947cc4aaf.pdf",
+    ctaHref: `${APP_BASE_URL}/api/guides/done-for-you`,
     color: "#F97316"
   },
   {
     number: 5,
-    title: "Guía de Servicios",
-    description: "El catálogo completo de servicios — precios, requisitos y el enlace oficial de cada uno.",
+    title: "Guía de Servicios Adicionales",
+    description: "Los 3 add-ons premium del CRM: número dedicado, WhatsApp API oficial y Prospecting B2B — precios y a quién recomendarlos.",
     ctaLabel: "Ver Guía de Servicios",
-    ctaHref: "https://assets.cdn.filesafe.space/ZF5DfVEmMfEhmmJBEHjw/media/6a2a16522719d8cb18b53b5a.pdf",
+    ctaHref: `${APP_BASE_URL}/api/guides/servicios-adicionales`,
     color: "#F43F5E"
   },
   {

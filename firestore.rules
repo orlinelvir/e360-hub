@@ -24,7 +24,7 @@ service cloud.firestore {
     // campos vía cliente — el guardado real de perfil pasa por /api/broker/profile
     // (Admin SDK), que ignora estas reglas.
     function protectedBrokerFields() {
-      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid', 'brokerId', 'brokerSequence', 'firstSaleAt', 'contractSignedAt', 'contractSignedMethod'];
+      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid', 'brokerId', 'brokerSequence', 'firstSaleAt', 'contractSignedAt', 'contractSignedMethod', 'bestQuizScore', 'quizPassed', 'quizPassedAt'];
     }
 
     // 0. Reglas para la colección de BROKERS & E360 Hub
@@ -59,6 +59,15 @@ service cloud.firestore {
 
       // Contadores de rate-limit (ej. Chat IA) — solo el backend los lee/escribe.
       match /rateLimits/{key} {
+        allow read, write: if false;
+      }
+
+      // Intentos del Examen de Conocimiento del CRM — el grading (y por lo
+      // tanto quién aprobó) tiene que pasar siempre por el servidor (ver
+      // lib/services/quiz-service.ts); un broker no puede escribir aquí
+      // directo ni fabricar que aprobó. Lectura también vía API
+      // (GET /api/quiz/submit), no directa.
+      match /quizAttempts/{attemptId} {
         allow read, write: if false;
       }
 

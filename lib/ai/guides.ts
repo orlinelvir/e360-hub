@@ -24,7 +24,8 @@ export const GUIDES: GuideEntry[] = [
   { slug: "lead-flow", title: "Cheatsheet Lead Flow", description: "Diagrama de flujo de cómo manejar y procesar leads entrantes.", storagePath: "guides/lead-flow.pdf" },
   { slug: "consolidacion-synchrony", title: "Cheatsheet Consolidación Synchrony", description: "Detalles sobre opciones de consolidación de deudas con Synchrony.", storagePath: "guides/consolidacion-synchrony.pdf" },
   { slug: "prestamos-empresariales", title: "Cheatsheet Préstamos Empresariales", description: "Resumen rápido de opciones de préstamos empresariales.", storagePath: "guides/prestamos-empresariales.pdf" },
-  { slug: "onboarding-broker", title: "Descripción de Onboarding para Broker", description: "Descripción general del proceso de onboarding para nuevos brokers.", storagePath: "guides/onboarding-broker.pdf" }
+  { slug: "onboarding-broker", title: "Guía de Onboarding E360", description: "Paso a paso exclusivo para brokers: acceso, perfil, el CRM completo, calendarios, landing pages y formularios.", storagePath: "guides/onboarding-broker.pdf" },
+  { slug: "servicios-adicionales", title: "Guía de Servicios Adicionales E360", description: "Los 3 add-ons premium del CRM: número de teléfono dedicado ($30/mes), WhatsApp API oficial ($10/mes) y Prospecting B2B ($75/mes) — precios, beneficios y a quién recomendarlos.", storagePath: "guides/servicios-adicionales.pdf" }
   // "loan-structures" y "llc-fees-by-state" se quitaron de aquí a propósito:
   // sus PDFs nunca se subieron a Storage (confirmado en vivo), así que la IA
   // los ofrecía al broker y el enlace daba 404. Vuelve a agregarlos cuando

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket, Tag, UserCheck, LayoutDashboard } from "lucide-react";
+import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket, Tag, UserCheck, LayoutDashboard, FileText, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import AdminCasesTab, { CaseItem } from "./admin/AdminCasesTab";
 import AdminMetricsTab, { MetricsData } from "./admin/AdminMetricsTab";
@@ -31,6 +31,23 @@ export default function AdminPanelSection() {
 
   const [cases, setCases] = useState<CaseItem[]>([]);
   const [loadingCases, setLoadingCases] = useState<boolean>(false);
+
+  const [loadingStaffGuide, setLoadingStaffGuide] = useState<boolean>(false);
+  const handleOpenStaffGuide = async () => {
+    if (!user) return;
+    setLoadingStaffGuide(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/staff-guides/induccion-staff", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo abrir la guía");
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error("Error abriendo la guía de inducción del staff:", err);
+    } finally {
+      setLoadingStaffGuide(false);
+    }
+  };
 
   const [locations, setLocations] = useState<AdminLocation[]>([]);
   const [loadingLocations, setLoadingLocations] = useState<boolean>(false);
@@ -391,14 +408,25 @@ export default function AdminPanelSection() {
           </div>
         </div>
 
-        <button
-          onClick={() => handleTabChange(activeTab)}
-          disabled={isRefreshing}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#05101F] hover:bg-[#0A182D] border border-cyan-500/40 text-cyan-400 font-extrabold rounded-xl text-xs transition-all shadow-sm disabled:opacity-50 self-start md:self-auto"
-        >
-          <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
-          <span>Actualizar Datos</span>
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <button
+            onClick={handleOpenStaffGuide}
+            disabled={loadingStaffGuide}
+            title="Uso interno — no compartir con brokers ni clientes"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#05101F] hover:bg-[#0A182D] border border-gray-700 text-gray-300 font-bold rounded-xl text-xs transition-all shadow-sm disabled:opacity-50"
+          >
+            {loadingStaffGuide ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+            <span>Guía de Inducción (Staff)</span>
+          </button>
+          <button
+            onClick={() => handleTabChange(activeTab)}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#05101F] hover:bg-[#0A182D] border border-cyan-500/40 text-cyan-400 font-extrabold rounded-xl text-xs transition-all shadow-sm disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
+            <span>Actualizar Datos</span>
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">

@@ -25,6 +25,9 @@ export interface BrokerItem {
   contractSignedAt?: string;
   contractSignedMethod?: string;
   contractSignedSelfReported?: boolean;
+  bestQuizScore?: number;
+  quizPassed?: boolean;
+  quizPassedAt?: string;
   createdAt: string;
   totalClients: number;
   totalVolume: number;
@@ -627,6 +630,29 @@ export default function AdminBrokersTab({ brokers, loading, onRefresh }: AdminBr
                         {isConfirmingContract ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
                         Confirmar firma manualmente
                       </button>
+                    )}
+                  </div>
+
+                  {/* Examen de Conocimiento del CRM — referencia rápida para revisar
+                      elegibilidad de reembolso (90 días) sin tener que entrar a
+                      revisar el historial de videos vistos por separado. */}
+                  <div className="bg-[#05101F] border border-gray-800 rounded-xl p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Examen de Conocimiento del CRM</h4>
+                      {detailTarget.quizPassed ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-md text-[10px] font-bold">
+                          <CheckCircle2 size={11} /> Aprobado ({detailTarget.bestQuizScore}%)
+                        </span>
+                      ) : detailTarget.bestQuizScore ? (
+                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-md text-[10px] font-bold">
+                          No aprobado ({detailTarget.bestQuizScore}%)
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-gray-800 text-gray-400 border border-gray-700 rounded-md text-[10px] font-bold">Sin intentos</span>
+                      )}
+                    </div>
+                    {detailTarget.quizPassedAt && (
+                      <p className="text-[11px] text-gray-500">Aprobado el {formatDate(detailTarget.quizPassedAt)}.</p>
                     )}
                   </div>
 

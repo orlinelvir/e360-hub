@@ -240,6 +240,106 @@ export const VIDEOS: VideoEntry[] = [
   }
 ];
 
+// Recapitulado Hub + CRM — pendientes de grabar, deliberadamente FUERA de
+// VIDEOS (que alimenta el prompt del asistente de IA, ver
+// lib/ai/knowledge-base.ts): si el asistente los recomendara con url: null,
+// el broker terminaría con un título sin enlace real, o peor, el texto libre
+// del modelo podría mandarlo a buscarlo en e360library.com, donde tampoco
+// existen. Esta lista es solo para la sección de "Recapitulado" del Hub (ver
+// ResourcesSection.tsx), que sí sabe mostrar "Próximamente" para url: null.
+//
+// Pensados para que un broker se autosirva cuando olvida algo de su
+// onboarding, en vez de pedir otra sesión en vivo (ver reunión del
+// 2026-11-04). Los primeros 7 siguen exactamente las 7 fases de la Guía de
+// Onboarding E360; los últimos cubren el Hub, que esa guía no toca (solo
+// cubre el CRM).
+export const ONBOARDING_RECAP_VIDEOS: VideoEntry[] = [
+  {
+    slug: "repaso-crm-acceso-perfil",
+    title: "Acceso, Perfil y Zona Horaria",
+    category: "Recapitulado Hub + CRM",
+    description: "Login en app.startpoint.biz, 2FA, por qué la zona horaria es crítica, firma de correo y la app móvil LeadConnector.",
+    url: null
+  },
+  {
+    slug: "repaso-crm-centro-comando",
+    title: "El Centro de Comando: Navegación y Gestión Diaria",
+    category: "Recapitulado Hub + CRM",
+    description: "El buscador universal (Ctrl+K) y los módulos de uso diario: Launchpad, Tablero, Conversaciones, Calendarios, Contactos, Pipelines y Pagos.",
+    url: null
+  },
+  {
+    slug: "repaso-crm-dominios-crecimiento",
+    title: "Dominios, Integraciones y Motores de Crecimiento",
+    category: "Recapitulado Hub + CRM",
+    description: "Conectar tu dominio, integrar pagos y redes sociales, y qué hacen las herramientas de IA, Marketing y Automatización.",
+    url: null
+  },
+  {
+    slug: "repaso-crm-equipo-usuarios",
+    title: "Gestión del Equipo: Usuarios y Seguridad",
+    category: "Recapitulado Hub + CRM",
+    description: "Agregar y borrar usuarios, roles y permisos, y las dos formas de restablecer una contraseña.",
+    url: null
+  },
+  {
+    slug: "repaso-crm-calendarios-citas",
+    title: "Calendarios y Citas: Configúralos Bien",
+    category: "Recapitulado Hub + CRM",
+    description: "Tipos de calendario (Simple, Round Robin, Clase), reglas de disponibilidad, sincronización con Google/Outlook y cómo compartir tu enlace.",
+    url: null
+  },
+  {
+    slug: "repaso-crm-landing-pages",
+    title: "Landing Pages: Crea y Edita tu Embudo",
+    category: "Recapitulado Hub + CRM",
+    description: "Las fases de un funnel, el editor visual (secciones, filas y elementos), y cómo publicar y conectar tu dominio.",
+    url: null
+  },
+  {
+    slug: "repaso-crm-formularios",
+    title: "Formularios: Captura y Gestiona tus Prospectos",
+    category: "Recapitulado Hub + CRM",
+    description: "Crear un formulario, agregar campos, compartirlo (Link o Embed) y revisar los envíos en Forms > Submissions.",
+    url: null
+  },
+  {
+    slug: "repaso-hub-mis-clientes",
+    title: "Mis Clientes y el Tablero Kanban",
+    category: "Recapitulado Hub + CRM",
+    description: "Dar seguimiento a tus solicitudes en el Hub: el tablero Kanban, notas de caso y documentos del cliente.",
+    url: null
+  },
+  {
+    slug: "repaso-hub-oficina-virtual-taxes",
+    title: "Oficina Virtual E360 (Taxes)",
+    category: "Recapitulado Hub + CRM",
+    description: "Para brokers con el add-on de Taxes: gestión de casos, facturación y comisiones.",
+    url: null
+  },
+  {
+    slug: "repaso-hub-revisor-credito",
+    title: "Revisor de Reporte de Crédito con IA",
+    category: "Recapitulado Hub + CRM",
+    description: "Cómo subir un reporte de crédito (PDF, fotos o texto) y leer el diagnóstico, el plan de acción y la recomendación de cobro.",
+    url: null
+  },
+  {
+    slug: "repaso-hub-soporte-tickets",
+    title: "Soporte VIP y Tickets",
+    category: "Recapitulado Hub + CRM",
+    description: "Cómo abrir un ticket de soporte desde el Hub y usar el asistente de IA para resolver dudas rápido.",
+    url: null
+  },
+  {
+    slug: "repaso-hub-mi-perfil",
+    title: "Mi Perfil: Tu ID de Broker, Contrato y Comisiones",
+    category: "Recapitulado Hub + CRM",
+    description: "Dónde ver tu ID oficial E360, firmar tu contrato de servicios y revisar tus comisiones y referidos.",
+    url: null
+  }
+];
+
 export function getVideoBySlug(slug: string): VideoEntry | undefined {
   return VIDEOS.find((v) => v.slug === slug);
 }

@@ -456,5 +456,56 @@ export interface CreditReportAnalysis {
   tradelines: CreditReportTradelines;
   no_prometer: string[];
   expectativa_realista: string;
+  // Presente solo cuando el análisis pasó por la verificación automática
+  // (ver app/api/credit-repair/analyze-report/route.ts) y esta corrigió algo
+  // — vacío o ausente si no hubo cambios.
+  correcciones_aplicadas?: string[];
+}
+
+// Hallazgos crudos de UN fragmento de un reporte grande (ver
+// lib/ai/credit-report-prompt.ts buildExtractionSystemInstruction) — no
+// decide prioridad ni escribe nada para el cliente todavía, solo extrae.
+export interface CreditReportExtractionFindings {
+  scores_vistos: CreditReportScore[];
+  hallazgos: Array<{
+    acreedor: string | null;
+    cuenta_ultimos4: string | null;
+    tipo: CreditReportIssueType;
+    es_negativo: boolean;
+    buros: string[];
+    detalle: string | null;
+  }>;
+  tarjetas_utilizacion: Array<{ acreedor: string; limite: number | null; balance: number | null }>;
+  notas_consistencia: string[];
+  cosas_positivas_vistas: string[];
+}
+
+// ==========================================
+// EXAMEN DE CONOCIMIENTO DEL CRM
+// ==========================================
+
+export interface QuizQuestion {
+  id: string;
+  phase: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+export interface QuizAnswerResult {
+  questionId: string;
+  selectedIndex: number;
+  correct: boolean;
+}
+
+export interface QuizAttempt {
+  id: string;
+  answers: QuizAnswerResult[];
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  passed: boolean;
+  completedAt: string;
 }
 

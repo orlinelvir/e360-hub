@@ -339,6 +339,16 @@ export async function POST(request: Request) {
             phone: phone || undefined,
             address: businessAddress || undefined,
             country: "US",
+            // Sin esto, GHL adivina la zona horaria a partir de la dirección
+            // recibida — y muchos brokers la llenan con su ubicación real
+            // (Venezuela, Colombia, México), aunque todo el negocio opera en
+            // hora del Este (clases en vivo, citas, recordatorios). Eso
+            // obligaba a Samantha/el equipo de onboarding a corregirla a mano
+            // en cada subcuenta nueva. Se fija explícito al estándar de la
+            // empresa; el broker puede cambiar la suya propia luego si de
+            // verdad lo necesita (Mi Perfil > Zona Horaria, ver la Guía de
+            // Onboarding).
+            timezone: "America/New_York",
             website: businessWebsite || undefined,
             prospectInfo: { firstName, lastName, email }
           },

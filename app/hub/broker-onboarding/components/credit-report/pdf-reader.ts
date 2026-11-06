@@ -78,6 +78,29 @@ export async function pdfPagesToImages(doc: PDFDocumentProxy, max: number): Prom
   return out;
 }
 
+/**
+ * Redimensiona y recomprime una foto subida directamente (pestaña "Fotos o
+ * capturas") antes de mandarla al servidor — una foto de celular sin tocar
+ * puede pesar varios MB; unas pocas así de golpe ya superan el límite de
+ * tamaño de solicitud de la plataforma, lo que se ve como un simple "error de
+ * conexión" sin mensaje claro. Las páginas renderizadas desde un PDF (ver
+ * pdfPagesToImages) ya salen comprimidas del canvas; esto les da el mismo
+ * tratamiento a las fotos que el usuario sube tal cual.
+ */
+export async function compressImageFile(file: File, maxDim = 1600, quality = 0.7): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+  return blob || file;
+}
+
 export function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

@@ -39,7 +39,8 @@ const LOCAL_PATHS: Record<string, string> = {
   "lead-flow": "Docs y Audios/Documentos y Guías adicionales/Cheatsheet Lead Flow Broker Emprende360.pdf",
   "consolidacion-synchrony": "Docs y Audios/Documentos y Guías adicionales/Cheatsheet Consolidacion Synchrony Broker Emprende360.pdf",
   "prestamos-empresariales": "Docs y Audios/Documentos y Guías adicionales/Cheatsheet_Prestamos_Empresariales_Emprende360-1.pdf",
-  "onboarding-broker": "Docs y Audios/E360 Hub Onboarding Broker Descripcion.pdf"
+  "onboarding-broker": "Docs y Audios/Guia de Onboarding E360.pdf",
+  "servicios-adicionales": "Docs y Audios/Documentos y Guías adicionales/Servicios Adicionales E360.pdf"
 };
 
 (async () => {
