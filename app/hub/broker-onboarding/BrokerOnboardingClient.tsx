@@ -35,6 +35,7 @@ import NotificationBell from "./components/NotificationBell";
 import TaxSoftwareContent from "@/components/taxes/TaxSoftwareContent";
 import TaxOfficeSection from "./components/TaxOfficeSection";
 import CreditReportReviewSection from "./components/credit-report/CreditReportReviewSection";
+import WhatsNewModal from "./components/changelog/WhatsNewModal";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 import { isMasterAdminEmail } from "@/lib/roles";
@@ -1156,6 +1157,8 @@ export default function BrokerOnboardingClient() {
           </>
         )}
       </AnimatePresence>
+
+      {user && profile && <WhatsNewModal />}
 
       <GHLOnboardingWizardModal
         isOpen={isWizardOpen}
