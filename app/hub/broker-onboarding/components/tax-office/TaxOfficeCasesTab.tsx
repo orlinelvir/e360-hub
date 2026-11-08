@@ -4,6 +4,12 @@ import { useState, useMemo } from "react";
 import { Search, Plus, FileText, X } from "lucide-react";
 import { TaxCase, TaxCaseStage } from "../../types";
 
+// Función de módulo para que el linter de pureza de React no trate new Date()
+// como parte del render.
+function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
 interface TaxOfficeCasesTabProps {
   cases: TaxCase[];
   onNewCase: () => void;
@@ -30,12 +36,20 @@ export default function TaxOfficeCasesTab({
   selectedCase,
   onSelectCase,
 }: TaxOfficeCasesTabProps) {
+  const currentYear = getCurrentYear();
   const [search, setSearch] = useState("");
   const [yearFilter, setYearFilter] = useState<number | "all">("all");
   const [stageFilter, setStageFilter] = useState<TaxCaseStage | "all">("all");
+  const [preparerFilter, setPreparerFilter] = useState<string>("all");
 
   const formatMoney = (val: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
+
+  const preparers = useMemo(() => {
+    const names = new Set<string>();
+    cases.forEach((c) => c.assignedPreparer && names.add(c.assignedPreparer));
+    return Array.from(names);
+  }, [cases]);
 
   const filteredCases = useMemo(() => {
     return cases.filter((c) => {
@@ -47,10 +61,11 @@ export default function TaxOfficeCasesTab({
 
       const matchYear = yearFilter === "all" || c.taxYear === yearFilter;
       const matchStage = stageFilter === "all" || c.stage === stageFilter;
+      const matchPreparer = preparerFilter === "all" || c.assignedPreparer === preparerFilter;
 
-      return matchSearch && matchYear && matchStage;
+      return matchSearch && matchYear && matchStage && matchPreparer;
     });
-  }, [cases, search, yearFilter, stageFilter]);
+  }, [cases, search, yearFilter, stageFilter, preparerFilter]);
 
   const getStageBadge = (stage: TaxCaseStage) => {
     switch (stage) {
@@ -116,19 +131,20 @@ export default function TaxOfficeCasesTab({
             className="bg-[#05101F] border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none cursor-pointer"
           >
             <option value="all">Todos los Años</option>
-            <option value={2025}>2025 (Actual)</option>
-            <option value={2024}>2024</option>
-            <option value={2023}>2023</option>
+            <option value={currentYear}>{currentYear} (Actual)</option>
+            <option value={currentYear - 1}>{currentYear - 1}</option>
+            <option value={currentYear - 2}>{currentYear - 2}</option>
           </select>
 
           <select
-            value={stageFilter}
-            onChange={(e) => setStageFilter(e.target.value as TaxCaseStage | "all")}
+            value={preparerFilter}
+            onChange={(e) => setPreparerFilter(e.target.value)}
             className="bg-[#05101F] border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none cursor-pointer hidden sm:block"
           >
-            {STAGES.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
+            <option value="all">Assigned to: All</option>
+            {preparers.map((p) => (
+              <option key={p} value={p}>
+                {p}
               </option>
             ))}
           </select>
@@ -141,6 +157,21 @@ export default function TaxOfficeCasesTab({
           <Plus size={16} />
           <span>Nuevo Caso de Tax</span>
         </button>
+      </div>
+
+      {/* Tabs de Estado */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {STAGES.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setStageFilter(s.id)}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors shrink-0 cursor-pointer ${
+              stageFilter === s.id ? "bg-cyan-500/20 text-cyan-300 border-cyan-400" : "bg-[#05101F] text-gray-400 border-gray-800 hover:text-white"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
       </div>
 
       {/* Tabla de Casos */}

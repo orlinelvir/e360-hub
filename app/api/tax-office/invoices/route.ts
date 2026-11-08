@@ -41,7 +41,11 @@ export async function POST(request: Request) {
     amount: Number(body.amount) || 0,
     paymentMethod: body.paymentMethod || "refund_deduction",
     taxYear: body.taxYear || new Date().getFullYear(),
-    caseId: body.caseId
+    caseId: body.caseId,
+    clientId: body.clientId,
+    description: body.description?.trim() || undefined,
+    status: body.status === "draft" ? "draft" : undefined,
+    dueDate: body.dueDate
   };
 
   try {

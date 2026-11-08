@@ -39,6 +39,7 @@ export async function POST(request: Request) {
   }
 
   const input: NewTaxCaseInput = {
+    clientId: body.clientId,
     clientName: body.clientName.trim(),
     clientEmail: body.clientEmail?.trim() || "sin-correo@e360.com",
     clientPhone: body.clientPhone?.trim() || "No especificado",
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
     serviceType: body.serviceType || "1040_personal",
     filingStatus: body.filingStatus,
     agreedFee: Number(body.agreedFee) || 0,
+    deadline: body.deadline,
     bankProduct: Boolean(body.bankProduct),
     bankPartner: body.bankProduct ? body.bankPartner : "none",
     refundAdvanceRequested: Boolean(body.bankProduct && body.refundAdvanceRequested),

@@ -298,6 +298,7 @@ export type TaxServiceType =
 export interface TaxCase {
   id: string;
   brokerId: string;
+  clientId?: string; // enlaza a TaxClient — opcional para no romper casos creados antes de que existiera Clientes
   clientName: string;
   clientEmail: string;
   clientPhone: string;
@@ -306,6 +307,7 @@ export interface TaxCase {
   stage: TaxCaseStage;
   filingStatus?: "single" | "married_joint" | "married_separate" | "head_of_household" | "qualifying_widow";
   agreedFee: number;
+  deadline?: string; // AAAA-MM-DD
   bankProduct: boolean;
   bankPartner?: "sbtpg" | "refund_advantage" | "republic" | "eps" | "none";
   refundAdvanceRequested?: boolean;
@@ -318,14 +320,21 @@ export interface TaxCase {
   updatedAt: string;
 }
 
+// "overdue" nunca se guarda — se calcula en pantalla comparando dueDate con
+// hoy sobre una factura en estado "sent" (evita que quede desincronizado del
+// reloj si nadie la vuelve a tocar).
+export type TaxInvoiceStatus = "draft" | "sent" | "paid" | "failed" | "refunded" | "cancelled";
+
 export interface TaxInvoice {
   id: string;
   invoiceNumber: string;
   caseId?: string;
+  clientId?: string;
   clientName: string;
   clientEmail: string;
+  description?: string;
   amount: number;
-  status: "paid" | "pending" | "overdue" | "cancelled";
+  status: TaxInvoiceStatus;
   paymentMethod: "refund_deduction" | "card" | "zelle" | "cash";
   taxYear: number;
   dueDate: string;
@@ -346,14 +355,214 @@ export interface TaxCommissionItem {
   lastPayoutDate?: string;
 }
 
+// --- Clientes ---
+
+export type TaxClientStatus = "lead" | "active" | "pending" | "waiting_docs" | "in_review" | "completed" | "inactive" | "archived";
+
+export interface TaxClient {
+  id: string;
+  brokerId: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: TaxClientStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- Workflow: pipelines configurables + leads (embudo de ventas, previo a
+// convertirse en TaxCase) ---
+
+export interface TaxPipelineStage {
+  id: string;
+  name: string;
+  order: number;
+}
+
+export interface TaxPipeline {
+  id: string;
+  brokerId: string;
+  name: string;
+  stages: TaxPipelineStage[];
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface TaxLead {
+  id: string;
+  brokerId: string;
+  pipelineId: string;
+  stageId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  estimatedValue?: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- Tareas ---
+// Entidad propia de la Oficina Virtual (persistida en Firestore vía API) —
+// deliberadamente separada de CaseTask (arriba), que es de la sección CRM de
+// financiamiento y vive solo en localStorage del navegador, nunca en el
+// servidor.
+
+export type TaxTaskPriority = "low" | "medium" | "high";
+export type TaxTaskStatus = "to_do" | "in_progress" | "completed";
+
+export interface TaxTask {
+  id: string;
+  brokerId: string;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  priority: TaxTaskPriority;
+  status: TaxTaskStatus;
+  relatedClientId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- Citas ---
+
+export type TaxAppointmentIntegration = "none" | "zoom" | "google_meet" | "phone";
+
+export interface TaxAppointment {
+  id: string;
+  brokerId: string;
+  title: string;
+  type: string;
+  dateTime: string; // ISO completo (fecha + hora)
+  durationMinutes: number;
+  relatedClientId?: string;
+  location?: string;
+  meetingIntegration: TaxAppointmentIntegration;
+  label?: string;
+  createdAt: string;
+}
+
+// --- Formularios y Contratos ---
+// Constructor propio (no depende de ningún formulario externo de GHL/Luxora):
+// cada TaxFormTemplate tiene páginas → secciones → campos, un estado
+// borrador/publicado con versión, y un secureToken que identifica el link
+// público de llenado (ver app/api/public/tax-forms/[token]/route.ts).
+
+export type TaxFormFieldType =
+  | "short_text"
+  | "long_text"
+  | "number"
+  | "currency"
+  | "percentage"
+  | "email"
+  | "phone"
+  | "address"
+  | "date"
+  | "time"
+  | "dropdown"
+  | "multiple_choice"
+  | "checkbox"
+  | "checkbox_group"
+  | "yes_no"
+  | "multi_select"
+  | "rating"
+  | "preparer";
+
+export interface TaxFormField {
+  id: string;
+  type: TaxFormFieldType;
+  label: string;
+  required: boolean;
+  options?: string[]; // dropdown / multiple_choice / checkbox_group / multi_select
+}
+
+export interface TaxFormSection {
+  id: string;
+  name: string;
+  fields: TaxFormField[];
+}
+
+export interface TaxFormPage {
+  id: string;
+  name: string;
+  sections: TaxFormSection[];
+}
+
+export type TaxFormStatus = "draft" | "published";
+
+export interface TaxFormTemplate {
+  id: string;
+  brokerId: string;
+  name: string;
+  serviceType?: TaxServiceType | "service_agreement" | "custom";
+  status: TaxFormStatus;
+  version: number;
+  headerText?: string;
+  logoUrl?: string;
+  logoSize: "sm" | "md" | "lg";
+  logoAlignment: "left" | "center";
+  pages: TaxFormPage[];
+  attachmentStoragePath?: string; // PDF de referencia adjunto (ej. el contrato ya firmado), vía "Upload document (PDF)"
+  attachmentName?: string;
+  secureToken: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+}
+
+export interface TaxFormSubmission {
+  id: string;
+  brokerId: string;
+  formTemplateId: string;
+  formVersion: number;
+  clientName?: string;
+  clientEmail?: string;
+  answers: Record<string, string | number | boolean | string[]>;
+  submittedAt: string;
+}
+
+// --- Automatizaciones y Recordatorios ---
+
+export type TaxAutomationTriggerType = "deadline_approaching" | "stage_changed" | "task_overdue" | "invoice_overdue";
+export type TaxAutomationActionType = "send_email" | "send_sms" | "create_task";
+export type TaxAutomationStatus = "active" | "draft" | "paused";
+
+export interface TaxAutomationTriggerConfig {
+  daysBefore?: number; // deadline_approaching / invoice_overdue
+  toStageId?: string; // stage_changed
+}
+
+export interface TaxAutomationActionConfig {
+  subject?: string; // send_email
+  message?: string; // send_email / send_sms
+  taskTitle?: string; // create_task
+}
+
+export interface TaxAutomation {
+  id: string;
+  brokerId: string;
+  name: string;
+  status: TaxAutomationStatus;
+  triggerType: TaxAutomationTriggerType;
+  triggerConfig: TaxAutomationTriggerConfig;
+  actionType: TaxAutomationActionType;
+  actionConfig: TaxAutomationActionConfig;
+  lastRunAt?: string;
+  createdAt: string;
+}
+
 // Datos de entrada que el broker llena en los formularios de creación — el
 // servidor asigna id/brokerId/stage/documentsCount/timestamps (TaxCase) o
 // invoiceNumber/dueDate/createdAt (TaxInvoice), y calcula e360FeeDeduction/
 // netCommission a partir de los campos crudos (TaxCommissionItem).
 export type NewTaxCaseInput = Omit<TaxCase, "id" | "brokerId" | "stage" | "documentsCount" | "createdAt" | "updatedAt">;
 
-export type NewTaxInvoiceInput = Pick<TaxInvoice, "clientName" | "clientEmail" | "amount" | "paymentMethod" | "taxYear"> & {
+export type NewTaxInvoiceInput = Pick<TaxInvoice, "clientName" | "clientEmail" | "amount" | "paymentMethod" | "taxYear" | "description"> & {
   caseId?: string;
+  clientId?: string;
+  status?: Extract<TaxInvoiceStatus, "draft" | "sent">;
+  dueDate?: string;
 };
 
 export interface NewTaxCommissionInput {
@@ -364,6 +573,25 @@ export interface NewTaxCommissionInput {
   splitPercentage: number;
   underMentorship: boolean;
 }
+
+export type NewTaxClientInput = Pick<TaxClient, "name" | "email" | "phone" | "status" | "notes">;
+
+export type NewTaxPipelineInput = {
+  name: string;
+  stageNames: string[];
+};
+
+export type NewTaxLeadInput = Pick<TaxLead, "pipelineId" | "stageId" | "name" | "email" | "phone" | "estimatedValue" | "notes">;
+
+export type NewTaxTaskInput = Pick<TaxTask, "title" | "description" | "dueDate" | "priority" | "relatedClientId">;
+
+export type NewTaxAppointmentInput = Omit<TaxAppointment, "id" | "brokerId" | "createdAt">;
+
+export type NewTaxFormTemplateInput = Pick<TaxFormTemplate, "name" | "serviceType">;
+
+export type NewTaxFormSubmissionInput = Pick<TaxFormSubmission, "clientName" | "clientEmail" | "answers">;
+
+export type NewTaxAutomationInput = Omit<TaxAutomation, "id" | "brokerId" | "createdAt" | "lastRunAt">;
 
 // ==========================================
 // REVISOR DE REPORTE DE CRÉDITO (IA)

@@ -11,6 +11,7 @@ import HardMoneyWorkScopeEmail from "./templates/HardMoneyWorkScopeEmail";
 import NewCreditRepairApplicationEmail from "./templates/NewCreditRepairApplicationEmail";
 import NewCaseStaffEmail from "./templates/NewCaseStaffEmail";
 import TicketUpdateEmail, { TicketUpdateKind } from "./templates/TicketUpdateEmail";
+import TaxAutomationEmail from "./templates/TaxAutomationEmail";
 
 /**
  * Envío de notificaciones al broker. Nunca debe tumbar la acción principal
@@ -437,4 +438,28 @@ export async function sendTicketReplyEmail(params: TicketUpdateEmailParams): Pro
 
 export async function sendTicketResolvedEmail(params: TicketUpdateEmailParams): Promise<void> {
   await sendTicketUpdateEmail("resolved", params);
+}
+
+interface TaxAutomationEmailParams {
+  to: string;
+  recipientName: string;
+  subject: string;
+  message: string;
+  audience?: "broker" | "client";
+}
+
+export async function sendTaxAutomationEmail(params: TaxAutomationEmailParams): Promise<void> {
+  const resend = getResendClient();
+  if (!resend || !params.to) return;
+
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: params.to,
+      subject: params.subject,
+      react: <TaxAutomationEmail recipientName={params.recipientName} message={params.message} audience={params.audience} />,
+    });
+  } catch (err) {
+    console.error("Error enviando email de automatización de Oficina Virtual:", err);
+  }
 }

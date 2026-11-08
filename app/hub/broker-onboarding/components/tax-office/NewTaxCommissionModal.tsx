@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, UserPlus, CheckCircle2, DollarSign, Percent, Hash } from "lucide-react";
 import { NewTaxCommissionInput } from "../../types";
+import { computeTaxCommission } from "@/lib/services/tax-commission-calc";
 
 interface NewTaxCommissionModalProps {
   isOpen: boolean;
@@ -22,8 +23,7 @@ export default function NewTaxCommissionModal({ isOpen, onClose, onCommissionCre
 
   if (!isOpen) return null;
 
-  const e360FeeDeduction = underMentorship ? totalReturns * 60 : 0;
-  const netCommission = Math.round(grossVolume * (splitPercentage / 100)) - e360FeeDeduction;
+  const { e360FeeDeduction, netCommission } = computeTaxCommission(totalReturns, grossVolume, splitPercentage, underMentorship);
 
   const formatMoney = (val: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
@@ -169,9 +169,17 @@ export default function NewTaxCommissionModal({ isOpen, onClose, onCommissionCre
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-[#05101F] border border-gray-800 flex items-center justify-between">
-            <span className="text-[11px] uppercase font-bold text-gray-400">Comisión Neta Calculada</span>
-            <span className="text-lg font-black text-emerald-400">{formatMoney(netCommission)}</span>
+          <div className="p-3.5 rounded-xl bg-[#05101F] border border-gray-800 space-y-1.5">
+            {underMentorship && e360FeeDeduction > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-500">Fee E360 ({totalReturns} declaraciones × $60)</span>
+                <span className="text-xs font-bold text-amber-400">-{formatMoney(e360FeeDeduction)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase font-bold text-gray-400">Comisión Neta Calculada</span>
+              <span className="text-lg font-black text-emerald-400">{formatMoney(netCommission)}</span>
+            </div>
           </div>
 
           <div className="pt-3 border-t border-gray-800 flex items-center justify-end gap-3">

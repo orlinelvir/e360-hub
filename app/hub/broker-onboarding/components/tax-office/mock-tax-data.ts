@@ -1,4 +1,4 @@
-import { TaxCase, TaxInvoice, TaxCommissionItem } from "../../types";
+import { TaxCase, TaxInvoice, TaxCommissionItem, TaxClient, TaxPipeline, TaxLead, TaxTask, TaxAppointment, TaxFormTemplate, TaxAutomation } from "../../types";
 
 export interface TaxOfficeStats {
   totalCollected: number;
@@ -17,24 +17,6 @@ export interface TaxOfficeStats {
     rejected: number;
   };
 }
-
-export const EMPTY_TAX_STATS: TaxOfficeStats = {
-  totalCollected: 0,
-  outstandingBalance: 0,
-  refundAdvances: 0,
-  paidInvoicesCount: 0,
-  averageFee: 0,
-  totalCasesCount: 0,
-  stageCounts: {
-    new: 0,
-    docs_pending: 0,
-    in_review: 0,
-    ready_to_file: 0,
-    transmitted: 0,
-    accepted: 0,
-    rejected: 0,
-  },
-};
 
 export const INITIAL_TAX_STATS: TaxOfficeStats = {
   totalCollected: 68450,
@@ -207,7 +189,7 @@ export const INITIAL_TAX_INVOICES: TaxInvoice[] = [
     clientName: "Elena Ramos (Transport LLC)",
     clientEmail: "elena@transportllc.net",
     amount: 850,
-    status: "pending",
+    status: "sent",
     paymentMethod: "card",
     taxYear: 2025,
     dueDate: "2026-01-28",
@@ -234,7 +216,7 @@ export const INITIAL_TAX_INVOICES: TaxInvoice[] = [
     clientName: "Mariana Gómez",
     clientEmail: "mariana.gomez@outlook.com",
     amount: 300,
-    status: "pending",
+    status: "sent",
     paymentMethod: "refund_deduction",
     taxYear: 2025,
     dueDate: "2026-01-26",
@@ -279,41 +261,246 @@ export const INITIAL_TAX_COMMISSIONS: TaxCommissionItem[] = [
   },
 ];
 
-export const TAX_TEMPLATES_DATA = [
+export const INITIAL_TAX_CLIENTS: TaxClient[] = [
   {
-    id: "tpl-7216",
-    title: "Formulario de Consentimiento IRS 7216",
-    code: "IRS-7216-2025",
-    description: "Requisito federal obligatorio del IRS para autorizar el uso y divulgación de información fiscal del contribuyente.",
-    badge: "Obligatorio IRS",
-    category: "Legal & Cumplimiento",
-    fieldsCount: 8,
+    id: "TCL-001",
+    brokerId: "current_broker",
+    name: "Carlos Mendoza",
+    email: "carlos.mendoza@email.com",
+    phone: "+1 (305) 555-0192",
+    status: "active",
+    notes: "Cliente recurrente desde 2024, siempre con Schedule C.",
+    createdAt: "2026-01-20T14:30:00Z",
+    updatedAt: "2026-01-22T09:15:00Z",
   },
   {
-    id: "tpl-intake",
-    title: "Cuestionario de Admisión Fiscal (Tax Intake 2025)",
-    code: "INTAKE-1040-ES",
-    description: "Formulario digital para que el cliente ingrese sus dependientes, cambios de estado civil, cuentas bancarias y suba sus W-2/1099.",
-    badge: "Bilingüe (ES/EN)",
-    category: "Captación de Cliente",
-    fieldsCount: 24,
+    id: "TCL-002",
+    brokerId: "current_broker",
+    name: "Elena Ramos (Transport LLC)",
+    email: "elena@transportllc.net",
+    phone: "+1 (832) 555-0144",
+    status: "in_review",
+    createdAt: "2026-01-18T11:00:00Z",
+    updatedAt: "2026-01-21T16:40:00Z",
   },
   {
-    id: "tpl-agreement",
-    title: "Contrato de Prestación de Servicios Fiscales",
-    code: "E360-TAX-AGR-2025",
-    description: "Contrato con el cliente estipulando honorarios acordados, responsabilidades de veracidad de datos y cláusula de no devolución.",
-    badge: "Blindaje Legal",
-    category: "Contratos de Honorarios",
-    fieldsCount: 12,
+    id: "TCL-003",
+    brokerId: "current_broker",
+    name: "Sofía Morales",
+    email: "sofia.morales@icloud.com",
+    phone: "+1 (702) 555-0165",
+    status: "waiting_docs",
+    notes: "Pendiente pasaporte certificado para W-7.",
+    createdAt: "2026-01-22T08:00:00Z",
+    updatedAt: "2026-01-22T08:00:00Z",
   },
   {
-    id: "tpl-corporate",
-    title: "Checklist de Cierre Fiscal Corporativo (1120/1065)",
-    code: "CORP-CHECK-2025",
-    description: "Lista de verificación para LLCs, Sociedades y Corporaciones: P&L, balance general, nómina 941/940 y aportes de socios.",
-    badge: "Empresarial",
-    category: "Corporativo",
-    fieldsCount: 18,
+    id: "TCL-004",
+    brokerId: "current_broker",
+    name: "Giancarlo Guzmán",
+    email: "giancarlo.g@gmail.com",
+    phone: "+1 (954) 555-0110",
+    status: "lead",
+    createdAt: "2026-01-23T10:00:00Z",
+    updatedAt: "2026-01-23T10:00:00Z",
+  },
+];
+
+export const INITIAL_TAX_PIPELINES: TaxPipeline[] = [
+  {
+    id: "TPL-DEMO-MAIN",
+    brokerId: "current_broker",
+    name: "Main pipeline",
+    isDefault: true,
+    stages: [
+      { id: "stage-new-lead", name: "New Lead", order: 0 },
+      { id: "stage-contacted", name: "Contacted", order: 1 },
+      { id: "stage-consultation", name: "Consultation", order: 2 },
+      { id: "stage-proposal", name: "Proposal", order: 3 },
+      { id: "stage-client", name: "Client", order: 4 },
+    ],
+    createdAt: "2026-01-10T00:00:00Z",
+  },
+];
+
+export const INITIAL_TAX_LEADS: TaxLead[] = [
+  {
+    id: "TLD-001",
+    brokerId: "current_broker",
+    pipelineId: "TPL-DEMO-MAIN",
+    stageId: "stage-contacted",
+    name: "Maricela Funes",
+    email: "maricela.funes@gmail.com",
+    phone: "+1 (786) 555-0199",
+    estimatedValue: 400,
+    createdAt: "2026-01-21T10:00:00Z",
+    updatedAt: "2026-01-21T10:00:00Z",
+  },
+  {
+    id: "TLD-002",
+    brokerId: "current_broker",
+    pipelineId: "TPL-DEMO-MAIN",
+    stageId: "stage-consultation",
+    name: "Ernesto Villalta",
+    email: "ernesto.v@outlook.com",
+    phone: "+1 (954) 555-0122",
+    estimatedValue: 650,
+    createdAt: "2026-01-20T10:00:00Z",
+    updatedAt: "2026-01-20T10:00:00Z",
+  },
+  {
+    id: "TLD-003",
+    brokerId: "current_broker",
+    pipelineId: "TPL-DEMO-MAIN",
+    stageId: "stage-new-lead",
+    name: "Daniela Portillo",
+    phone: "+1 (407) 555-0177",
+    estimatedValue: 300,
+    createdAt: "2026-01-23T10:00:00Z",
+    updatedAt: "2026-01-23T10:00:00Z",
+  },
+];
+
+export const INITIAL_TAX_TASKS: TaxTask[] = [
+  {
+    id: "TTK-001",
+    brokerId: "current_broker",
+    title: "Pedir W-2 faltante",
+    description: "Falta el W-2 del segundo empleador de 2025.",
+    dueDate: new Date(Date.now() + 2 * 86400000).toISOString().split("T")[0],
+    priority: "high",
+    status: "to_do",
+    relatedClientId: "TCL-003",
+    createdAt: "2026-01-22T08:00:00Z",
+    updatedAt: "2026-01-22T08:00:00Z",
+  },
+  {
+    id: "TTK-002",
+    brokerId: "current_broker",
+    title: "Confirmar Balance Sheet 2025",
+    dueDate: new Date(Date.now() + 5 * 86400000).toISOString().split("T")[0],
+    priority: "medium",
+    status: "in_progress",
+    relatedClientId: "TCL-002",
+    createdAt: "2026-01-19T09:00:00Z",
+    updatedAt: "2026-01-21T10:00:00Z",
+  },
+  {
+    id: "TTK-003",
+    brokerId: "current_broker",
+    title: "Llamar para confirmar cita de firma",
+    priority: "low",
+    status: "completed",
+    relatedClientId: "TCL-001",
+    createdAt: "2026-01-18T09:00:00Z",
+    updatedAt: "2026-01-20T09:00:00Z",
+  },
+];
+
+export const INITIAL_TAX_APPOINTMENTS: TaxAppointment[] = [
+  {
+    id: "TAP-001",
+    brokerId: "current_broker",
+    title: "Consulta inicial",
+    type: "Consulta",
+    dateTime: new Date(new Date().setHours(10, 0, 0, 0) + 86400000).toISOString(),
+    durationMinutes: 30,
+    relatedClientId: "TCL-004",
+    meetingIntegration: "zoom",
+    location: "https://zoom.us/j/demo",
+    label: "Consulta",
+    createdAt: "2026-01-22T08:00:00Z",
+  },
+  {
+    id: "TAP-002",
+    brokerId: "current_broker",
+    title: "Firma de contrato de servicios",
+    type: "Firma",
+    dateTime: new Date(new Date().setHours(15, 30, 0, 0)).toISOString(),
+    durationMinutes: 20,
+    relatedClientId: "TCL-002",
+    meetingIntegration: "phone",
+    label: "Firma de Contrato",
+    createdAt: "2026-01-20T08:00:00Z",
+  },
+];
+
+export const INITIAL_TAX_FORMS: TaxFormTemplate[] = [
+  {
+    id: "TFM-001",
+    brokerId: "current_broker",
+    name: "Personal Tax Intake",
+    serviceType: "1040_personal",
+    status: "published",
+    version: 2,
+    logoSize: "md",
+    logoAlignment: "center",
+    headerText: "Completa este formulario antes de tu cita.",
+    pages: [
+      {
+        id: "page-1",
+        name: "Página 1",
+        sections: [
+          {
+            id: "section-1",
+            name: "Sección",
+            fields: [
+              { id: "f1", type: "dropdown", label: "Filing status", required: true, options: ["Single", "Married Filing Jointly", "Married Filing Separately", "Head of Household"] },
+              { id: "f2", type: "number", label: "Number of dependents", required: false },
+              { id: "f3", type: "yes_no", label: "Did you file last year?", required: false },
+            ],
+          },
+        ],
+      },
+    ],
+    secureToken: "demo-token-personal-tax-intake",
+    createdAt: "2026-01-10T00:00:00Z",
+    updatedAt: "2026-01-15T00:00:00Z",
+    publishedAt: "2026-01-15T00:00:00Z",
+  },
+  {
+    id: "TFM-002",
+    brokerId: "current_broker",
+    name: "Service Agreement",
+    serviceType: "service_agreement",
+    status: "draft",
+    version: 1,
+    logoSize: "md",
+    logoAlignment: "center",
+    pages: [
+      {
+        id: "page-1",
+        name: "Página 1",
+        sections: [{ id: "section-1", name: "Sección", fields: [{ id: "f1", type: "currency", label: "Agreed fee", required: true }] }],
+      },
+    ],
+    secureToken: "demo-token-service-agreement",
+    createdAt: "2026-01-20T00:00:00Z",
+    updatedAt: "2026-01-20T00:00:00Z",
+  },
+];
+
+export const INITIAL_TAX_AUTOMATIONS: TaxAutomation[] = [
+  {
+    id: "TAU-001",
+    brokerId: "current_broker",
+    name: "Recordatorio 3 días antes del deadline",
+    status: "active",
+    triggerType: "deadline_approaching",
+    triggerConfig: { daysBefore: 3 },
+    actionType: "send_email",
+    actionConfig: { subject: "Tu fecha límite se acerca", message: "Recuerda que tu declaración tiene una fecha límite próxima." },
+    createdAt: "2026-01-10T00:00:00Z",
+  },
+  {
+    id: "TAU-002",
+    brokerId: "current_broker",
+    name: "Tarea de seguimiento para facturas vencidas",
+    status: "draft",
+    triggerType: "invoice_overdue",
+    triggerConfig: {},
+    actionType: "create_task",
+    actionConfig: { taskTitle: "Dar seguimiento a factura vencida" },
+    createdAt: "2026-01-18T00:00:00Z",
   },
 ];

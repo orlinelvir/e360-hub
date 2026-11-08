@@ -129,6 +129,46 @@ service cloud.firestore {
         match /taxCommissions/{commissionId} {
           allow read, write: if false;
         }
+
+        match /taxClients/{clientId} {
+          allow read, write: if false;
+        }
+
+        match /taxPipelines/{pipelineId} {
+          allow read, write: if false;
+        }
+
+        match /taxLeads/{leadId} {
+          allow read, write: if false;
+        }
+
+        match /taxTasks/{taskId} {
+          allow read, write: if false;
+        }
+
+        match /taxAppointments/{appointmentId} {
+          allow read, write: if false;
+        }
+
+        // El contenido del formulario (campos, texto) no es sensible, pero el
+        // acceso sigue siendo solo por Admin SDK igual que el resto de Tax
+        // Office — el único camino de lectura pública es el collectionGroup
+        // query por secureToken en getPublishedTaxFormByToken(), que también
+        // corre con Admin SDK desde la ruta API pública, nunca desde el cliente.
+        match /taxFormTemplates/{formId} {
+          allow read, write: if false;
+        }
+
+        // Puede contener datos personales del contribuyente que llenó el
+        // formulario (nombre, correo, respuestas) — jamás legible/escribible
+        // directo por el cliente, ni siquiera por el broker dueño.
+        match /taxFormSubmissions/{submissionId} {
+          allow read, write: if false;
+        }
+
+        match /taxAutomations/{automationId} {
+          allow read, write: if false;
+        }
       }
 
       // Tickets de soporte scoped por Broker (Legacy & Enhanced V2)

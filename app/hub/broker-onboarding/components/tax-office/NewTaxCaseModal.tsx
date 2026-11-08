@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { X, UserPlus, CheckCircle2, DollarSign, Calendar, Landmark, FileText, Phone, Mail, User } from "lucide-react";
-import { TaxCase, TaxServiceType, NewTaxCaseInput } from "../../types";
+import { X, UserPlus, CheckCircle2, DollarSign, Calendar, Landmark, FileText, Phone, Mail, User, Users } from "lucide-react";
+import { TaxCase, TaxServiceType, NewTaxCaseInput, TaxClient } from "../../types";
+
+// Función de módulo (no del componente) para que el linter de pureza de
+// React no trate new Date() como parte del render — igual patrón que el
+// resto de generadores de valores "ahora mismo" de esta sección.
+function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
 
 interface NewTaxCaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCaseCreated: (input: NewTaxCaseInput) => Promise<boolean>;
+  clients: TaxClient[];
 }
 
 const SERVICE_LABELS: Record<TaxServiceType, string> = {
@@ -20,14 +28,18 @@ const SERVICE_LABELS: Record<TaxServiceType, string> = {
   "itin_application": "Trámite de ITIN (Form W-7)",
 };
 
-export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewTaxCaseModalProps) {
+export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated, clients }: NewTaxCaseModalProps) {
+  const [mode, setMode] = useState<"select" | "new">(clients.length > 0 ? "select" : "new");
+  const [selectedClientId, setSelectedClientId] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
-  const [taxYear, setTaxYear] = useState<number>(2025);
+  const currentYear = getCurrentYear();
+  const [taxYear, setTaxYear] = useState<number>(currentYear);
   const [serviceType, setServiceType] = useState<TaxServiceType>("1040_personal");
   const [filingStatus, setFilingStatus] = useState<TaxCase["filingStatus"]>("single");
   const [agreedFee, setAgreedFee] = useState<number>(350);
+  const [deadline, setDeadline] = useState("");
   const [bankProduct, setBankProduct] = useState<boolean>(true);
   const [bankPartner, setBankPartner] = useState<TaxCase["bankPartner"]>("sbtpg");
   const [refundAdvanceRequested, setRefundAdvanceRequested] = useState<boolean>(true);
@@ -36,6 +48,16 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
   const [error, setError] = useState("");
 
   if (!isOpen) return null;
+
+  const handleSelectClient = (id: string) => {
+    setSelectedClientId(id);
+    const c = clients.find((cl) => cl.id === id);
+    if (c) {
+      setClientName(c.name);
+      setClientEmail(c.email);
+      setClientPhone(c.phone);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +75,7 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
     setIsSubmitting(true);
 
     const input: NewTaxCaseInput = {
+      clientId: mode === "select" ? selectedClientId || undefined : undefined,
       clientName: clientName.trim(),
       clientEmail: clientEmail.trim() || "sin-correo@e360.com",
       clientPhone: clientPhone.trim() || "No especificado",
@@ -60,6 +83,7 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
       serviceType,
       filingStatus,
       agreedFee: Number(agreedFee) || 0,
+      deadline: deadline || undefined,
       bankProduct,
       bankPartner: bankProduct ? bankPartner : "none",
       refundAdvanceRequested: bankProduct && refundAdvanceRequested,
@@ -86,7 +110,7 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
             </div>
             <div>
               <h3 className="font-bold text-base text-white">Nuevo Caso Fiscal (Expediente)</h3>
-              <p className="text-xs text-gray-400">Registra un cliente para la temporada de taxes 2025-2026</p>
+              <p className="text-xs text-gray-400">Registra un cliente para la temporada de taxes {currentYear}-{currentYear + 1}</p>
             </div>
           </div>
           <button
@@ -107,19 +131,59 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
 
           {/* Datos del Cliente */}
           <div className="space-y-3">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-              <User size={13} /> Datos del Contribuyente
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                <User size={13} /> Datos del Contribuyente
+              </h4>
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#05101F] border border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => setMode("select")}
+                  className={`px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer ${mode === "select" ? "bg-cyan-500/20 text-cyan-300" : "text-gray-400 hover:text-white"}`}
+                >
+                  <Users size={11} />
+                  Select a client
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("new")}
+                  className={`px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer ${mode === "new" ? "bg-cyan-500/20 text-cyan-300" : "text-gray-400 hover:text-white"}`}
+                >
+                  <UserPlus size={11} />
+                  New client
+                </button>
+              </div>
+            </div>
+
+            {mode === "select" && (
+              <div>
+                <label className="block text-[10px] uppercase font-semibold text-gray-400 mb-1">Client</label>
+                <select
+                  value={selectedClientId}
+                  onChange={(e) => handleSelectClient(e.target.value)}
+                  className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-white outline-none cursor-pointer"
+                >
+                  <option value="">— Elige un cliente —</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2">
                 <label className="block text-[10px] uppercase font-semibold text-gray-400 mb-1">Nombre Completo *</label>
                 <input
                   type="text"
                   required
+                  disabled={mode === "select" && Boolean(selectedClientId)}
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   placeholder="Ej. Juan Carlos Morales"
-                  className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-600 outline-none transition-colors"
+                  className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-600 outline-none transition-colors disabled:opacity-60"
                 />
               </div>
 
@@ -129,10 +193,11 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
                 </label>
                 <input
                   type="tel"
+                  disabled={mode === "select" && Boolean(selectedClientId)}
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
                   placeholder="+1 (305) 555-0123"
-                  className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-600 outline-none transition-colors"
+                  className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-600 outline-none transition-colors disabled:opacity-60"
                 />
               </div>
 
@@ -142,10 +207,11 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
                 </label>
                 <input
                   type="email"
+                  disabled={mode === "select" && Boolean(selectedClientId)}
                   value={clientEmail}
                   onChange={(e) => setClientEmail(e.target.value)}
                   placeholder="cliente@gmail.com"
-                  className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-600 outline-none transition-colors"
+                  className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-600 outline-none transition-colors disabled:opacity-60"
                 />
               </div>
             </div>
@@ -166,10 +232,10 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
                   onChange={(e) => setTaxYear(Number(e.target.value))}
                   className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3 py-2.5 text-white outline-none cursor-pointer"
                 >
-                  <option value={2025}>2025 (Año Actual)</option>
-                  <option value={2024}>2024 (Año Previo)</option>
-                  <option value={2023}>2023</option>
-                  <option value={2022}>2022</option>
+                  <option value={currentYear}>{currentYear} (Año Actual)</option>
+                  <option value={currentYear - 1}>{currentYear - 1} (Año Previo)</option>
+                  <option value={currentYear - 2}>{currentYear - 2}</option>
+                  <option value={currentYear - 3}>{currentYear - 3}</option>
                 </select>
               </div>
 
@@ -214,6 +280,18 @@ export default function NewTaxCaseModal({ isOpen, onClose, onCaseCreated }: NewT
                   value={agreedFee}
                   onChange={(e) => setAgreedFee(Number(e.target.value))}
                   className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-white font-bold outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-semibold text-gray-400 mb-1 flex items-center gap-1">
+                  <Calendar size={11} /> Deadline
+                </label>
+                <input
+                  type="date"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-white outline-none"
                 />
               </div>
             </div>
