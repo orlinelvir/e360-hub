@@ -911,9 +911,13 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
         </div>
       )}
 
-      {/* Subnavegación Interna de la Oficina Virtual */}
-      <div className="border-b border-gray-800 flex items-center justify-between overflow-x-auto pb-px">
-        <div className="flex items-center gap-2">
+      {/* Subnavegación Interna de la Oficina Virtual — la tira de pestañas
+          tiene su propio scroll horizontal (min-w-0 para que pueda encogerse
+          dentro del flex row), separado de los botones de acción, que llevan
+          shrink-0 para quedar siempre visibles y no desaparecer dentro del
+          scroll junto con las pestañas. */}
+      <div className="border-b border-gray-800 flex items-center justify-between gap-3 pb-px">
+        <div className="flex items-center gap-2 overflow-x-auto min-w-0">
           {subTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeSubTab === tab.id;
@@ -934,7 +938,7 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
           })}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {hasAccess && (
             <button
               onClick={() => setShowSampleData((prev) => !prev)}

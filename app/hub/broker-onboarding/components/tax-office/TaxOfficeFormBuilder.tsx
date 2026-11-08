@@ -273,18 +273,20 @@ export default function TaxOfficeFormBuilder({ form, onClose, onSave, onPublish,
         </div>
       </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto">
-        {pages.map((p, i) => (
-          <button
-            key={p.id}
-            onClick={() => setActivePageIndex(i)}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors shrink-0 cursor-pointer ${
-              activePageIndex === i ? "bg-cyan-500/20 text-cyan-300 border-cyan-400" : "bg-[#05101F] text-gray-400 border-gray-800 hover:text-white"
-            }`}
-          >
-            {p.name}
-          </button>
-        ))}
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 overflow-x-auto min-w-0">
+          {pages.map((p, i) => (
+            <button
+              key={p.id}
+              onClick={() => setActivePageIndex(i)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors shrink-0 cursor-pointer ${
+                activePageIndex === i ? "bg-cyan-500/20 text-cyan-300 border-cyan-400" : "bg-[#05101F] text-gray-400 border-gray-800 hover:text-white"
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
         <button
           onClick={addPage}
           className="px-3 py-1.5 rounded-full text-[11px] font-bold border border-dashed border-gray-700 text-gray-400 hover:text-white cursor-pointer shrink-0 flex items-center gap-1"

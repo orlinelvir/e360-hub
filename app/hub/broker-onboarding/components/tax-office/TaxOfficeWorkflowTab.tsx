@@ -44,20 +44,22 @@ export default function TaxOfficeWorkflowTab({ pipelines, leads, onAddLead, onMo
   return (
     <div className="space-y-6">
       <div className="p-4 rounded-2xl bg-[#0A182D]/80 border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
-          {pipelines.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setActivePipelineId(p.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors shrink-0 cursor-pointer ${
-                activePipeline.id === p.id
-                  ? "bg-cyan-500/20 text-cyan-300 border-cyan-400"
-                  : "bg-[#05101F] text-gray-400 border-gray-800 hover:text-white"
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+          <div className="flex items-center gap-2 overflow-x-auto min-w-0">
+            {pipelines.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setActivePipelineId(p.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors shrink-0 cursor-pointer ${
+                  activePipeline.id === p.id
+                    ? "bg-cyan-500/20 text-cyan-300 border-cyan-400"
+                    : "bg-[#05101F] text-gray-400 border-gray-800 hover:text-white"
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setIsNewPipelineOpen(true)}
             className="px-3 py-2 rounded-xl text-xs font-bold border border-dashed border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors shrink-0 cursor-pointer flex items-center gap-1"
