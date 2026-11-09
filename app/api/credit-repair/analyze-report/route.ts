@@ -30,6 +30,13 @@ const IMAGE_BATCH_SIZE = 10; // imágenes por llamada de extracción
 const TEXT_CHUNK_BYTES = 70_000; // tamaño objetivo por fragmento de texto en la fase de extracción
 const EXTRACTION_TIMEOUT_MS = 35_000;
 const SYNTHESIS_TIMEOUT_MS = 40_000;
+// Antes, extractOneChunk/verifyAnalysis llamaban con un solo modelo fijo
+// (gemini-3.6-flash) sin respaldo — confirmado en logs de producción el
+// 2026-11-09: ese modelo entró en un estado sostenido de 503 "alta demanda",
+// y como no había a qué más recurrir, CADA fragmento de CADA reporte grande
+// fallaba, tumbando el análisis completo. Misma cadena de respaldo que ya
+// usa el resto del archivo (ver analyzeReport, llamada directa/síntesis).
+const GEMINI_MODEL_CHAIN = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
 
 function isValidAnalysis(d: unknown): d is CreditReportAnalysis {
   if (!d || typeof d !== "object") return false;
@@ -105,7 +112,7 @@ async function extractOneChunk(
     const systemInstruction = buildExtractionSystemInstruction();
     const userContent = buildExtractionUserContent(text, usingImages, idx, total);
     const data = await generateGeminiJson(systemInstruction, userContent, images, {
-      models: ["gemini-3.6-flash"],
+      models: GEMINI_MODEL_CHAIN,
       timeoutMs: EXTRACTION_TIMEOUT_MS,
       maxOutputTokens: 4096
     });
@@ -146,7 +153,7 @@ async function verifyAnalysis(
     const systemInstruction = buildVerificationSystemInstruction();
     const userContent = buildVerificationUserContent(sourceLabel, JSON.stringify(draft));
     const result = await generateGeminiJson(systemInstruction, userContent, verificationImages, {
-      models: ["gemini-3.6-flash"],
+      models: GEMINI_MODEL_CHAIN,
       timeoutMs: SYNTHESIS_TIMEOUT_MS,
       maxOutputTokens: 8192
     });
@@ -194,7 +201,7 @@ async function analyzeReport(
   if (!needsChunking) {
     const systemInstruction = buildCreditReportSystemInstruction();
     const userContent = buildCreditReportUserContent(text, usingImages);
-    draft = await generateGeminiJson(systemInstruction, userContent, images, { maxOutputTokens: 8192 });
+    draft = await generateGeminiJson(systemInstruction, userContent, images, { models: GEMINI_MODEL_CHAIN, maxOutputTokens: 8192 });
   } else {
     const chunks = usingImages ? chunkArray(images, IMAGE_BATCH_SIZE) : splitTextIntoChunks(text, TEXT_CHUNK_BYTES);
     const total = chunks.length;
@@ -226,6 +233,7 @@ async function analyzeReport(
     const synthesisSystemInstruction = buildCreditReportSystemInstruction();
     const synthesisUserContent = buildSynthesisUserContent(combinedFindingsJson);
     draft = await generateGeminiJson(synthesisSystemInstruction, synthesisUserContent, [], {
+      models: GEMINI_MODEL_CHAIN,
       timeoutMs: SYNTHESIS_TIMEOUT_MS,
       maxOutputTokens: 8192
     });
