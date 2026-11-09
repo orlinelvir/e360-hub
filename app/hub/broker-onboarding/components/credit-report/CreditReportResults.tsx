@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Copy, Download, Check, RotateCcw } from "lucide-react";
 import { CreditReportAnalysis, CreditReportIssue } from "../../types";
-import { BANDS, TIPO_LABELS, DISPUTABLE_LABELS, IMPACT_LABELS, money, pct, summaryText } from "./credit-report-utils";
+import { BANDS, TIPO_LABELS, DISPUTABLE_LABELS, IMPACT_LABELS, money, pct, summaryText, normalizeBuro, asScoreNumber } from "./credit-report-utils";
 import CreditReportPricingCard from "./CreditReportPricingCard";
 import CreditReportPdfCard from "./CreditReportPdfCard";
 
@@ -79,8 +79,8 @@ export default function CreditReportResults({ analysis, notes, brokerName, onNew
         <h2 className="text-lg font-extrabold text-white">Diagnóstico</h2>
         <div className="space-y-3">
           {["Equifax", "Experian", "TransUnion"].map((name) => {
-            const f = scores.find((s) => s.buro.toLowerCase() === name.toLowerCase());
-            return <ScoreRuler key={name} name={name} score={f && typeof f.score === "number" ? f.score : null} />;
+            const f = scores.find((s) => normalizeBuro(s.buro) === normalizeBuro(name));
+            return <ScoreRuler key={name} name={name} score={f ? asScoreNumber(f.score) : null} />;
           })}
         </div>
         <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[11px] text-gray-500">

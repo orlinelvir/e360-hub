@@ -2,6 +2,27 @@ import { jsPDF } from "jspdf";
 import { autoTable } from "jspdf-autotable";
 import { CreditReportAnalysis, CreditReportIssue, CreditReportIssueType, CreditReportDisputable, CreditReportImpact } from "../../types";
 
+// Gemini no siempre devuelve "buro" con la ortografía exacta del schema (ej.
+// "Trans Union" con espacio, o "TRANSUNION" en mayúsculas) — compararlo tal
+// cual contra "Equifax"/"Experian"/"TransUnion" hacía que la barra de score
+// mostrara "—" aunque el dato sí viniera en la respuesta. Se normaliza
+// quitando acentos, espacios y mayúsculas antes de comparar.
+export function normalizeBuro(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+}
+
+// El score también puede llegar como string numérico (ej. "720") en vez de
+// número — se admite cualquiera de las dos formas antes de mostrar "—".
+export function asScoreNumber(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return Number(v);
+  return null;
+}
+
 export const BANDS: Array<[number, number, string, string]> = [
   [300, 579, "#b3261e", "Pobre"],
   [580, 669, "#d9822b", "Regular"],
@@ -112,9 +133,9 @@ export function summaryText(d: CreditReportAnalysis): string {
   L.push("RESUMEN DE TU REPORTE DE CRÉDITO");
   L.push("Emprende 360");
   L.push("");
-  const sc = (d.scores || []).filter((s) => typeof s.score === "number");
+  const sc = (d.scores || []).filter((s) => asScoreNumber(s.score) !== null);
   if (sc.length) {
-    L.push("Tus puntajes: " + sc.map((s) => `${s.buro} ${s.score}`).join(" | "));
+    L.push("Tus puntajes: " + sc.map((s) => `${s.buro} ${asScoreNumber(s.score)}`).join(" | "));
     L.push("");
   }
   if (d.explicacion_para_el_cliente) {
@@ -225,10 +246,10 @@ export function buildClientPdf(d: CreditReportAnalysis, clientName: string, brok
     y += 4;
   }
 
-  const sc = (d.scores || []).filter((x) => typeof x.score === "number");
+  const sc = (d.scores || []).filter((x) => asScoreNumber(x.score) !== null);
   if (sc.length) {
     heading("Tus puntajes");
-    para(sc.map((x) => `${x.buro}: ${x.score}`).join("      "));
+    para(sc.map((x) => `${x.buro}: ${asScoreNumber(x.score)}`).join("      "));
   }
   if (d.explicacion_para_el_cliente) {
     heading("Cómo está tu crédito hoy");
