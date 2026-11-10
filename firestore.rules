@@ -24,7 +24,7 @@ service cloud.firestore {
     // campos vía cliente — el guardado real de perfil pasa por /api/broker/profile
     // (Admin SDK), que ignora estas reglas.
     function protectedBrokerFields() {
-      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid', 'brokerId', 'brokerSequence', 'firstSaleAt', 'contractSignedAt', 'contractSignedMethod', 'bestQuizScore', 'quizPassed', 'quizPassedAt'];
+      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid', 'brokerId', 'brokerSequence', 'firstSaleAt', 'contractSignedAt', 'contractSignedMethod', 'bestQuizScore', 'quizPassed', 'quizPassedAt', 'businessCreditIntakeToken'];
     }
 
     // 0. Reglas para la colección de BROKERS & E360 Hub
@@ -167,6 +167,14 @@ service cloud.firestore {
         }
 
         match /taxAutomations/{automationId} {
+          allow read, write: if false;
+        }
+
+        // Business Credit Program (DUNS / vendor accounts): contiene dirección
+        // personal del dueño y el EIN de la empresa — el único camino de
+        // escritura es la ruta pública por token (Admin SDK), y de lectura la
+        // ruta autenticada del broker dueño; nunca directo por el cliente.
+        match /businessCreditIntakes/{intakeId} {
           allow read, write: if false;
         }
       }

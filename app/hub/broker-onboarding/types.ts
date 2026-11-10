@@ -737,3 +737,31 @@ export interface QuizAttempt {
   completedAt: string;
 }
 
+// ==========================================
+// BUSINESS CREDIT PROGRAM — FORMULARIO DE CAPTURA (DUNS / VENDOR ACCOUNTS)
+// ==========================================
+// Campos fijos (no es un constructor de formularios como el de Oficina
+// Virtual E360) — el broker tiene un solo link permanente que puede mandarle
+// a cualquier cliente, sin límite de usos ni de clientes distintos.
+
+export interface BusinessCreditIntake {
+  id: string;
+  brokerId: string;
+  ownerFullName: string;
+  ownerAddress: string;
+  ownerCity: string;
+  ownerState: string;
+  ownerZip: string;
+  businessLegalName: string;
+  businessAddress: string;
+  businessCity: string;
+  businessState: string;
+  businessZip: string;
+  ein: string;
+  contactEmail: string;
+  contactPhone: string;
+  submittedAt: string;
+}
+
+export type NewBusinessCreditIntakeInput = Omit<BusinessCreditIntake, "id" | "brokerId" | "submittedAt">;
+

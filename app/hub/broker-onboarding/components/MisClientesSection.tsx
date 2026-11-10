@@ -29,9 +29,11 @@ import {
   Loader2,
   LayoutGrid,
   Columns3,
-  CheckSquare
+  CheckSquare,
+  Building2
 } from "lucide-react";
 import KanbanBoard from "./KanbanBoard";
+import BusinessCreditIntakeModal from "./BusinessCreditIntakeModal";
 import { ClientLead, PipelineStage, CaseNote, CaseDocument } from "../types";
 import { useAuth } from "@/components/AuthProvider";
 import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
@@ -108,6 +110,7 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
   const [editError, setEditError] = useState<string>("");
 
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isBusinessCreditModalOpen, setIsBusinessCreditModalOpen] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Estado para capturar y mostrar errores de sincronización con el CRM
@@ -797,6 +800,14 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
               className="w-full bg-[#0A182D]/80 border border-gray-800 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/60"
             />
           </div>
+
+          <button
+            onClick={() => setIsBusinessCreditModalOpen(true)}
+            className="px-4 py-2.5 bg-[#05101F] hover:bg-gray-800 border border-gray-800 text-gray-300 text-xs font-bold rounded-xl transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+          >
+            <Building2 size={14} />
+            <span>Business Credit Program</span>
+          </button>
 
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -1511,6 +1522,11 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
         brokerName={brokerName}
         isOpen={Boolean(whatsAppModalClient)}
         onClose={() => setWhatsAppModalClient(null)}
+      />
+
+      <BusinessCreditIntakeModal
+        isOpen={isBusinessCreditModalOpen}
+        onClose={() => setIsBusinessCreditModalOpen(false)}
       />
 
     </div>
