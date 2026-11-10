@@ -19,6 +19,19 @@
   }
 }
 
+/* Candado global contra el scroll horizontal fantasma reportado en todo el
+   sitio (web pública y Hub por igual) — no venía de ninguna página en
+   particular (se verificó documentElement.scrollWidth === clientWidth en
+   varias), sino que es el patrón clásico de redondeo de sub-píxel por el
+   escalado de pantalla/zoom del navegador, que puede sumar un desborde de
+   1-2px en CUALQUIER página. No afecta a los scrolls horizontales internos
+   a propósito (tiras de pestañas, tablas, el kanban), esos usan su propio
+   overflow-x-auto en un elemento interno — esto solo cierra el documento
+   exterior. */
+html, body {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
