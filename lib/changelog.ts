@@ -459,6 +459,15 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Mis Clientes, más despejado",
     description: "Se reorganizaron los botones de la parte de arriba para que no se amontonen entre sí.",
     tabHint: "Mis Clientes (CRM)"
+  },
+  {
+    id: 48,
+    date: "2026-11-10",
+    audience: "broker",
+    icon: "Landmark",
+    title: "Nuevo: Precalificador SBA",
+    description: "Evalúa a detalle qué programa SBA le queda a tu cliente (Microcrédito, 7(a), Express, CAPLines, 504), con pago mensual estimado y la lista de documentos que vas a necesitarle pedir.",
+    tabHint: "Soporte VIP → Formularios y Recursos"
   }
 ];
 
