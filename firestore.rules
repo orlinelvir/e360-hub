@@ -24,7 +24,7 @@ service cloud.firestore {
     // campos vía cliente — el guardado real de perfil pasa por /api/broker/profile
     // (Admin SDK), que ignora estas reglas.
     function protectedBrokerFields() {
-      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid', 'brokerId', 'brokerSequence', 'firstSaleAt', 'contractSignedAt', 'contractSignedMethod', 'bestQuizScore', 'quizPassed', 'quizPassedAt', 'businessCreditIntakeToken'];
+      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid', 'brokerId', 'brokerSequence', 'firstSaleAt', 'contractSignedAt', 'contractSignedMethod', 'bestQuizScore', 'quizPassed', 'quizPassedAt', 'businessCreditIntakeToken', 'businessCreditLogoPath'];
     }
 
     // 0. Reglas para la colección de BROKERS & E360 Hub

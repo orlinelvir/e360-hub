@@ -39,6 +39,7 @@ export default function PublicBusinessCreditIntakePage({ params }: { params: Pro
   const { token } = use(params);
   const [checking, setChecking] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasLogo, setHasLogo] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -51,7 +52,11 @@ export default function PublicBusinessCreditIntakePage({ params }: { params: Pro
         const res = await fetch(`/api/business-credit-intake/public/${token}`);
         const data = await res.json();
         if (cancelled) return;
-        if (!res.ok) setLoadError(data.error || "Este link no está disponible.");
+        if (!res.ok) {
+          setLoadError(data.error || "Este link no está disponible.");
+        } else {
+          setHasLogo(Boolean(data.hasLogo));
+        }
       } catch {
         if (!cancelled) setLoadError("No se pudo verificar el link. Intenta de nuevo más tarde.");
       } finally {
@@ -125,7 +130,16 @@ export default function PublicBusinessCreditIntakePage({ params }: { params: Pro
     <div className="min-h-screen bg-[#f5f1e6] py-10 px-4">
       <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
         <div className="bg-[#0A182D] px-8 py-6 text-center">
-          <span className="text-white font-extrabold text-xl tracking-wide">EMPRENDE 360</span>
+          {hasLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/business-credit-intake/public/${token}/logo`}
+              alt="Logo"
+              className="inline-block max-h-16 max-w-[240px] object-contain"
+            />
+          ) : (
+            <span className="text-white font-extrabold text-xl tracking-wide">EMPRENDE 360</span>
+          )}
         </div>
         <div className="h-1 bg-[#D4AF37]" />
 

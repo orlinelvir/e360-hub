@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getBrokerIdByBusinessCreditToken, submitBusinessCreditIntake } from "@/lib/services/business-credit-intake-service";
+import { getBrokerIdByBusinessCreditToken, getBusinessCreditBrandingByToken, submitBusinessCreditIntake } from "@/lib/services/business-credit-intake-service";
 import { NewBusinessCreditIntakeInput } from "@/app/hub/broker-onboarding/types";
 
 // Ruta pública (sin autenticación) — el cliente final llena este formulario
@@ -44,11 +44,11 @@ function validateInput(body: Partial<NewBusinessCreditIntakeInput>): string | nu
 
 export async function GET(_request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const brokerId = await getBrokerIdByBusinessCreditToken(token);
-  if (!brokerId) {
+  const branding = await getBusinessCreditBrandingByToken(token);
+  if (!branding) {
     return NextResponse.json({ error: "Este link no existe o ya no está disponible" }, { status: 404 });
   }
-  return NextResponse.json({ valid: true });
+  return NextResponse.json({ valid: true, hasLogo: Boolean(branding.logoStoragePath) });
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {

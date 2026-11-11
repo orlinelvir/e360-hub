@@ -26,6 +26,7 @@ import QRCode from "qrcode";
 import { BrokerProfileData } from "../types";
 import { useAuth } from "@/components/AuthProvider";
 import { getBrokerProfile, updateBrokerProfile } from "@/lib/services/broker-service";
+import BusinessCreditLogoCard from "./BusinessCreditLogoCard";
 
 // Mismo fallback que usa lib/email/client.ts (APP_BASE_URL) para que el enlace
 // de referido y los correos de Resend siempre apunten al mismo dominio.
@@ -473,6 +474,8 @@ export default function MiPerfilSection({ brokerName }: MiPerfilSectionProps) {
           </div>
         </form>
       </div>
+
+      <BusinessCreditLogoCard />
 
       {/* 3. ENLACE ÚNICO DE REFERIDO Y CAPTURA */}
       <div className="bg-[#0A182D]/60 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-4">

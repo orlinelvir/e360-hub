@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Copy, Check, Loader2, Building2, ChevronRight, ChevronLeft } from "lucide-react";
+import { X, Copy, Check, Loader2, Building2, ChevronRight, ChevronLeft, Edit3, Save } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
-import { BusinessCreditIntake } from "../types";
+import { User } from "firebase/auth";
+import { BusinessCreditIntake, NewBusinessCreditIntakeInput } from "../types";
 
 interface BusinessCreditIntakeModalProps {
   isOpen: boolean;
@@ -77,7 +78,15 @@ export default function BusinessCreditIntakeModal({ isOpen, onClose }: BusinessC
 
         <div className="p-6 overflow-y-auto space-y-5">
           {selected ? (
-            <IntakeDetail intake={selected} onBack={() => setSelected(null)} />
+            <IntakeDetail
+              intake={selected}
+              user={user}
+              onBack={() => setSelected(null)}
+              onUpdated={(updated) => {
+                setSelected(updated);
+                setIntakes((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+              }}
+            />
           ) : (
             <>
               <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
@@ -144,7 +153,38 @@ export default function BusinessCreditIntakeModal({ isOpen, onClose }: BusinessC
   );
 }
 
-function IntakeDetail({ intake, onBack }: { intake: BusinessCreditIntake; onBack: () => void }) {
+const EDITABLE_FIELD_LABELS: [keyof NewBusinessCreditIntakeInput, string][] = [
+  ["ownerFullName", "Propietario"],
+  ["ownerAddress", "Dirección personal"],
+  ["ownerCity", "Ciudad (propietario)"],
+  ["ownerState", "Estado (propietario)"],
+  ["ownerZip", "Código postal (propietario)"],
+  ["businessLegalName", "Empresa"],
+  ["businessAddress", "Dirección comercial"],
+  ["businessCity", "Ciudad (empresa)"],
+  ["businessState", "Estado (empresa)"],
+  ["businessZip", "Código postal (empresa)"],
+  ["ein", "EIN"],
+  ["contactEmail", "Correo de contacto"],
+  ["contactPhone", "Teléfono de contacto"]
+];
+
+function IntakeDetail({
+  intake,
+  user,
+  onBack,
+  onUpdated
+}: {
+  intake: BusinessCreditIntake;
+  user: User | null;
+  onBack: () => void;
+  onUpdated: (updated: BusinessCreditIntake) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState(intake);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+
   const rows: [string, string][] = [
     ["Propietario", intake.ownerFullName],
     ["Dirección personal", `${intake.ownerAddress}, ${intake.ownerCity}, ${intake.ownerState} ${intake.ownerZip}`],
@@ -155,20 +195,103 @@ function IntakeDetail({ intake, onBack }: { intake: BusinessCreditIntake; onBack
     ["Teléfono de contacto", intake.contactPhone || "—"],
     ["Recibido", new Date(intake.submittedAt).toLocaleString("es-US")]
   ];
+
+  const handleSave = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    setError("");
+    try {
+      const token = await user.getIdToken();
+      const patch: Partial<NewBusinessCreditIntakeInput> = {};
+      for (const [field] of EDITABLE_FIELD_LABELS) {
+        if (form[field] !== intake[field]) patch[field] = form[field];
+      }
+      const res = await fetch(`/api/business-credit-intake/${intake.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(patch)
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "No se pudo guardar el cambio.");
+        return;
+      }
+      onUpdated(form);
+      setIsEditing(false);
+    } catch {
+      setError("No se pudo guardar el cambio. Intenta de nuevo.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 cursor-pointer">
-        <ChevronLeft size={14} />
-        <span>Volver a la lista</span>
-      </button>
-      <div className="space-y-2.5">
-        {rows.map(([label, value]) => (
-          <div key={label} className="p-3 rounded-xl bg-[#05101F] border border-gray-800">
-            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">{label}</p>
-            <p className="text-sm text-white mt-0.5">{value}</p>
-          </div>
-        ))}
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 cursor-pointer">
+          <ChevronLeft size={14} />
+          <span>Volver a la lista</span>
+        </button>
+        {!isEditing && (
+          <button
+            onClick={() => {
+              setForm(intake);
+              setIsEditing(true);
+            }}
+            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white cursor-pointer"
+          >
+            <Edit3 size={13} />
+            <span>Editar</span>
+          </button>
+        )}
       </div>
+
+      {error && <p className="text-xs text-red-400">{error}</p>}
+
+      {isEditing ? (
+        <div className="space-y-3">
+          {EDITABLE_FIELD_LABELS.map(([field, label]) => (
+            <div key={field}>
+              <label className="block text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">{label}</label>
+              <input
+                type="text"
+                value={form[field]}
+                onChange={(e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))}
+                className="w-full bg-[#05101F] border border-gray-800 focus:border-cyan-400 rounded-lg px-3 py-2 text-sm text-white outline-none"
+              />
+            </div>
+          ))}
+          <div className="flex items-center gap-2 pt-2">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+              <span>Guardar cambios</span>
+            </button>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setError("");
+              }}
+              disabled={isSaving}
+              className="px-4 py-2 bg-[#05101F] hover:bg-gray-800 border border-gray-800 text-gray-300 rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {rows.map(([label, value]) => (
+            <div key={label} className="p-3 rounded-xl bg-[#05101F] border border-gray-800">
+              <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">{label}</p>
+              <p className="text-sm text-white mt-0.5">{value}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
