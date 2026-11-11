@@ -315,6 +315,150 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Estado del examen y del contrato, de un vistazo",
     description: "En la ficha de cada broker ahora se ve de inmediato si aprobó su examen del CRM y si ya firmó su contrato — útil para revisar solicitudes de reembolso.",
     tabHint: "Panel de Admin → Brokers"
+  },
+  {
+    id: 32,
+    date: "2026-11-08",
+    audience: "broker",
+    icon: "Users",
+    title: "Módulo de Clientes en Oficina Virtual",
+    description: "Lleva un registro de los clientes de tus servicios de impuestos, separado de tus clientes de financiamiento y seguros.",
+    tabHint: "Oficina Virtual → Clientes"
+  },
+  {
+    id: 33,
+    date: "2026-11-08",
+    audience: "broker",
+    icon: "KanbanSquare",
+    title: "Workflow de impuestos con tablero de leads",
+    description: "Organiza tus prospectos de temporada de taxes en un tablero que puedes mover con el mouse, con tus propias etapas.",
+    tabHint: "Oficina Virtual → Workflow"
+  },
+  {
+    id: 34,
+    date: "2026-11-08",
+    audience: "broker",
+    icon: "ListChecks",
+    title: "Tareas dentro de Oficina Virtual",
+    description: "Anota pendientes de tu temporada de impuestos y márcalos como completados, igual que ya puedes hacerlo con tus otros clientes.",
+    tabHint: "Oficina Virtual → Tasks"
+  },
+  {
+    id: 35,
+    date: "2026-11-08",
+    audience: "broker",
+    icon: "CalendarClock",
+    title: "Citas y calendario en Oficina Virtual",
+    description: "Agenda y consulta tus citas de impuestos en lista, por día o en un calendario del mes completo.",
+    tabHint: "Oficina Virtual → Appointments"
+  },
+  {
+    id: 36,
+    date: "2026-11-08",
+    audience: "broker",
+    icon: "FileSignature",
+    title: "Formularios con link para tu cliente",
+    description: "Arma un formulario de intake de impuestos y mándale a tu cliente un link para que lo llene él mismo, sin necesitar cuenta ni contraseña.",
+    tabHint: "Oficina Virtual → Forms & Contracts"
+  },
+  {
+    id: 37,
+    date: "2026-11-08",
+    audience: "broker",
+    icon: "Zap",
+    title: "Automatizaciones y recordatorios",
+    description: "Configura avisos automáticos para fechas límite próximas, facturas vencidas o tareas atrasadas de tus casos de impuestos.",
+    tabHint: "Oficina Virtual → Automations"
+  },
+  {
+    id: 38,
+    date: "2026-11-08",
+    audience: "broker",
+    icon: "LayoutDashboard",
+    title: "Dashboard de Oficina Virtual con filtro de fechas real",
+    description: "Los números principales ahora sí cambian según el rango de fechas que elijas, incluyendo un rango personalizado.",
+    tabHint: "Oficina Virtual → Dashboard"
+  },
+  {
+    id: 39,
+    date: "2026-11-08",
+    audience: "broker",
+    icon: "Receipt",
+    title: "Facturación de impuestos más completa",
+    description: "Marca tus facturas como borrador, enviada, pagada o vencida, y cambia la fecha de vencimiento cuando haga falta.",
+    tabHint: "Oficina Virtual → Facturación"
+  },
+  {
+    id: 40,
+    date: "2026-11-08",
+    audience: "broker",
+    icon: "Percent",
+    title: "Reporte de comisiones de impuestos exportable",
+    description: "Filtra tus comisiones por preparador o por fecha y descarga el reporte en PDF o Excel.",
+    tabHint: "Oficina Virtual → Comisiones"
+  },
+  {
+    id: 41,
+    date: "2026-11-09",
+    audience: "broker",
+    icon: "ScanSearch",
+    title: "El Revisor de Reporte de Crédito ya no falla",
+    description: "Se corrigió un problema que hacía fallar el análisis en reportes grandes — ahora reintenta con otro modelo de IA automáticamente en vez de rendirse.",
+    tabHint: "Revisor de Crédito"
+  },
+  {
+    id: 42,
+    date: "2026-11-09",
+    audience: "broker",
+    icon: "ScanSearch",
+    title: "Puntajes exactos en el Revisor de Crédito",
+    description: "La barra de cada buró (Equifax, Experian, TransUnion) ahora siempre muestra el número exacto del puntaje, en vez de quedarse en blanco.",
+    tabHint: "Revisor de Crédito"
+  },
+  {
+    id: 43,
+    date: "2026-11-10",
+    audience: "all",
+    icon: "Rows3",
+    title: "Se corrigió un scroll horizontal que aparecía de más",
+    description: "Algunas pantallas mostraban una barra de desplazamiento lateral innecesaria. Ya no debería aparecer en ninguna página.",
+    tabHint: "Todo el sitio"
+  },
+  {
+    id: 44,
+    date: "2026-11-10",
+    audience: "broker",
+    icon: "Building2",
+    title: "Nuevo: formulario de Business Credit Program",
+    description: "Mándale a tu cliente un link para que te dé los datos que necesitas para tramitar su número D-U-N-S y sus vendor accounts — sin límite de clientes.",
+    tabHint: "Mis Clientes (CRM)"
+  },
+  {
+    id: 45,
+    date: "2026-11-10",
+    audience: "broker",
+    icon: "Edit3",
+    title: "Corrige una captura del Business Credit Program sin reenviarla",
+    description: "Si tu cliente anotó mal un dato, ya lo puedes corregir tú mismo desde la lista de capturas recibidas.",
+    tabHint: "Mis Clientes (CRM) → Business Credit Program"
+  },
+  {
+    id: 46,
+    date: "2026-11-10",
+    audience: "broker",
+    icon: "ImageIcon",
+    title: "Tu logo en el formulario de Business Credit Program",
+    description: "Sube tu logo desde tu perfil y tus clientes lo verán a ellos en vez del logo de Emprende 360 al llenar ese formulario.",
+    tabHint: "Mi Perfil"
+  },
+  {
+    id: 47,
+    date: "2026-11-10",
+    audience: "broker",
+    icon: "Sparkles",
+    title: "Mis Clientes, más despejado",
+    description: "Se reorganizaron los botones de la parte de arriba para que no se amontonen entre sí.",
+    tabHint: "Mis Clientes (CRM)"
   }
 ];
 

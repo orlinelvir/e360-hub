@@ -32,7 +32,13 @@ import {
   BarChart3,
   IdCard,
   PartyPopper,
-  X
+  X,
+  Users,
+  CalendarClock,
+  Zap,
+  Receipt,
+  Percent,
+  Image as ImageIcon
 } from "lucide-react";
 import { ChangelogEntry } from "@/lib/changelog";
 
@@ -64,7 +70,13 @@ const ICON_MAP: Record<string, typeof Sparkles> = {
   Umbrella,
   ClipboardCheck,
   BarChart3,
-  IdCard
+  IdCard,
+  Users,
+  CalendarClock,
+  Zap,
+  Receipt,
+  Percent,
+  ImageIcon
 };
 
 export default function WhatsNewModal() {
