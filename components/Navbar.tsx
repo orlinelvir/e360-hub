@@ -4,8 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+
+// Páginas públicas "standalone" (un link que el broker manda a su cliente
+// final, sin login) — no tienen nada que ver con la marca de E360 Hub de
+// cara al broker, y como este Navbar es fixed, se montaba encima del
+// encabezado de esas páginas en vez de simplemente no aparecer ahí.
+const STANDALONE_PUBLIC_PREFIXES = ["/tax-forms/", "/business-credit-intake/"];
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -16,6 +24,10 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  if (STANDALONE_PUBLIC_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
+    return null;
+  }
 
   const navLinks = [
     { name: "Inicio", path: "/" },

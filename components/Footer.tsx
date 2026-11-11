@@ -1,9 +1,22 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 // Hemos quitado Instagram, Facebook y Linkedin de aquí
 import { Mail, Phone, MapPin } from "lucide-react";
+import { usePathname } from "next/navigation";
+
+// Mismo criterio que Navbar.tsx — páginas públicas standalone que un broker
+// le manda a su cliente final no deben llevar el pie de página de marketing
+// del Hub.
+const STANDALONE_PUBLIC_PREFIXES = ["/tax-forms/", "/business-credit-intake/"];
 
 export default function Footer() {
+  const pathname = usePathname();
+  if (STANDALONE_PUBLIC_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
+    return null;
+  }
+
   return (
     <footer className="bg-[#030812] border-t border-gray-800/50 pt-20 pb-10 mt-auto">
       <div className="max-w-7xl mx-auto px-6">
