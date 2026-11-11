@@ -229,6 +229,13 @@ const resources: Resource[] = [
     icon: Gauge,
     action: { type: "external", href: "/calificador-de-clientes.html" }
   },
+  {
+    id: "precalificador-sba",
+    label: "Precalificador SBA",
+    desc: "Evalúa a detalle qué programa SBA encaja (Microcrédito, 7(a), Express, CAPLines, 504), cuánto podría pedir y qué le falta",
+    icon: Landmark,
+    action: { type: "external", href: "/precalificador-sba.html" }
+  },
   { id: "e360-library", label: "E360 Library", desc: "Acceso al curso", icon: GraduationCap, action: { type: "external", href: "https://e360library.com" } },
   {
     id: "zoom-taxes",

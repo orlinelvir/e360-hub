@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Precalificador SBA — Emprende 360</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#eef2f8; --card:#ffffff; --ink:#14233b; --muted:#566880; --line:#d6deea; --field:#f7f9fc;
+  --navy:#0d2d5e; --gold:#c9961a; --gold-soft:#fbf3dc;
+  --red:#b3261e; --red-soft:#fdeceb; --amber:#8a5d00; --amber-soft:#fdf4de;
+  --green:#1d6b3f; --green-soft:#e6f4ec; --slate:#4d5d73; --slate-soft:#e8eef6;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1524; --card:#142138; --ink:#e7eefa; --muted:#a2b2c8; --line:#26374f; --field:#0f1b2e;
+    --navy:#0a2147; --gold:#e0b23c; --gold-soft:#2b2410;
+    --red:#ff8a80; --red-soft:#3a1816; --amber:#f0c768; --amber-soft:#33290e;
+    --green:#7fd3a0; --green-soft:#10301f; --slate:#b4c2d6; --slate-soft:#1c2c45;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1524; --card:#142138; --ink:#e7eefa; --muted:#a2b2c8; --line:#26374f; --field:#0f1b2e;
+  --navy:#0a2147; --gold:#e0b23c; --gold-soft:#2b2410;
+  --red:#ff8a80; --red-soft:#3a1816; --amber:#f0c768; --amber-soft:#33290e;
+  --green:#7fd3a0; --green-soft:#10301f; --slate:#b4c2d6; --slate-soft:#1c2c45;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:15px;line-height:1.55;}
+h1,h2,h3{font-family:'Source Serif 4',Georgia,serif;margin:0;line-height:1.2;color:var(--ink);}
+p{margin:0;}
+.hdr{background:#0d2d5e;color:#fff;padding:22px 20px 20px;border-bottom:4px solid #d4a017;}
+.hdr h1{color:#fff;font-size:24px;}
+.hdr p{color:#c3d0e6;font-size:13.5px;margin-top:6px;max-width:62ch;}
+.wrap{max-width:900px;margin:0 auto;padding:18px 16px 40px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:14px;}
+.card h2{font-size:18px;margin-bottom:4px;}
+.card .sub{color:var(--muted);font-size:13px;margin-bottom:14px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);}
+.fld input,.fld select{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--ink);font:inherit;font-size:15px;}
+.fld input:focus-visible,.fld select:focus-visible,.btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+.hint{font-size:12px;color:var(--muted);}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 18px;border-radius:8px;border:1px solid var(--navy);background:var(--navy);color:#fff;font:inherit;font-weight:600;cursor:pointer;}
+.btn.gold{background:#d4a017;border-color:#d4a017;color:#14233b;}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);}
+.btn.block{width:100%;}
+.row{display:flex;gap:10px;flex-wrap:wrap;}
+.banner{border-radius:8px;padding:11px 13px;font-size:13.5px;margin-bottom:12px;}
+.banner.warn{background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber);}
+.banner.err{background:var(--red-soft);color:var(--red);border:1px solid var(--red);}
+.banner.info{background:var(--slate-soft);color:var(--slate);border:1px solid var(--line);}
+.footnote{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;}
+[hidden]{display:none !important;}
+
+/* results */
+.verdict{border-radius:12px;padding:20px 20px 18px;margin-bottom:14px;border:1px solid var(--line);border-left-width:8px;background:var(--card);}
+.verdict.ok{border-left-color:var(--green);} .verdict.cond{border-left-color:var(--gold);} .verdict.low{border-left-color:#d9822b;} .verdict.no{border-left-color:var(--red);}
+.verdict h2{font-size:23px;margin-bottom:6px;}
+.verdict .pick{margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--field);font-size:14px;}
+.gate{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;}
+.gate:last-child{border-bottom:0;}
+.dot{flex:none;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;margin-top:1px;}
+.dot.pass{background:var(--green);} .dot.warn{background:#c98a00;} .dot.fail{background:var(--red);}
+.prog{border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;background:var(--card);}
+.prog.top{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft);}
+.prog-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;}
+.prog-head h3{font-size:19px;}
+.meter{display:flex;gap:4px;align-items:center;}
+.meter i{display:block;width:34px;height:9px;border-radius:5px;background:var(--line);}
+.meter.alto i{background:var(--green);} .meter.medio i:nth-child(-n+2){background:#c98a00;} .meter.medio i:nth-child(3){background:var(--line);} .meter.bajo i:nth-child(1){background:var(--red);}
+.meter-label{font-size:12.5px;font-weight:600;margin-left:8px;}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:10px 0;}
+.fact{background:var(--field);border-radius:8px;padding:8px 10px;}
+.fact b{display:block;font-family:'Source Serif 4',Georgia,serif;font-size:17px;}
+.fact span{font-size:12px;color:var(--muted);}
+ul.reasons{list-style:none;margin:8px 0 0;padding:0;}
+ul.reasons li{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;padding:3px 0;}
+ul.reasons .dot{width:18px;height:18px;font-size:11px;margin-top:2px;}
+.desc{font-size:13.5px;color:var(--muted);margin-bottom:6px;}
+ul.plain{margin:6px 0 0 18px;padding:0;} ul.plain li{margin:4px 0;font-size:14px;}
+.na{opacity:.75;}
+.tag{display:inline-block;font-size:12px;font-weight:500;padding:2px 9px;border-radius:20px;background:var(--slate-soft);color:var(--slate);}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>Precalificador SBA</h1>
+  <p>Ingresa los datos del cliente y mira a qué programa SBA encaja, cuánto podría pedir y qué le falta. Es una estimación: el prestamista decide.</p>
+</div>
+
+<div class="wrap">
+
+  <form id="form" autocomplete="off" novalidate>
+
+    <section class="card">
+      <h2>Puertas de elegibilidad</h2>
+      <p class="sub">Si alguna de estas falla, el SBA no es una opción hoy.</p>
+      <div class="grid">
+        <label class="fld">¿Todos los dueños y garantes son ciudadanos o nacionales de EE.UU. y viven en EE.UU. o sus territorios?
+          <select id="own100"><option value="">Elige…</option><option value="si">Sí, todos</option><option value="no">No, al menos uno no lo es (por ejemplo, residente permanente, visa o ITIN)</option><option value="nose">No sé</option></select>
+        </label>
+        <label class="fld">Tipo de negocio
+          <select id="bizType"><option value="">Elige…</option><option value="op">Negocio que opera (comercio, servicios, restaurante, construcción, transporte u otro)</option><option value="passive">Solo alquila propiedades de inversión (pasivo)</option><option value="lender">Presta dinero o actividad financiera</option><option value="gambling">Juegos de azar o actividad especulativa</option><option value="otro">Otro o no estoy seguro</option></select>
+        </label>
+        <label class="fld">¿El negocio es con fines de lucro y opera en EE.UU.?
+          <select id="forProfit"><option value="">Elige…</option><option value="si">Sí</option><option value="no">No</option></select>
+        </label>
+        <label class="fld">¿Algún dueño debe impuestos federales vencidos o tiene un préstamo del SBA moroso?
+          <select id="fedDebt"><option value="">Elige…</option><option value="no">No</option><option value="si">Sí</option></select>
+        </label>
+        <label class="fld">¿Algún dueño tiene cargos penales pendientes, o está en libertad condicional o probation?
+          <select id="criminal"><option value="">Elige…</option><option value="no">No</option><option value="si">Sí</option></select>
+        </label>
+        <label class="fld">¿Los dueños de 20% o más están dispuestos a firmar garantía personal?
+          <select id="guarantee"><option value="">Elige…</option><option value="si">Sí</option><option value="no">No</option></select>
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>El negocio</h2>
+      <p class="sub">Usa las cifras de las declaraciones de impuestos más recientes.</p>
+      <div class="grid">
+        <label class="fld">Meses en operación<input id="months" inputmode="numeric" placeholder="Ej.: 30"></label>
+        <label class="fld">Ingresos brutos al año ($)<input id="revenue" inputmode="decimal" placeholder="Ej.: 360000"></label>
+        <label class="fld">Utilidad neta al año ($)<input id="net" inputmode="decimal" placeholder="Ej.: 54000"><span class="hint">La ganancia que aparece en la declaración.</span></label>
+        <label class="fld">Pagos anuales de deudas actuales del negocio ($)<input id="debt" inputmode="decimal" placeholder="Ej.: 9000"></label>
+        <label class="fld">Años de declaraciones de impuestos presentadas
+          <select id="taxYears"><option value="">Elige…</option><option value="3">3 o más</option><option value="2">2</option><option value="1">1</option><option value="0">Ninguna</option></select>
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>El dueño</h2>
+      <div class="grid">
+        <label class="fld">Puntaje de crédito personal<input id="credit" inputmode="numeric" placeholder="Ej.: 690"></label>
+        <label class="fld">Garantía (colateral) que podría ofrecer
+          <select id="collateral"><option value="">Elige…</option><option value="none">Ninguna</option><option value="some">Algo (equipo, inventario o vehículos)</option><option value="re">Bienes raíces con equity</option></select>
+        </label>
+        <label class="fld">Ahorros propios disponibles ($)<input id="savings" inputmode="decimal" placeholder="Ej.: 15000"><span class="hint">Sirve para la inyección de capital del 10%.</span></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Lo que necesita</h2>
+      <div class="grid">
+        <label class="fld">Monto que necesita ($)<input id="amount" inputmode="decimal" placeholder="Ej.: 120000"></label>
+        <label class="fld">Para qué lo necesita
+          <select id="purpose"><option value="">Elige…</option><option value="wc">Capital de trabajo</option><option value="equipment">Comprar equipo o maquinaria</option><option value="inventory">Inventario</option><option value="line">Línea de crédito (temporadas o contratos)</option><option value="acq">Comprar un negocio</option><option value="re">Comprar o construir un local</option><option value="refi">Refinanciar deuda</option></select>
+        </label>
+        <label class="fld" id="occWrap" hidden>¿El negocio ocupará al menos 51% del inmueble (60% si es construcción nueva)?
+          <select id="occupancy"><option value="">Elige…</option><option value="si">Sí</option><option value="no">No</option></select>
+        </label>
+        <label class="fld">¿Cuándo necesita el dinero?
+          <select id="urgency"><option value="">Elige…</option><option value="u30">En menos de 30 días</option><option value="u90">En 1 a 3 meses</option><option value="o90">En más de 3 meses</option></select>
+        </label>
+        <label class="fld">Tasa prime actual (%)<input id="prime" inputmode="decimal" value="7.00"><span class="hint">Confírmala: cambia. La usamos para estimar tasas y pagos.</span></label>
+      </div>
+    </section>
+
+    <div id="formError" class="banner err" hidden></div>
+    <button type="submit" class="btn gold block">Evaluar al cliente</button>
+    <p class="footnote">Reglas del SBA verificadas en noviembre de 2026. Esta herramienta no aprueba ni garantiza nada: el prestamista toma la decisión final.</p>
+  </form>
+
+  <div id="results" hidden></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $ = function(s){ return document.querySelector(s); };
+function h(tag, props){
+  var e = document.createElement(tag);
+  if(props){ Object.keys(props).forEach(function(k){
+    var v = props[k];
+    if(v == null || v === false) return;
+    if(k === "class") e.className = v;
+    else if(k === "text") e.textContent = v;
+    else if(k.slice(0,2) === "on") e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }); }
+  for(var i=2;i<arguments.length;i++){
+    [].concat(arguments[i]).forEach(function(kid){
+      if(kid == null || kid === false) return;
+      e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    });
+  }
+  return e;
+}
+var USD = new Intl.NumberFormat("es-US", { style:"currency", currency:"USD", maximumFractionDigits:0 });
+function usd(n){ return USD.format(Math.round(n)); }
+function num(id){ var s = String($("#"+id).value || "").replace(/[^0-9.\-]/g,""); var n = parseFloat(s); return isFinite(n) ? n : NaN; }
+
+$("#purpose").addEventListener("change", function(){ $("#occWrap").hidden = $("#purpose").value !== "re"; });
+
+/* ---------- math ---------- */
+function pmt(P, rate, years){ var r = rate/12, n = years*12; return r === 0 ? P/n : P*r/(1-Math.pow(1+r,-n)); }
+function pv(payment, rate, years){ var r = rate/12, n = years*12; return payment*(1-Math.pow(1+r,-n))/r; }
+function maxSpread(a){ return a <= 50000 ? 6.5 : a <= 250000 ? 6.0 : a <= 350000 ? 4.5 : 3.0; }
+
+/* ---------- evaluation ---------- */
+function evaluate(v){
+  var gates = [], blockAll = false, block7a = false;
+  function gate(kind, text){ gates.push({ kind:kind, text:text }); }
+
+  if(v.own100 === "si") gate("pass","Todos los dueños y garantes son ciudadanos o nacionales de EE.UU.");
+  else if(v.own100 === "no"){ gate("fail","Desde el 1 de marzo de 2026, el 100% de los dueños debe ser ciudadano o nacional de EE.UU. Con residentes permanentes, visa o ITIN no califica para 7(a) ni 504."); block7a = true; }
+  else gate("warn","Confirma la ciudadanía de todos los dueños y garantes antes de seguir. Basta con un dueño que no califique para perder la solicitud.");
+
+  if(v.forProfit === "si") gate("pass","Negocio con fines de lucro que opera en EE.UU.");
+  else { gate("fail","El SBA solo financia negocios con fines de lucro que operan en EE.UU."); blockAll = true; }
+
+  if(v.bizType === "op") gate("pass","Es un negocio que opera, no una actividad excluida.");
+  else if(v.bizType === "passive"){ gate("fail","Un negocio que solo alquila propiedades de inversión se considera pasivo y no califica para SBA."); blockAll = true; }
+  else if(v.bizType === "lender"){ gate("fail","Las actividades de préstamo o financieras están excluidas del SBA."); blockAll = true; }
+  else if(v.bizType === "gambling"){ gate("fail","Los juegos de azar y las actividades especulativas están excluidos del SBA."); blockAll = true; }
+  else gate("warn","Confirma con el prestamista que el tipo de negocio es elegible.");
+
+  if(v.fedDebt === "si"){ gate("fail","Con impuestos federales vencidos o un préstamo SBA moroso no se puede solicitar hasta corregirlo."); blockAll = true; }
+  else gate("pass","Sin deudas federales vencidas.");
+
+  if(v.criminal === "si"){ gate("fail","Cargos penales pendientes, libertad condicional o probation pueden descalificar la solicitud."); blockAll = true; }
+  else gate("pass","Sin cargos penales pendientes.");
+
+  if(v.guarantee === "si") gate("pass","Está dispuesto a firmar la garantía personal.");
+  else { gate("fail","Todo dueño de 20% o más debe firmar garantía personal. Sin ella no hay SBA."); blockAll = true; }
+
+  if(v.taxYears === 0 && v.months >= 12){ gate("fail","Con más de 12 meses de operación, el SBA exige declaraciones de impuestos presentadas."); blockAll = true; }
+  else if(v.taxYears === 0) gate("warn","Un negocio nuevo sin declaraciones tendrá que apoyarse en proyecciones y plan de negocios.");
+  else if(v.taxYears >= 2) gate("pass","Tiene "+v.taxYears+" o más años de declaraciones presentadas.");
+  else gate("warn","Solo 1 año de declaraciones: el prestamista probablemente pedirá más historial.");
+
+  var startup = v.months < 24;
+  var results = [];
+  // CORREGIDO: antes se limitaba el margen a un máximo de 4.0 puntos con
+  // Math.min(4.0, maxSpread(a)), lo que subestimaba la tasa (y por lo tanto
+  // el pago, el DSCR y la capacidad de pago) en cualquier préstamo de hasta
+  // $350,000 — la mayoría de los casos reales — mientras el texto de "Tasa
+  // máxima estimada" sí mostraba el margen completo de maxSpread(). Ahora
+  // ambos usan el mismo valor, consistente con los topes reales por tamaño
+  // de préstamo que ya codifica maxSpread().
+  var rate = function(a){ return (v.prime + maxSpread(a)) / 100; };
+  var minNeed = function(){ return v.amount * 0.10; };
+
+  function factorsFor(kind, p){
+    var f = [], s = 0;
+    function add(pts, k, text){ s += pts; f.push({ kind:k, text:text }); }
+    // credit
+    if(kind === "micro"){
+      if(v.credit >= 680) add(2,"pass","Crédito de "+v.credit+": fuerte para un microcrédito.");
+      else if(v.credit >= 640) add(2,"pass","Crédito de "+v.credit+": aceptable para la mayoría de los intermediarios.");
+      else if(v.credit >= 600) add(1,"warn","Crédito de "+v.credit+": algunos intermediarios lo aceptan con condiciones.");
+      else add(-1,"fail","Crédito de "+v.credit+": por debajo de lo que suelen pedir.");
+    } else {
+      if(v.credit >= 720) add(3,"pass","Crédito de "+v.credit+": excelente.");
+      else if(v.credit >= 680) add(2,"pass","Crédito de "+v.credit+": cumple lo que busca la mayoría de los prestamistas (680 o más).");
+      else if(v.credit >= 650) add(1,"warn","Crédito de "+v.credit+": por debajo de 680, hay menos prestamistas disponibles.");
+      else if(v.credit >= 620) add(0,"warn","Crédito de "+v.credit+": difícil para SBA 7(a) y 504.");
+      else add(-2,"fail","Crédito de "+v.credit+": muy bajo para SBA 7(a) y 504.");
+    }
+    // time
+    if(kind === "micro"){
+      if(v.months >= 12) add(1,"pass","Más de 12 meses de operación.");
+      else add(0,"warn","Negocio nuevo: los microcréditos aceptan negocios jóvenes, con plan sólido.");
+    } else {
+      if(v.months >= 24) add(3,"pass","Más de 2 años de operación.");
+      else if(v.months >= 12) add(1,"warn","Menos de 2 años: se trata como negocio nuevo y se exige 10% de inyección en algunos casos.");
+      else if(v.months >= 6) add(-1,"warn","Menos de 12 meses: el SBA 7(a) es difícil sin historial.");
+      else add(-2,"fail","Menos de 6 meses: muy nuevo para SBA 7(a) o 504.");
+    }
+    // taxes
+    if(kind !== "micro"){
+      if(v.taxYears >= 3) add(2,"pass","Tiene 3 años o más de declaraciones.");
+      else if(v.taxYears === 2) add(1,"pass","Tiene 2 años de declaraciones.");
+      else if(v.taxYears === 1) add(-1,"warn","Solo 1 año de declaraciones.");
+      else add(v.months >= 12 ? -3 : -1, v.months >= 12 ? "fail" : "warn","Sin declaraciones presentadas.");
+    } else if(v.taxYears >= 1) add(1,"pass","Tiene declaraciones para respaldar los ingresos.");
+    // cash flow / dscr
+    var pay = pmt(Math.min(v.amount, p.cap), p.rate, p.years);
+    var annual = pay*12;
+    var dscr = v.net > 0 ? v.net / (v.debt + annual) : 0;
+    p.dscr = dscr; p.payment = pay;
+    if(!(v.net > 0)) add(-3,"fail","Sin utilidad neta positiva, el flujo no cubre un préstamo nuevo.");
+    else if(dscr >= 1.25) add(3,"pass","Cobertura de deuda estimada de "+dscr.toFixed(2)+": sólida (1.25 o más).");
+    else if(dscr >= 1.15) add(2,"pass","Cobertura de deuda estimada de "+dscr.toFixed(2)+": cumple lo mínimo (1.15 o más).");
+    else if(dscr >= 1.0) add(0,"warn","Cobertura de deuda estimada de "+dscr.toFixed(2)+": muy ajustada.");
+    else add(-3,"fail","Cobertura de deuda estimada de "+dscr.toFixed(2)+": no alcanza para pagar el préstamo.");
+    // collateral
+    if(kind !== "micro" && v.amount > 50000){
+      if(v.collateral === "re") add(2,"pass","Tiene bienes raíces como garantía.");
+      else if(v.collateral === "some") add(1,"warn","Garantía limitada: el prestamista pedirá la disponible.");
+      else add(-1,"warn","Sin garantía: en préstamos de más de $50,000 el prestamista debe pedir colateral.");
+    }
+    // equity
+    if(kind === "504"){
+      var need504 = v.amount * (startup ? 0.15 : 0.10);
+      if(v.savings >= need504) add(1,"pass","Tiene el pago inicial de "+usd(need504)+" ("+(startup?"15%":"10%")+").");
+      else add(-2,"fail","Falta el pago inicial: necesita unos "+usd(need504)+" ("+(startup?"15%":"10%")+").");
+    } else if(kind !== "micro" && (startup || v.purpose === "acq")){
+      if(v.savings >= minNeed()) add(1,"pass","Tiene el 10% de inyección ("+usd(minNeed())+").");
+      else add(-3,"fail","Falta la inyección de capital del 10%: necesita unos "+usd(minNeed())+".");
+    }
+    // urgency
+    if(v.urgency === "u30"){ add(-2,"warn","El SBA toma semanas o meses. No sirve para el dinero de esta semana."); }
+    p.score = s; p.factors = f;
+  }
+
+  function addProgram(key, name, desc, cap, years, rateOverride, kind, extra){
+    var p = { key:key, name:name, desc:desc, cap:cap, years:years, rate:(rateOverride != null ? rateOverride : rate(Math.min(v.amount,cap))), kind:kind, extra:extra||{} };
+    results.push(p);
+    return p;
+  }
+
+  var purp = v.purpose, amt = v.amount;
+  var workingLike = ["wc","equipment","inventory"].indexOf(purp) >= 0;
+
+  var progs = [];
+  if(workingLike && amt <= 50000) progs.push(addProgram("micro","Microcrédito SBA","Hasta $50,000, por medio de intermediarios sin fines de lucro. Para capital de trabajo, inventario, muebles o equipo. No sirve para bienes raíces ni para pagar deudas.",50000,6,0.105,"micro"));
+  if(amt <= 350000 && ["line"].indexOf(purp) < 0) progs.push(addProgram("small","7(a) préstamo pequeño","Hasta $350,000, con un trámite más sencillo. Sirve para capital de trabajo, equipo, compra de negocio, inmueble o refinanciar. Plazo hasta 10 años (25 para bienes raíces).",350000,(purp==="re"?25:10),null,"7a"));
+  if(amt <= 500000 && (workingLike || purp === "line")) progs.push(addProgram("express","SBA Express","Hasta $500,000, con respuesta más rápida del SBA y garantía del 50%. Para capital de trabajo, equipo y líneas de crédito.",500000,10,null,"7a"));
+  if(amt > 350000 || ["acq","re","refi"].indexOf(purp) >= 0) progs.push(addProgram("std","7(a) estándar","Hasta $5 millones. El programa más flexible: compra de negocio, inmuebles, equipo, capital de trabajo y refinanciar. Plazo hasta 10 años (25 para bienes raíces).",5000000,(purp==="re"?25:10),null,"7a"));
+  if(purp === "line") progs.push(addProgram("caplines","CAPLines (líneas de crédito SBA)","Líneas de capital de trabajo para negocios con temporadas, contratos o inventario que cambia. Hasta $5 millones.",5000000,10,null,"7a"));
+  if(purp === "re" || (purp === "equipment" && amt >= 150000)) progs.push(addProgram("504","SBA 504","Para comprar o construir un local, terrenos o equipo pesado. Normalmente 50% banco, 40% una corporación de desarrollo respaldada por el SBA y 10% el dueño. Plazos de 10, 20 o 25 años.",5500000,25,(v.prime+2.5)/100,"504"));
+
+  if(!blockAll){
+    progs.forEach(function(p){
+      if(p.key === "micro" && block7a){ p.fit = "consult"; p.score = 0; p.factors = [{kind:"warn",text:"Las reglas de ciudadanía de los microcréditos pueden ser distintas. Pregunta al intermediario si acepta al cliente."}]; p.payment = pmt(v.amount,p.rate,p.years); return; }
+      if(p.key !== "micro" && block7a){ p.fit = "na"; p.score = -99; p.factors = [{kind:"fail",text:"No califica por la regla de ciudadanía del 100% de los dueños."}]; return; }
+      if(p.kind === "504"){
+        if(v.occupancy === "no"){ p.fit="na"; p.score=-99; p.factors=[{kind:"fail",text:"El 504 exige que el negocio ocupe al menos 51% del inmueble (60% si es construcción nueva)."}]; return; }
+      }
+      factorsFor(p.kind === "micro" ? "micro" : (p.kind === "504" ? "504" : "7a"), p);
+      var t = p.key === "micro" ? [3,1] : [9,5];
+      p.fit = p.score >= t[0] ? "alto" : p.score >= t[1] ? "medio" : "bajo";
+      // capacity by cash flow
+      var avail = v.net > 0 ? (v.net/1.25 - v.debt) : 0;
+      p.capacity = avail > 0 ? Math.min(p.cap, pv(avail/12, p.rate, p.years)) : 0;
+    });
+  }
+
+  var order = { alto:3, medio:2, consult:1, bajo:1, na:0 };
+  progs.sort(function(a,b){ return (order[b.fit]||0)-(order[a.fit]||0) || (b.score||0)-(a.score||0); });
+  var best = progs.filter(function(p){ return p.fit === "alto" || p.fit === "medio" || p.fit === "bajo" || p.fit === "consult"; })[0];
+
+  // CORREGIDO: antes, si block7a era verdadero, el status se forzaba siempre
+  // a "no" — incluso cuando sí había un microcrédito viable (fit:"consult")
+  // que SÍ se renderizaba más abajo en "Programas que encajan". Eso dejaba
+  // el veredicto diciendo "No califica" mientras la tarjeta de abajo
+  // mostraba una opción real. Ahora, si hay un microcrédito por confirmar,
+  // el status es "cond" (coincide con lo que de verdad se muestra).
+  var status;
+  if(blockAll) status = "no";
+  else if(block7a) status = (best && best.fit === "consult") ? "cond" : "no";
+  else if(!best || best.fit === "na") status = "no";
+  else if(best.fit === "consult") status = "cond";
+  else if(best.fit === "alto" && v.own100 === "si" && gates.every(function(g){ return g.kind !== "fail"; })) status = "ok";
+  else if(best.fit === "alto" || best.fit === "medio") status = "cond";
+  else status = "low";
+
+  return { gates:gates, progs:progs, best:best, status:status, blockAll:blockAll, block7a:block7a, startup:startup };
+}
+
+/* ---------- render ---------- */
+var FITLABEL = { alto:"Encaje alto", medio:"Encaje medio", bajo:"Encaje bajo", na:"No aplica", consult:"Por confirmar" };
+function dot(kind){ return h("span", { class:"dot "+kind, "aria-hidden":"true", text: kind==="pass" ? "✓" : kind==="warn" ? "!" : "✕" }); }
+
+function improvements(v, r){
+  var out = [];
+  var seen = {};
+  function add(t){ if(!seen[t]){ seen[t] = 1; out.push(t); } }
+  (r.best ? r.best.factors : []).forEach(function(f){
+    if(f.kind === "fail" || f.kind === "warn"){ add(f.text); }
+  });
+  if(v.credit < 680 && v.own100 !== "no") add("Subir el crédito personal a 680 o más amplía los prestamistas disponibles.");
+  return out.slice(0,8);
+}
+
+function alternatives(v, r){
+  var a = [];
+  if(v.credit >= 680) a.push("Tarjetas de crédito de negocio al 0% de interés por tiempo limitado, según el crédito personal.");
+  if(v.revenue >= 120000 && v.months >= 6) a.push("Adelanto de capital (MCA), si los depósitos bancarios y la antigüedad lo permiten. Es más rápido y más caro que un SBA.");
+  if(v.months >= 24 && v.net > 0) a.push("Financiamiento convencional de banco, que no tiene las reglas de ciudadanía del SBA.");
+  a.push("Construir el perfil de crédito empresarial (DUNS, proveedores y Paydex) para calificar mejor en el futuro.");
+  if(v.bizType === "passive") a.push("Préstamos DSCR o convencionales para inversionistas de bienes raíces.");
+  return a;
+}
+
+var DOCS = ["Solicitud del SBA (Formulario 1919) y estado financiero personal (Formulario 413)",
+"Declaraciones de impuestos personales y del negocio, normalmente de los últimos 3 años",
+"Estados financieros del negocio y proyecciones",
+"Plan de negocios, sobre todo si el negocio es nuevo",
+"Lista de deudas actuales del negocio",
+"Estados de cuenta bancarios recientes",
+"Registro del negocio, licencias y acuerdo operativo",
+"Identificación y comprobante de ciudadanía de cada dueño"];
+
+function render(v, r){
+  var out = $("#results"); out.replaceChildren();
+  var titles = { ok:"Buen candidato para SBA", cond:"Posible, con condiciones", low:"Difícil por ahora", no:"No califica para SBA hoy" };
+  var subs = {
+    ok:"Cumple las puertas de elegibilidad y su perfil encaja bien en al menos un programa.",
+    cond:"Puede calificar, pero hay puntos que confirmar o mejorar antes de enviarlo.",
+    low:"Es elegible, pero el perfil actual tiene debilidades importantes para un prestamista SBA.",
+    no:"Hay un requisito que falla. Mira abajo cuál es y qué otras opciones tiene."
+  };
+  var subText = (r.block7a && !r.blockAll) ? "No califica para 7(a), 504, Express ni CAPLines por la regla de ciudadanía del 100% de los dueños. Un microcrédito podría ser posible: confírmalo con el intermediario." : subs[r.status];
+  var verdict = h("div", { class:"verdict "+r.status }, h("h2", { text:(r.block7a && !r.blockAll) ? "No califica para 7(a) ni 504" : titles[r.status] }), h("p", { text:subText }));
+  if(r.best && r.status !== "no"){
+    verdict.append(h("div", { class:"pick" }, h("b", { text:"Programa que mejor encaja: " }), r.best.name + (r.best.fit === "consult" ? " (confirma la elegibilidad con el intermediario)" : "")));
+  }
+  out.append(verdict);
+
+  out.append(h("section", { class:"card" }, h("h2", { text:"Puertas de elegibilidad" }), h("div", null, r.gates.map(function(g){ return h("div", { class:"gate" }, dot(g.kind), h("span", { text:g.text })); }))));
+
+  var active = r.progs.filter(function(p){ return p.fit !== "na"; });
+  var inactive = r.progs.filter(function(p){ return p.fit === "na"; });
+  if(!r.blockAll && active.length){
+    out.append(h("h2", { style:"margin:18px 0 10px;font-size:20px", text:"Programas que encajan" }));
+    active.forEach(function(p, i){
+      var meterClass = p.fit === "alto" || p.fit === "medio" || p.fit === "bajo" ? p.fit : "";
+      var rateText = p.key === "micro" ? "8% a 13% (la fija el intermediario)" : p.kind === "504" ? "Tasa fija en la porción SBA" : "Hasta " + (v.prime + maxSpread(Math.min(v.amount,p.cap))).toFixed(2) + "% (prime + " + maxSpread(Math.min(v.amount,p.cap)) + "%)";
+      var facts = h("div", { class:"facts" },
+        h("div", { class:"fact" }, h("b", { text:usd(Math.min(v.amount,p.cap)) }), h("span", { text: v.amount > p.cap ? "Máximo del programa (pidió "+usd(v.amount)+")" : "Monto que pidió" })),
+        p.payment ? h("div", { class:"fact" }, h("b", { text:usd(p.payment)+" al mes" }), h("span", { text:"Pago estimado a "+p.years+" años" })) : null,
+        h("div", { class:"fact" }, h("b", { text:rateText }), h("span", { text:"Tasa máxima estimada" })),
+        (p.capacity != null) ? h("div", { class:"fact" }, h("b", { text: p.capacity > 0 ? "Hasta "+usd(p.capacity) : "Sin base para estimar" }), h("span", { text:"Lo que su flujo podría pagar (cobertura 1.25)" })) : null
+      );
+      out.append(h("div", { class:"prog"+(i===0 && p.fit !== "consult" ? " top" : "") },
+        h("div", { class:"prog-head" }, h("h3", { text:p.name }),
+          meterClass ? h("div", { class:"meter "+meterClass }, h("i"), h("i"), h("i"), h("span", { class:"meter-label", text:FITLABEL[p.fit] })) : h("span", { class:"tag", text:FITLABEL[p.fit] })),
+        h("p", { class:"desc", text:p.desc }),
+        facts,
+        h("ul", { class:"reasons" }, p.factors.map(function(f){ return h("li", null, dot(f.kind), h("span", { text:f.text })); }))
+      ));
+    });
+  }
+  if(!r.blockAll && inactive.length){
+    out.append(h("section", { class:"card na" }, h("h2", { style:"font-size:16px", text:"Programas que no aplican" }),
+      h("ul", { class:"plain" }, inactive.map(function(p){ return h("li", null, h("b", { text:p.name+": " }), p.factors[0] ? p.factors[0].text : "No aplica para este caso."); }))));
+  }
+  if(!r.progs.length && !r.blockAll){
+    out.append(h("div", { class:"banner info", text:"Con este monto y este uso no hay un programa SBA que encaje de forma clara. Revisa el monto y el propósito." }));
+  }
+
+  var imp = improvements(v, r);
+  if(imp.length && !r.blockAll){
+    out.append(h("section", { class:"card" }, h("h2", { text:"Qué mejorar o confirmar" }), h("ul", { class:"plain" }, imp.map(function(t){ return h("li", { text:t }); }))));
+  }
+
+  if(r.status === "no" || r.status === "low" || r.status === "cond"){
+    out.append(h("section", { class:"card" }, h("h2", { text:"Otras opciones para este cliente" }), h("ul", { class:"plain" }, alternatives(v, r).map(function(t){ return h("li", { text:t }); }))));
+  }
+
+  if(r.status !== "no") out.append(h("section", { class:"card" }, h("h2", { text:"Documentos que debes pedirle" }), h("ul", { class:"plain" }, DOCS.map(function(t){ return h("li", { text:t }); }))));
+
+  out.append(h("p", { class:"footnote", text:"Estimación basada en las reglas del SBA verificadas en noviembre de 2026 y en supuestos de tasa y plazo (prime + hasta 4%, 10 años para capital de trabajo y equipo, 25 para bienes raíces). No es una aprobación ni una oferta. Cada prestamista fija sus propios requisitos, y las reglas y tarifas del SBA cambian. No prometas aprobación, tasa ni monto al cliente." }));
+  out.append(h("div", { class:"row", style:"margin-top:14px" },
+    h("button", { class:"btn", type:"button", id:"copyBtn", onclick:function(ev){ copySummary(ev, v, r); } }, "Copiar resumen"),
+    h("button", { class:"btn ghost", type:"button", onclick:reset }, "Evaluar otro cliente")));
+
+  out.hidden = false; $("#form").hidden = true;
+  out.scrollIntoView({ behavior:"auto", block:"start" });
+}
+
+function summaryText(v, r){
+  var L = ["PRECALIFICACIÓN SBA (ESTIMACIÓN)", ""];
+  L.push("Resultado: " + ({ ok:"Buen candidato", cond:"Posible, con condiciones", low:"Difícil por ahora", no:"No califica hoy" })[r.status]);
+  if(r.best && r.status !== "no") L.push("Programa que mejor encaja: " + r.best.name);
+  L.push("");
+  L.push("Datos: monto " + usd(v.amount) + ", " + v.months + " meses en operación, crédito " + v.credit + ", utilidad neta " + usd(v.net) + ".");
+  L.push(""); L.push("Puertas de elegibilidad:");
+  r.gates.forEach(function(g){ L.push((g.kind==="pass"?"[OK] ":g.kind==="warn"?"[REVISAR] ":"[NO] ") + g.text); });
+  L.push(""); L.push("Programas:");
+  r.progs.forEach(function(p){ L.push("- " + p.name + ": " + (p.fit==="na" ? "No aplica" : FITLABEL[p.fit]) + (p.payment && p.fit!=="na" ? ", pago estimado " + usd(p.payment) + " al mes" : "")); });
+  L.push(""); L.push("Estimación. No es una aprobación: el prestamista decide.");
+  return L.join("\n");
+}
+function copySummary(ev, v, r){
+  var btn = ev.currentTarget, t = summaryText(v, r);
+  function done(){ var old = btn.textContent; btn.textContent = "Copiado"; setTimeout(function(){ btn.textContent = old; }, 1800); }
+  function fb(){ var ta = document.createElement("textarea"); ta.value = t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.append(ta); ta.select(); try{ document.execCommand("copy"); done(); }catch(e){ btn.textContent = "No se pudo copiar"; } ta.remove(); }
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done, fb); } else fb();
+}
+function reset(){ $("#results").hidden = true; $("#results").replaceChildren(); $("#form").hidden = false; window.scrollTo(0,0); }
+
+/* ---------- submit ---------- */
+$("#form").addEventListener("submit", function(ev){
+  ev.preventDefault();
+  var err = $("#formError"); err.hidden = true;
+  var v = {
+    own100:$("#own100").value, bizType:$("#bizType").value, forProfit:$("#forProfit").value, fedDebt:$("#fedDebt").value, criminal:$("#criminal").value, guarantee:$("#guarantee").value,
+    months:num("months"), revenue:num("revenue"), net:num("net"), debt:num("debt"), taxYears:$("#taxYears").value === "" ? NaN : parseInt($("#taxYears").value,10),
+    credit:num("credit"), collateral:$("#collateral").value, savings:num("savings"), amount:num("amount"), purpose:$("#purpose").value, occupancy:$("#occupancy").value, urgency:$("#urgency").value, prime:num("prime")
+  };
+  var missing = [];
+  ["own100","bizType","forProfit","fedDebt","criminal","guarantee","collateral","purpose","urgency"].forEach(function(k){ if(!v[k]) missing.push(k); });
+  ["months","net","credit","amount","taxYears"].forEach(function(k){ if(!isFinite(v[k])) missing.push(k); });
+  ["revenue","debt","savings"].forEach(function(k){ if(!isFinite(v[k])) v[k] = 0; });
+  if(!isFinite(v.prime)) v.prime = 7.0;
+  if(v.purpose === "re" && !v.occupancy) missing.push("occupancy");
+  if(missing.length){ err.textContent = "Completa todos los campos para evaluar al cliente."; err.hidden = false; err.scrollIntoView({behavior:"auto",block:"center"}); return; }
+  if(v.amount <= 0){ err.textContent = "El monto que necesita debe ser mayor que cero."; err.hidden = false; return; }
+  render(v, evaluate(v));
+});
+})();
+</script>
+</body>
+</html>
