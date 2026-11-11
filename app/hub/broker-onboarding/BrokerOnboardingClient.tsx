@@ -517,7 +517,7 @@ export default function BrokerOnboardingClient() {
                 </div>
 
                 {/* Enlaces de Navegación del Hub */}
-                <div className="hidden md:flex items-center gap-8">
+                <div className="hidden md:flex items-center gap-5 xl:gap-6">
                   {[
                     { id: "inicio", label: "Inicio / Servicios" },
                     { id: "clientes", label: "Mis Clientes (CRM)" },
@@ -549,7 +549,7 @@ export default function BrokerOnboardingClient() {
                 </div>
 
                 {/* Info Broker / Salida */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <NotificationBell onNavigate={setActiveTab} />
 
                   <button
