@@ -6,6 +6,8 @@ import Image from "next/image";
 import {
   Search,
   ChevronRight,
+  ChevronLeft,
+  LogOut,
   Phone,
   Copy,
   Check,
@@ -64,6 +66,24 @@ export default function BrokerOnboardingClient() {
   const [loginError, setLoginError] = useState<string>("");
   const [resetInfo, setResetInfo] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ActiveTab>("inicio");
+
+  // Colapso del sidebar vertical — se recuerda entre sesiones (localStorage)
+  // para que no se tenga que volver a colapsar cada vez que se entra al Hub.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const timer = setTimeout(() => {
+      setSidebarCollapsed(window.localStorage.getItem("e360HubSidebarCollapsed") === "1");
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") window.localStorage.setItem("e360HubSidebarCollapsed", next ? "1" : "0");
+      return next;
+    });
+  };
   
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedService, setSelectedService] = useState<ServiceDetail | null>(null);
@@ -330,7 +350,19 @@ export default function BrokerOnboardingClient() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#030812] text-white overflow-y-auto flex flex-col font-sans">
+    // Este div es el verdadero viewport scrolleable de todo el Hub — <body>
+    // nunca scrollea porque este "fixed inset-0" lo tapa por completo. Sin
+    // overflow-x-hidden explícito aquí, el navegador promueve este eje a
+    // "auto" (porque el otro eje ya no es "visible"), así que CUALQUIER
+    // desborde horizontal residual (scroll chaining desde una tabla ancha,
+    // redondeo de sub-píxel) lo scrollea A ÉL, arrastrando consigo al
+    // <aside> del sidebar — que solo está anclado en vertical (sticky
+    // top-0), nunca en horizontal, porque es hermano de la columna de
+    // contenido dentro de la misma fila flex. El candado global en
+    // globals.css (html, body { overflow-x: hidden }) no alcanza este div
+    // porque protege a <html>/<body>, un contexto de scroll distinto que
+    // aquí nunca se usa.
+    <div className="fixed inset-0 z-50 bg-[#030812] text-white overflow-y-auto overflow-x-hidden flex flex-col font-sans">
       
       {/* Luces de Fondo Decorativas */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
@@ -511,71 +543,120 @@ export default function BrokerOnboardingClient() {
             className="flex-grow flex relative z-10 w-full"
           >
             {/* --- SIDEBAR VERTICAL (desktop) --- */}
-            <aside className="hidden md:flex md:flex-col w-60 shrink-0 h-screen sticky top-0 bg-[#05101F]/95 border-r border-gray-800/80 backdrop-blur-md">
-              <div className="h-20 flex items-center px-6 border-b border-gray-800/80 cursor-pointer shrink-0" onClick={() => setActiveTab("inicio")}>
-                <div className="relative h-9 w-32">
-                  <Image
-                    src="/logo.png"
-                    alt="E360 Logo"
-                    fill
-                    className="object-contain"
-                  />
-                </div>
+            <aside
+              className={`hidden md:flex md:flex-col shrink-0 h-screen sticky top-0 bg-[#05101F]/95 border-r border-gray-800/80 backdrop-blur-md transition-[width] duration-200 ${
+                sidebarCollapsed ? "w-[72px]" : "w-60"
+              }`}
+            >
+              <div
+                className={`h-20 flex items-center shrink-0 border-b border-gray-800/80 ${sidebarCollapsed ? "justify-center px-2" : "justify-between px-4"}`}
+              >
+                {!sidebarCollapsed && (
+                  <div className="relative h-9 w-28 cursor-pointer shrink-0" onClick={() => setActiveTab("inicio")}>
+                    <Image src="/logo.png" alt="E360 Logo" fill className="object-contain" />
+                  </div>
+                )}
+                <button
+                  onClick={toggleSidebarCollapsed}
+                  title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
+                  className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-900/60 transition-colors cursor-pointer shrink-0"
+                >
+                  {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                </button>
               </div>
 
-              <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+              <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 space-y-4">
                 {[
-                  { id: "inicio", label: "Inicio / Servicios", icon: Home },
-                  { id: "clientes", label: "Mis Clientes (CRM)", icon: Users },
-                  { id: "oficina-virtual", label: "Oficina Virtual", icon: Building2, badge: "PRO" },
-                  { id: "taxes", label: "Software Taxes", icon: Calculator },
-                  { id: "revisor-credito", label: "Revisor de Crédito", icon: ScanSearch, badge: "IA" },
-                  { id: "soporte", label: "Soporte VIP", icon: MessageCircle },
-                  { id: "recursos", label: "Recursos", icon: BookOpen },
-                  { id: "perfil", label: "Mi Perfil", icon: User },
-                  ...(isStaff ? [{ id: "mis-horas", label: "Mis Horas", icon: Clock }] : []),
-                  ...(isAdmin ? [{ id: "admin", label: "Torre de Control", icon: ShieldCheck }] : isStaff ? [{ id: "admin", label: "Gestión de Casos", icon: ShieldCheck }] : [])
-                ].map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id as ActiveTab)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${
-                        isActive
-                          ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
-                          : "text-gray-400 border-transparent hover:text-white hover:bg-gray-900/60"
-                      }`}
-                    >
-                      <Icon size={16} className="shrink-0" />
-                      <span className="flex-1 text-left truncate">{tab.label}</span>
-                      {"badge" in tab && (
-                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,224,240,0.2)]">
-                          {tab.badge}
-                        </span>
+                  {
+                    id: "broker",
+                    label: "Mi Negocio",
+                    items: [
+                      { id: "inicio", label: "Inicio / Servicios", icon: Home },
+                      { id: "clientes", label: "Mis Clientes (CRM)", icon: Users },
+                      { id: "oficina-virtual", label: "Oficina Virtual", icon: Building2, badge: "PRO" },
+                      { id: "taxes", label: "Software Taxes", icon: Calculator },
+                      { id: "revisor-credito", label: "Revisor de Crédito", icon: ScanSearch, badge: "IA" },
+                      { id: "soporte", label: "Soporte VIP", icon: MessageCircle },
+                      { id: "recursos", label: "Recursos", icon: BookOpen },
+                      { id: "perfil", label: "Mi Perfil", icon: User },
+                    ],
+                  },
+                  {
+                    id: "equipo",
+                    label: "Equipo E360",
+                    items: [
+                      ...(isStaff ? [{ id: "mis-horas", label: "Mis Horas", icon: Clock }] : []),
+                      ...(isAdmin
+                        ? [{ id: "admin", label: "Torre de Control", icon: ShieldCheck }]
+                        : isStaff
+                        ? [{ id: "admin", label: "Gestión de Casos", icon: ShieldCheck }]
+                        : []),
+                    ],
+                  },
+                ]
+                  .filter((group) => group.items.length > 0)
+                  .map((group, groupIndex) => (
+                    <div key={group.id}>
+                      {sidebarCollapsed ? (
+                        groupIndex > 0 && <div className="mb-3 border-t border-gray-800/60" />
+                      ) : (
+                        <p className="px-3 mb-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">{group.label}</p>
                       )}
-                    </button>
-                  );
-                })}
+                      <div className="space-y-1">
+                        {group.items.map((tab) => {
+                          const Icon = tab.icon;
+                          const isActive = activeTab === tab.id;
+                          return (
+                            <button
+                              key={tab.id}
+                              onClick={() => setActiveTab(tab.id as ActiveTab)}
+                              title={tab.label}
+                              className={`w-full flex items-center ${
+                                sidebarCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                              } py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${
+                                isActive
+                                  ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                                  : "text-gray-400 border-transparent hover:text-white hover:bg-gray-900/60"
+                              }`}
+                            >
+                              <Icon size={16} className="shrink-0" />
+                              {!sidebarCollapsed && <span className="flex-1 text-left truncate">{tab.label}</span>}
+                              {!sidebarCollapsed && "badge" in tab && (
+                                <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,224,240,0.2)]">
+                                  {tab.badge}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
               </nav>
 
-              <div className="p-4 border-t border-gray-800/80 flex items-center gap-3 shrink-0">
+              <div className={`p-3 border-t border-gray-800/80 shrink-0 flex ${sidebarCollapsed ? "flex-col items-center gap-2" : "items-center gap-3"}`}>
                 <div
                   onClick={() => setActiveTab("perfil")}
+                  title={brokerName}
                   className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-[0_0_15px_rgba(0,224,240,0.1)] cursor-pointer hover:border-cyan-400 transition-colors shrink-0"
                 >
                   {brokerName.charAt(0).toUpperCase()}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-white leading-none truncate">{brokerName}</p>
-                  <button
-                    onClick={handleLogout}
-                    className="text-[10px] font-semibold text-gray-500 hover:text-red-400 transition-colors mt-1 cursor-pointer"
-                  >
-                    Cerrar Sesión
+                {sidebarCollapsed ? (
+                  <button onClick={handleLogout} title="Cerrar Sesión" className="p-1.5 text-gray-500 hover:text-red-400 transition-colors cursor-pointer">
+                    <LogOut size={14} />
                   </button>
-                </div>
+                ) : (
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white leading-none truncate">{brokerName}</p>
+                    <button
+                      onClick={handleLogout}
+                      className="text-[10px] font-semibold text-gray-500 hover:text-red-400 transition-colors mt-1 cursor-pointer"
+                    >
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                )}
               </div>
             </aside>
 
@@ -701,7 +782,7 @@ export default function BrokerOnboardingClient() {
                 </section>
 
                 {/* --- COLUMNAS DE SERVICIOS --- */}
-                <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-12">
+                <main className="flex-grow min-w-0 max-w-7xl mx-auto w-full px-6 py-12">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     
                     {/* COLUMNA IZQUIERDA: SERVICIOS FINANCIEROS */}
@@ -822,7 +903,7 @@ export default function BrokerOnboardingClient() {
             )}
 
             {activeTab === "clientes" && (
-              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+              <main className="flex-grow min-w-0 max-w-7xl mx-auto w-full px-6 py-8">
                 <MisClientesSection 
                   brokerName={brokerName} 
                   crmLocationId={userLocationId}
@@ -832,49 +913,49 @@ export default function BrokerOnboardingClient() {
             )}
 
             {activeTab === "oficina-virtual" && (
-              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+              <main className="flex-grow min-w-0 max-w-7xl mx-auto w-full px-6 py-8">
                 <TaxOfficeSection brokerName={brokerName} />
               </main>
             )}
 
             {activeTab === "taxes" && (
-              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+              <main className="flex-grow min-w-0 max-w-7xl mx-auto w-full px-6 py-8">
                 <TaxSoftwareContent variant="hub" />
               </main>
             )}
 
             {activeTab === "revisor-credito" && (
-              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+              <main className="flex-grow min-w-0 max-w-7xl mx-auto w-full px-6 py-8">
                 <CreditReportReviewSection brokerName={brokerName} />
               </main>
             )}
 
             {activeTab === "soporte" && (
-              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+              <main className="flex-grow min-w-0 max-w-7xl mx-auto w-full px-6 py-8">
                 <SoporteSection onNavigateToServices={() => setActiveTab("inicio")} />
               </main>
             )}
 
             {activeTab === "recursos" && (
-              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+              <main className="flex-grow min-w-0 max-w-7xl mx-auto w-full px-6 py-8">
                 <ResourcesSection />
               </main>
             )}
 
             {activeTab === "perfil" && (
-              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+              <main className="flex-grow min-w-0 max-w-7xl mx-auto w-full px-6 py-8">
                 <MiPerfilSection brokerName={brokerName} />
               </main>
             )}
 
             {activeTab === "mis-horas" && isStaff && (
-              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+              <main className="flex-grow min-w-0 max-w-7xl mx-auto w-full px-6 py-8">
                 <MisHorasSection />
               </main>
             )}
 
             {activeTab === "admin" && canAccessAdmin && (
-              <main className="flex-grow max-w-[1800px] mx-auto w-full px-6 py-8">
+              <main className="flex-grow min-w-0 max-w-[1800px] mx-auto w-full px-6 py-8">
                 <AdminPanelSection />
               </main>
             )}

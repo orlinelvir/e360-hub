@@ -257,27 +257,29 @@ export default function TaxOfficeCommissionsTab({ commissions, onAddCommission }
           {yearly1099.length === 0 ? (
             <p className="text-xs text-gray-500 italic py-6 text-center">Todavía no hay comisiones liquidadas este año.</p>
           ) : (
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-gray-800 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                  <th className="py-3 pl-2">Colaborador</th>
-                  <th className="py-3">Pagos realizados</th>
-                  <th className="py-3">Total pagado (año)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800/60">
-                {yearly1099.map((p) => (
-                  <tr key={p.preparerEmail} className="hover:bg-gray-900/40 transition-colors">
-                    <td className="py-3.5 pl-2 font-bold text-white">
-                      <div>{p.preparerName}</div>
-                      <div className="text-[10px] text-gray-500 font-normal">{p.preparerEmail}</div>
-                    </td>
-                    <td className="py-3.5 text-gray-300">{p.payouts}</td>
-                    <td className="py-3.5 font-black text-emerald-400">{formatMoney(p.totalPaid)}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-gray-800 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                    <th className="py-3 pl-2">Colaborador</th>
+                    <th className="py-3">Pagos realizados</th>
+                    <th className="py-3">Total pagado (año)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-800/60">
+                  {yearly1099.map((p) => (
+                    <tr key={p.preparerEmail} className="hover:bg-gray-900/40 transition-colors">
+                      <td className="py-3.5 pl-2 font-bold text-white">
+                        <div>{p.preparerName}</div>
+                        <div className="text-[10px] text-gray-500 font-normal">{p.preparerEmail}</div>
+                      </td>
+                      <td className="py-3.5 text-gray-300">{p.payouts}</td>
+                      <td className="py-3.5 font-black text-emerald-400">{formatMoney(p.totalPaid)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

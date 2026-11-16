@@ -495,6 +495,24 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "La barra de filtros ya no se pierde al hacer scroll",
     description: "En Master Feed de Casos, la barra de búsqueda y filtros se queda fija arriba al bajar por la lista — ya no hay que regresar al inicio para volver a filtrar.",
     tabHint: "Torre de Control → Master Feed de Casos"
+  },
+  {
+    id: 52,
+    date: "2026-11-14",
+    audience: "all",
+    icon: "LayoutDashboard",
+    title: "Menú lateral: colapsar y secciones separadas",
+    description: "Ahora puedes colapsar el menú de la izquierda a solo íconos con el botón de la flecha, y las secciones quedan separadas entre \"Mi Negocio\" y \"Equipo E360\".",
+    tabHint: "Todo el Hub"
+  },
+  {
+    id: 53,
+    date: "2026-11-14",
+    audience: "all",
+    icon: "RefreshCcw",
+    title: "Se corrigió el deslizamiento lateral que descuadraba la pantalla",
+    description: "Ya no se puede arrastrar toda la pantalla hacia la derecha con el touchpad o el mouse — el menú lateral se queda fijo sin importar qué tan ancha sea la tabla que estés viendo.",
+    tabHint: "Todo el Hub"
   }
 ];
 
