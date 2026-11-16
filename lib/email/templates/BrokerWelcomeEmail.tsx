@@ -105,6 +105,14 @@ const STEPS: Step[] = [
   },
   {
     number: 10,
+    title: "Información de Licencia E360",
+    description: "Documento oficial de licencia y cumplimiento de Emprende 360 — tenlo a la mano para consultas de tus clientes.",
+    ctaLabel: "Ver Información de Licencia",
+    ctaHref: `${APP_BASE_URL}/api/guides/license-information`,
+    color: "#DC2626"
+  },
+  {
+    number: 11,
     title: "Agenda tu Sesión de Onboarding",
     description: "Si necesitas ayuda personalizada para arrancar, agenda directamente un espacio con el equipo.",
     ctaLabel: "Agendar Sesión",

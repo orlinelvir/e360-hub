@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import type { HubNotification } from "@/lib/services/notification-service";
 import { LayoutDashboard, FolderKanban, Receipt, Users, FileText, Sparkles, Plus, Eye, Percent, Workflow, ListChecks, CalendarClock, Zap } from "lucide-react";
 import TaxOfficePaywall from "./tax-office/TaxOfficePaywall";
 import TaxOfficeDashboard from "./tax-office/TaxOfficeDashboard";
@@ -87,6 +88,8 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
   const [realAppointments, setRealAppointments] = useState<TaxAppointment[]>([]);
   const [realForms, setRealForms] = useState<TaxFormTemplate[]>([]);
   const [realAutomations, setRealAutomations] = useState<TaxAutomation[]>([]);
+  const [realSubmissions, setRealSubmissions] = useState<TaxFormSubmission[]>([]);
+  const [notifications, setNotifications] = useState<HubNotification[]>([]);
   const [demoCases, setDemoCases] = useState<TaxCase[]>(INITIAL_TAX_CASES);
   const [demoInvoices, setDemoInvoices] = useState<TaxInvoice[]>(INITIAL_TAX_INVOICES);
   const [demoCommissions, setDemoCommissions] = useState<TaxCommissionItem[]>(INITIAL_TAX_COMMISSIONS);
@@ -111,6 +114,10 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
   const activeAppointments = isViewingSample ? demoAppointments : realAppointments;
   const activeForms = isViewingSample ? demoForms : realForms;
   const activeAutomations = isViewingSample ? demoAutomations : realAutomations;
+  // Sin equivalente de demo para envíos reales de formularios — el formulario
+  // público solo escribe contra una cuenta real vía su secureToken, así que
+  // no hay forma honesta de simular "envíos de ejemplo" en modo demo.
+  const activeSubmissions = isViewingSample ? [] : realSubmissions;
 
   // Carga los datos reales una sola vez cuando la cuenta tiene acceso pagado —
   // independiente de si en ese momento se está viendo la muestra de demo.
@@ -122,7 +129,7 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
       try {
         const token = await user.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
-        const [casesRes, invoicesRes, commissionsRes, clientsRes, pipelinesRes, leadsRes, tasksRes, appointmentsRes, formsRes, automationsRes] = await Promise.all([
+        const [casesRes, invoicesRes, commissionsRes, clientsRes, pipelinesRes, leadsRes, tasksRes, appointmentsRes, formsRes, automationsRes, submissionsRes, notificationsRes] = await Promise.all([
           fetch("/api/tax-office/cases", { headers }),
           fetch("/api/tax-office/invoices", { headers }),
           fetch("/api/tax-office/commissions", { headers }),
@@ -132,7 +139,9 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
           fetch("/api/tax-office/tasks", { headers }),
           fetch("/api/tax-office/appointments", { headers }),
           fetch("/api/tax-office/forms", { headers }),
-          fetch("/api/tax-office/automations", { headers })
+          fetch("/api/tax-office/automations", { headers }),
+          fetch("/api/tax-office/submissions", { headers }),
+          fetch("/api/notifications", { headers })
         ]);
         if (cancelled) return;
         if (casesRes.ok) setRealCases((await casesRes.json()).cases);
@@ -145,6 +154,8 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
         if (appointmentsRes.ok) setRealAppointments((await appointmentsRes.json()).appointments);
         if (formsRes.ok) setRealForms((await formsRes.json()).forms);
         if (automationsRes.ok) setRealAutomations((await automationsRes.json()).automations);
+        if (submissionsRes.ok) setRealSubmissions((await submissionsRes.json()).submissions);
+        if (notificationsRes.ok) setNotifications((await notificationsRes.json()).notifications);
       } catch (error) {
         console.error("Error cargando datos de Oficina Virtual E360:", error);
       }
@@ -974,6 +985,9 @@ export default function TaxOfficeSection({ brokerName }: TaxOfficeSectionProps) 
           tasks={activeTasks}
           appointments={activeAppointments}
           commissions={activeCommissions}
+          automations={activeAutomations}
+          submissions={activeSubmissions}
+          notifications={notifications}
           onNewCase={() => setIsNewCaseModalOpen(true)}
           onNavigateTab={setActiveSubTab}
           onSelectCase={(c) => {

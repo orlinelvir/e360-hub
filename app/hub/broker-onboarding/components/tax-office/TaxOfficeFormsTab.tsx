@@ -27,6 +27,8 @@ export default function TaxOfficeFormsTab({ forms, onAddForm, onUpdateForm, onPu
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [dismissedServicePicker, setDismissedServicePicker] = useState(false);
+  const [selectedServiceTemplateIds, setSelectedServiceTemplateIds] = useState<string[]>([]);
 
   const editingForm = forms.find((f) => f.id === editingFormId) || null;
 
@@ -39,16 +41,36 @@ export default function TaxOfficeFormsTab({ forms, onAddForm, onUpdateForm, onPu
     if (form) setEditingFormId(form.id);
   };
 
-  const handleAddFromGallery = async (templateId: string) => {
+  const handleAddOneFromGallery = async (templateId: string) => {
     const template = FORM_GALLERY_TEMPLATES.find((t) => t.id === templateId);
     if (!template) return;
-    setIsCreating(true);
     const form = await onAddForm({ name: template.title, serviceType: template.serviceType });
     if (form) {
       await onUpdateForm(form.id, {
         pages: [{ id: uniqueId("page"), name: "Página 1", sections: [{ id: uniqueId("section"), name: "Sección", fields: template.fields }] }]
       });
     }
+    return form;
+  };
+
+  const toggleServiceTemplate = (templateId: string) => {
+    setSelectedServiceTemplateIds((prev) => (prev.includes(templateId) ? prev.filter((id) => id !== templateId) : [...prev, templateId]));
+  };
+
+  const handleAddSelectedServices = async () => {
+    if (selectedServiceTemplateIds.length === 0) return;
+    setIsCreating(true);
+    for (const id of selectedServiceTemplateIds) {
+      await handleAddOneFromGallery(id);
+    }
+    setIsCreating(false);
+    setSelectedServiceTemplateIds([]);
+    setDismissedServicePicker(true);
+  };
+
+  const handleAddFromGallery = async (templateId: string) => {
+    setIsCreating(true);
+    const form = await handleAddOneFromGallery(templateId);
     setIsCreating(false);
     setIsGalleryOpen(false);
     if (form) setEditingFormId(form.id);
@@ -94,6 +116,51 @@ export default function TaxOfficeFormsTab({ forms, onAddForm, onUpdateForm, onPu
         </div>
       </div>
 
+      {forms.length === 0 && !dismissedServicePicker ? (
+        <div className="p-6 rounded-2xl bg-[#0A182D]/80 border border-gray-800">
+          <h4 className="text-sm font-extrabold text-white">¿Qué servicios ofreces?</h4>
+          <p className="text-xs text-gray-400 mt-1 mb-4">
+            Elige tus servicios y te agregamos sus formularios de intake ya armados. Puedes saltarte esto y agregarlos después desde el Template gallery.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {FORM_GALLERY_TEMPLATES.map((t) => {
+              const isSelected = selectedServiceTemplateIds.includes(t.id);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => toggleServiceTemplate(t.id)}
+                  className={`text-left p-4 rounded-xl border transition-colors cursor-pointer ${
+                    isSelected ? "bg-cyan-500/10 border-cyan-400" : "bg-[#05101F] border-gray-800 hover:border-gray-700"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-bold text-white text-sm leading-tight">{t.title}</span>
+                    <Plus size={14} className={isSelected ? "text-cyan-300 rotate-45 transition-transform" : "text-gray-500 transition-transform"} />
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">{t.fieldCount} fields</p>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2 mt-5">
+            <button
+              onClick={handleAddSelectedServices}
+              disabled={isCreating || selectedServiceTemplateIds.length === 0}
+              className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-xs font-black uppercase tracking-wider rounded-xl shadow-[0_0_20px_rgba(0,224,240,0.3)] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Plus size={16} />
+              <span>{isCreating ? "Agregando..." : "Add selected"}</span>
+            </button>
+            <button
+              onClick={() => setDismissedServicePicker(true)}
+              className="px-4 py-2 border border-gray-700 text-gray-300 text-xs font-bold rounded-xl hover:bg-gray-800 transition-colors cursor-pointer"
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="p-6 rounded-2xl bg-[#0A182D]/80 border border-gray-800">
         {forms.length === 0 ? (
           <div className="py-12 text-center max-w-md mx-auto space-y-3">
@@ -152,6 +219,7 @@ export default function TaxOfficeFormsTab({ forms, onAddForm, onUpdateForm, onPu
           </div>
         )}
       </div>
+      )}
 
       {isGalleryOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">

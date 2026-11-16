@@ -468,6 +468,33 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Nuevo: Precalificador SBA",
     description: "Evalúa a detalle qué programa SBA le queda a tu cliente (Microcrédito, 7(a), Express, CAPLines, 504), con pago mensual estimado y la lista de documentos que vas a necesitarle pedir.",
     tabHint: "Soporte VIP → Formularios y Recursos"
+  },
+  {
+    id: 49,
+    date: "2026-11-13",
+    audience: "broker",
+    icon: "ShieldCheck",
+    title: "Nueva guía: Información de Licencia E360",
+    description: "Documento oficial de licencia y cumplimiento de la empresa, ahora disponible para ver o descargar — también llega como paso nuevo en el correo de bienvenida.",
+    tabHint: "Soporte VIP → Biblioteca de Guías"
+  },
+  {
+    id: 50,
+    date: "2026-11-13",
+    audience: "broker",
+    icon: "LayoutDashboard",
+    title: "Nuevo menú lateral en el Hub",
+    description: "La navegación de arriba ahora vive en un menú vertical a la izquierda, más fácil de usar — en celular sigue igual, abajo de la pantalla.",
+    tabHint: "Todo el Hub"
+  },
+  {
+    id: 51,
+    date: "2026-11-14",
+    audience: "staff",
+    icon: "FileSpreadsheet",
+    title: "La barra de filtros ya no se pierde al hacer scroll",
+    description: "En Master Feed de Casos, la barra de búsqueda y filtros se queda fija arriba al bajar por la lista — ya no hay que regresar al inicio para volver a filtrar.",
+    tabHint: "Torre de Control → Master Feed de Casos"
   }
 ];
 

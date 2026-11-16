@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, MessageSquare, Edit3, Ticket, MapPin, AlertTriangle } from "lucide-react";
+import { useMemo } from "react";
+import { Loader2, MessageSquare, Edit3, Ticket, MapPin, AlertTriangle, Trophy, Users } from "lucide-react";
 
 export interface StaffActivityItem {
   uid: string;
@@ -42,6 +43,19 @@ const CLUSTER_LABELS: Record<string, string> = {
 };
 
 export default function AdminStaffActivityTab({ staff, backlogByCluster, windowDays, loading, onChangeWindow, onOpenCase }: AdminStaffActivityTabProps) {
+  // Resumen de productividad del equipo — agregado del mismo dato que ya
+  // trae cada fila de la tabla (caseNotes/statusChanges/ticketReplies para
+  // el rango seleccionado), sin capturar nada nuevo.
+  const productivitySummary = useMemo(() => {
+    const totalNotes = staff.reduce((acc, s) => acc + s.caseNotes, 0);
+    const totalStatusChanges = staff.reduce((acc, s) => acc + s.statusChanges, 0);
+    const totalTicketReplies = staff.reduce((acc, s) => acc + s.ticketReplies, 0);
+    const mostActive = staff
+      .map((s) => ({ ...s, total: s.caseNotes + s.statusChanges + s.ticketReplies }))
+      .sort((a, b) => b.total - a.total)[0];
+    return { totalNotes, totalStatusChanges, totalTicketReplies, mostActive };
+  }, [staff]);
+
   const formatLastLogin = (login: StaffActivityItem["lastLogin"]) => {
     if (!login?.at) return "Sin registro";
     const date = new Date(login.at).toLocaleString("es-US", { dateStyle: "medium", timeStyle: "short" });
@@ -76,6 +90,46 @@ export default function AdminStaffActivityTab({ staff, backlogByCluster, windowD
         </div>
       ) : (
         <>
+          {staff.length > 0 && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-[#0A182D]/80 border border-gray-800">
+                <span className="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1.5">
+                  <Users size={12} />
+                  Equipo activo
+                </span>
+                <p className="text-xl font-black text-white mt-1">{staff.length}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-[#0A182D]/80 border border-gray-800">
+                <span className="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1.5">
+                  <MessageSquare size={12} />
+                  Notas totales
+                </span>
+                <p className="text-xl font-black text-white mt-1">{productivitySummary.totalNotes}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-[#0A182D]/80 border border-gray-800">
+                <span className="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1.5">
+                  <Edit3 size={12} />
+                  Cambios de estado
+                </span>
+                <p className="text-xl font-black text-white mt-1">{productivitySummary.totalStatusChanges}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-[#0A182D]/80 border border-gray-800">
+                <span className="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1.5">
+                  <Trophy size={12} className="text-amber-400" />
+                  Más activo
+                </span>
+                {productivitySummary.mostActive && productivitySummary.mostActive.total > 0 ? (
+                  <>
+                    <p className="text-sm font-black text-white mt-1 truncate">{productivitySummary.mostActive.name}</p>
+                    <p className="text-[10px] text-gray-500">{productivitySummary.mostActive.total} acciones</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-500 italic mt-2">Sin actividad</p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="bg-[#0A182D]/50 border border-gray-800 rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-gray-300">

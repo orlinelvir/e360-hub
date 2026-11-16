@@ -46,6 +46,7 @@ import {
   CREDIT_REPAIR_STATUS_META,
   isValidCreditRepairStatus
 } from "@/lib/services/case-status";
+import { useHubHeaderOffset } from "../../hooks/useHubHeaderOffset";
 
 export interface CaseItem {
   id: string;
@@ -175,6 +176,12 @@ function RowGroup({
 }
 
 export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, onFocusCaseHandled, isFullAdmin }: AdminCasesTabProps) {
+  // Solo la barra de filtros queda sticky (ver useHubHeaderOffset) — el thead
+  // y los encabezados de grupo se intentaron apilar aquí antes (commit
+  // 9e13c47) pero un desajuste en el offset acumulado los dejaba tapando la
+  // fila de abajo, y se quitaron por completo. Un solo elemento sticky, con
+  // un solo offset medido en vivo, no tiene ese riesgo de desajuste.
+  const headerOffset = useHubHeaderOffset();
   const [search, setSearch] = useState<string>("");
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
   const [selectedServiceId, setSelectedServiceId] = useState<string>("all");
@@ -791,9 +798,11 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
         </div>
       </div>
 
-      {/* 2. Barra de Filtros y Búsqueda */}
+      {/* 2. Barra de Filtros y Búsqueda — sticky justo debajo del header del
+          Hub, para que no se pierda al bajar por un Master Feed largo. */}
       <div
-        className="bg-[#0B1C33] border border-gray-800 rounded-2xl p-4 space-y-3 shadow-lg shadow-black/20"
+        style={{ top: headerOffset }}
+        className="sticky z-30 bg-[#0B1C33] border border-gray-800 rounded-2xl p-4 space-y-3 shadow-lg shadow-black/20"
       >
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Buscador */}

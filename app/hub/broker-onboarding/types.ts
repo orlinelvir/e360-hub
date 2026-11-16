@@ -1,4 +1,4 @@
-export type ActiveTab = "inicio" | "clientes" | "oficina-virtual" | "taxes" | "revisor-credito" | "soporte" | "perfil" | "admin" | "recursos";
+export type ActiveTab = "inicio" | "clientes" | "oficina-virtual" | "taxes" | "revisor-credito" | "soporte" | "perfil" | "admin" | "recursos" | "mis-horas";
 
 export type PipelineStage =
   | "lead"
@@ -764,4 +764,34 @@ export interface BusinessCreditIntake {
 }
 
 export type NewBusinessCreditIntakeInput = Omit<BusinessCreditIntake, "id" | "brokerId" | "submittedAt">;
+
+// ==========================================
+// CONTROL DE HORAS Y NÓMINA DE STAFF
+// ==========================================
+
+export interface TimeEntry {
+  id: string;
+  staffUid: string;
+  date: string; // YYYY-MM-DD
+  hoursWorked: number;
+  note?: string;
+  createdAt: string;
+}
+
+export type NewTimeEntryInput = Pick<TimeEntry, "date" | "hoursWorked" | "note">;
+
+export interface PayrollRecord {
+  id: string;
+  staffUid: string;
+  staffName: string;
+  periodStart: string; // YYYY-MM-DD
+  periodEnd: string; // YYYY-MM-DD
+  hoursLogged: number;
+  hourlyRate: number;
+  expectedPay: number;
+  actualPaid?: number;
+  paidAt?: string;
+  notes?: string;
+  updatedAt: string;
+}
 

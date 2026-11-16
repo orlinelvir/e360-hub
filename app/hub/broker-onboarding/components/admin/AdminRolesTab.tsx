@@ -24,6 +24,8 @@ export interface RoleDefinition {
   color: string;
 }
 
+export type ContractType = "hourly" | "salary" | "commission";
+
 export interface TeamMember {
   uid: string;
   displayName: string;
@@ -32,6 +34,10 @@ export interface TeamMember {
   role: string;
   roleDetails?: RoleDefinition;
   updatedAt?: string;
+  contractType?: ContractType;
+  hourlyRateUSD?: number;
+  weeklyHoursExpected?: number;
+  contractNotes?: string;
 }
 
 export interface CandidateUser {
@@ -63,6 +69,10 @@ export default function AdminRolesTab({
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<CandidateUser | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("underwriter_mca");
+  const [contractType, setContractType] = useState<ContractType>("salary");
+  const [hourlyRateUSD, setHourlyRateUSD] = useState<string>("");
+  const [weeklyHoursExpected, setWeeklyHoursExpected] = useState<string>("");
+  const [contractNotes, setContractNotes] = useState<string>("");
   const [userSearch, setUserSearch] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -153,6 +163,10 @@ export default function AdminRolesTab({
         body: JSON.stringify({
           targetUid: selectedUser.uid,
           role: selectedRole,
+          contractType,
+          hourlyRateUSD: contractType === "hourly" && hourlyRateUSD ? Number(hourlyRateUSD) : null,
+          weeklyHoursExpected: weeklyHoursExpected ? Number(weeklyHoursExpected) : null,
+          contractNotes: contractNotes.trim() || null,
         }),
       });
       const data = await res.json();
@@ -161,6 +175,10 @@ export default function AdminRolesTab({
       setSuccessMsg(`Rol asignado correctamente a ${selectedUser.displayName}.`);
       setModalOpen(false);
       setSelectedUser(null);
+      setContractType("salary");
+      setHourlyRateUSD("");
+      setWeeklyHoursExpected("");
+      setContractNotes("");
       onRefresh();
       setTimeout(() => setSuccessMsg(""), 4000);
     } catch (err: unknown) {
@@ -206,7 +224,16 @@ export default function AdminRolesTab({
         </div>
 
         <button
-          onClick={() => { setModalOpen(true); setErrorMsg(""); }}
+          onClick={() => {
+            setModalOpen(true);
+            setErrorMsg("");
+            setSelectedUser(null);
+            setSelectedRole("underwriter_mca");
+            setContractType("salary");
+            setHourlyRateUSD("");
+            setWeeklyHoursExpected("");
+            setContractNotes("");
+          }}
           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold rounded-xl text-xs transition-colors shadow-[0_0_15px_rgba(0,224,240,0.2)]"
         >
           <UserPlus size={15} />
@@ -308,6 +335,7 @@ export default function AdminRolesTab({
                   <tr>
                     <th className="p-4">Miembro del Equipo</th>
                     <th className="p-4">Rol Asignado</th>
+                    <th className="p-4">Contrato</th>
                     <th className="p-4">Verticales Permitidas</th>
                     <th className="p-4 text-center">Fecha Actualización</th>
                     <th className="p-4 text-center">Acción</th>
@@ -324,6 +352,15 @@ export default function AdminRolesTab({
                       </td>
                       <td className="p-4">
                         {getRoleBadge(m.role, m.roleDetails)}
+                      </td>
+                      <td className="p-4 text-[11px]">
+                        {m.contractType === "hourly" ? (
+                          <span className="text-emerald-400 font-bold font-mono">
+                            ${m.hourlyRateUSD?.toFixed(2) || "—"}/hr
+                          </span>
+                        ) : (
+                          <span className="text-gray-500 capitalize">{m.contractType === "commission" ? "Comisión" : "Salario"}</span>
+                        )}
                       </td>
                       <td className="p-4 font-mono text-[11px] text-gray-400">
                         {m.roleDetails?.allowedClusters.join(", ") || "Acceso Total"}
@@ -343,6 +380,10 @@ export default function AdminRolesTab({
                               role: m.role,
                             });
                             setSelectedRole(m.role);
+                            setContractType(m.contractType || "salary");
+                            setHourlyRateUSD(m.hourlyRateUSD != null ? String(m.hourlyRateUSD) : "");
+                            setWeeklyHoursExpected(m.weeklyHoursExpected != null ? String(m.weeklyHoursExpected) : "");
+                            setContractNotes(m.contractNotes || "");
                             setModalOpen(true);
                           }}
                           className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-xs font-bold transition-colors"
@@ -454,6 +495,69 @@ export default function AdminRolesTab({
                   <option value="support_agent">🎧 Agente de Soporte & Operaciones</option>
                   <option value="broker">👤 Broker Estándar (Revocar permisos especiales)</option>
                 </select>
+              </div>
+
+              {/* Paso 3: Condiciones de Contrato */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-gray-300 uppercase">
+                  3. Condiciones de Contrato
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["hourly", "salary", "commission"] as ContractType[]).map((ct) => (
+                    <button
+                      type="button"
+                      key={ct}
+                      onClick={() => setContractType(ct)}
+                      className={`py-2 rounded-xl text-[11px] font-bold border transition-colors ${
+                        contractType === ct
+                          ? "bg-cyan-500/20 text-cyan-300 border-cyan-400"
+                          : "bg-[#05101F] text-gray-400 border-gray-800 hover:text-white"
+                      }`}
+                    >
+                      {ct === "hourly" ? "Por Hora" : ct === "salary" ? "Salario" : "Comisión"}
+                    </button>
+                  ))}
+                </div>
+
+                {contractType === "hourly" && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Tarifa por hora (USD)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={hourlyRateUSD}
+                        onChange={(e) => setHourlyRateUSD(e.target.value)}
+                        placeholder="15.00"
+                        className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Horas semanales esperadas</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={weeklyHoursExpected}
+                        onChange={(e) => setWeeklyHoursExpected(e.target.value)}
+                        placeholder="40"
+                        className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Notas del contrato (opcional)</label>
+                  <textarea
+                    value={contractNotes}
+                    onChange={(e) => setContractNotes(e.target.value)}
+                    rows={2}
+                    placeholder="Ej. revisión salarial cada 6 meses, bono por desempeño, etc."
+                    className="w-full bg-[#05101F] border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 resize-none"
+                  />
+                </div>
               </div>
 
               {/* Botones de Acción */}

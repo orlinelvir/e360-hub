@@ -24,7 +24,7 @@ service cloud.firestore {
     // campos vía cliente — el guardado real de perfil pasa por /api/broker/profile
     // (Admin SDK), que ignora estas reglas.
     function protectedBrokerFields() {
-      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid', 'brokerId', 'brokerSequence', 'firstSaleAt', 'contractSignedAt', 'contractSignedMethod', 'bestQuizScore', 'quizPassed', 'quizPassedAt', 'businessCreditIntakeToken', 'businessCreditLogoPath'];
+      return ['role', 'tier', 'packagePaid', 'referralEarnings', 'referredByUid', 'onboardingStage', 'ghlConnected', 'totalVolumeProcessed', 'totalCommissionsPaid', 'brokerId', 'brokerSequence', 'firstSaleAt', 'contractSignedAt', 'contractSignedMethod', 'bestQuizScore', 'quizPassed', 'quizPassedAt', 'businessCreditIntakeToken', 'businessCreditLogoPath', 'contractType', 'hourlyRateUSD', 'weeklyHoursExpected', 'contractNotes'];
     }
 
     // 0. Reglas para la colección de BROKERS & E360 Hub
@@ -170,6 +170,14 @@ service cloud.firestore {
           allow read, write: if false;
         }
 
+        // Registro de Horas de staff (nómina) — todo el acceso pasa por
+        // /api/staff/time-entries (Admin SDK), igual que el resto de
+        // subcolecciones sensibles de este documento. Nunca legible/escribible
+        // directo por el cliente, ni siquiera por el propio dueño del doc.
+        match /timeEntries/{entryId} {
+          allow read, write: if false;
+        }
+
         // Business Credit Program (DUNS / vendor accounts): contiene dirección
         // personal del dueño y el EIN de la empresa — el único camino de
         // escritura es la ruta pública por token (Admin SDK), y de lectura la
@@ -259,6 +267,14 @@ service cloud.firestore {
     match /adminDeletionLog/{logId} {
       allow read: if request.auth != null && getRole() == 'admin';
       allow write: if false;
+    }
+
+    // Nómina reconciliada (horas × tarifa vs. pago real) — contiene monto real
+    // pagado a cada empleado, solo visible/editable por admin vía
+    // /api/admin/payroll (Admin SDK). El estimado "en vivo" que el propio
+    // staff ve en Mis Horas se calcula aparte, sin leer esta colección.
+    match /payrollRecords/{recordId} {
+      allow read, write: if false;
     }
   }
 }

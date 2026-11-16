@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket, Tag, UserCheck, LayoutDashboard, FileText, Loader2 } from "lucide-react";
+import { Building2, Users, AlertTriangle, BarChart3, RefreshCw, AlertCircle, CheckCircle2, FileSpreadsheet, ShieldCheck, Ticket, Tag, UserCheck, LayoutDashboard, FileText, Loader2, DollarSign } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import AdminCasesTab, { CaseItem } from "./admin/AdminCasesTab";
 import AdminMetricsTab, { MetricsData } from "./admin/AdminMetricsTab";
@@ -12,10 +12,11 @@ import AdminLocationsTab, { AdminLocation } from "./admin/AdminLocationsTab";
 import AdminTicketsTab, { AdminTicketItem } from "./admin/AdminTicketsTab";
 import AdminServicesTab from "./admin/AdminServicesTab";
 import AdminStaffActivityTab, { StaffActivityItem, BacklogByCluster } from "./admin/AdminStaffActivityTab";
+import AdminPayrollTab from "./admin/AdminPayrollTab";
 import AdminOverviewTab from "./admin/AdminOverviewTab";
 import { useHubHeaderOffset } from "../hooks/useHubHeaderOffset";
 
-type AdminTab = "overview" | "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets" | "services" | "staff_activity";
+type AdminTab = "overview" | "cases" | "metrics" | "brokers" | "roles" | "failed_sync" | "locations" | "tickets" | "services" | "staff_activity" | "payroll";
 
 export default function AdminPanelSection() {
   const { user } = useAuth();
@@ -359,6 +360,9 @@ export default function AdminPanelSection() {
         ...(isFullAdmin ? [
           { id: "roles", label: "Equipo & Roles", icon: ShieldCheck, count: teamMembers.length || undefined, badgeColor: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
         ] : []),
+        ...(isFullAdmin ? [
+          { id: "payroll", label: "Nómina", icon: DollarSign, count: undefined, badgeColor: undefined },
+        ] : []),
       ],
     },
     {
@@ -541,6 +545,7 @@ export default function AdminPanelSection() {
               onOpenCase={handleOpenStaleCase}
             />
           )}
+          {activeTab === "payroll" && <AdminPayrollTab />}
         </div>
       </div>
     </div>

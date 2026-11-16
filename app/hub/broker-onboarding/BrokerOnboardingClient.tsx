@@ -4,20 +4,27 @@ import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import {
-  Search, 
-  ChevronRight, 
-  Phone, 
-  Copy, 
-  Check, 
-  Lock, 
-  User, 
+  Search,
+  ChevronRight,
+  Phone,
+  Copy,
+  Check,
+  Lock,
+  User,
   X,
   AlertCircle,
   CheckCircle2,
   Clock,
   Coins,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  Home,
+  Users,
+  Building2,
+  Calculator,
+  ScanSearch,
+  MessageCircle,
+  BookOpen
 } from "lucide-react";
 
 import { servicesData, ServiceDetail } from "./data/services";
@@ -26,6 +33,7 @@ import { ServiceOverride, mergeServiceOverride } from "@/lib/services/service-ca
 import MisClientesSection from "./components/MisClientesSection";
 import SoporteSection from "./components/SoporteSection";
 import MiPerfilSection from "./components/MiPerfilSection";
+import MisHorasSection from "./components/MisHorasSection";
 import AdminPanelSection from "./components/AdminPanelSection";
 import ResourcesSection from "./components/ResourcesSection";
 import GHLOnboardingWizardModal from "./components/GHLOnboardingWizardModal";
@@ -500,123 +508,163 @@ export default function BrokerOnboardingClient() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-grow flex flex-col relative z-10 w-full"
+            className="flex-grow flex relative z-10 w-full"
           >
-            {/* --- HEADER SUPERIOR --- */}
-            <header id="hub-main-header" className="sticky top-0 w-full z-40 bg-[#05101F]/90 backdrop-blur-md border-b border-gray-800/80 py-4 px-6">
-              <div className="max-w-7xl mx-auto flex items-center justify-between">
-                
-                {/* Logo E360 */}
-                <div className="relative h-9 w-32 cursor-pointer" onClick={() => setActiveTab("inicio")}>
-                  <Image 
-                    src="/logo.png" 
-                    alt="E360 Logo" 
+            {/* --- SIDEBAR VERTICAL (desktop) --- */}
+            <aside className="hidden md:flex md:flex-col w-60 shrink-0 h-screen sticky top-0 bg-[#05101F]/95 border-r border-gray-800/80 backdrop-blur-md">
+              <div className="h-20 flex items-center px-6 border-b border-gray-800/80 cursor-pointer shrink-0" onClick={() => setActiveTab("inicio")}>
+                <div className="relative h-9 w-32">
+                  <Image
+                    src="/logo.png"
+                    alt="E360 Logo"
                     fill
-                    className="object-contain" 
+                    className="object-contain"
                   />
                 </div>
+              </div>
 
-                {/* Enlaces de Navegación del Hub */}
-                <div className="hidden md:flex items-center gap-5 xl:gap-6">
-                  {[
-                    { id: "inicio", label: "Inicio / Servicios" },
-                    { id: "clientes", label: "Mis Clientes (CRM)" },
-                    { id: "oficina-virtual", label: "Oficina Virtual", badge: "PRO" },
-                    { id: "taxes", label: "Software Taxes" },
-                    { id: "revisor-credito", label: "Revisor de Crédito", badge: "IA" },
-                    { id: "soporte", label: "Soporte VIP" },
-                    { id: "recursos", label: "Recursos" },
-                    { id: "perfil", label: "Mi Perfil" },
-                    ...(isAdmin ? [{ id: "admin", label: "Torre de Control" }] : isStaff ? [{ id: "admin", label: "Gestión de Casos" }] : [])
-                  ].map((tab) => (
+              <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+                {[
+                  { id: "inicio", label: "Inicio / Servicios", icon: Home },
+                  { id: "clientes", label: "Mis Clientes (CRM)", icon: Users },
+                  { id: "oficina-virtual", label: "Oficina Virtual", icon: Building2, badge: "PRO" },
+                  { id: "taxes", label: "Software Taxes", icon: Calculator },
+                  { id: "revisor-credito", label: "Revisor de Crédito", icon: ScanSearch, badge: "IA" },
+                  { id: "soporte", label: "Soporte VIP", icon: MessageCircle },
+                  { id: "recursos", label: "Recursos", icon: BookOpen },
+                  { id: "perfil", label: "Mi Perfil", icon: User },
+                  ...(isStaff ? [{ id: "mis-horas", label: "Mis Horas", icon: Clock }] : []),
+                  ...(isAdmin ? [{ id: "admin", label: "Torre de Control", icon: ShieldCheck }] : isStaff ? [{ id: "admin", label: "Gestión de Casos", icon: ShieldCheck }] : [])
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as ActiveTab)}
-                      className={`text-xs uppercase tracking-widest py-1 transition-all flex items-center gap-1.5 ${
-                        activeTab === tab.id
-                          ? "font-extrabold text-cyan-400 border-b-2 border-cyan-400"
-                          : "font-semibold text-gray-400 hover:text-white"
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${
+                        isActive
+                          ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                          : "text-gray-400 border-transparent hover:text-white hover:bg-gray-900/60"
                       }`}
                     >
-                      <span>{tab.label}</span>
+                      <Icon size={16} className="shrink-0" />
+                      <span className="flex-1 text-left truncate">{tab.label}</span>
                       {"badge" in tab && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,224,240,0.2)]">
+                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,224,240,0.2)]">
                           {tab.badge}
                         </span>
                       )}
                     </button>
+                  );
+                })}
+              </nav>
+
+              <div className="p-4 border-t border-gray-800/80 flex items-center gap-3 shrink-0">
+                <div
+                  onClick={() => setActiveTab("perfil")}
+                  className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-[0_0_15px_rgba(0,224,240,0.1)] cursor-pointer hover:border-cyan-400 transition-colors shrink-0"
+                >
+                  {brokerName.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white leading-none truncate">{brokerName}</p>
+                  <button
+                    onClick={handleLogout}
+                    className="text-[10px] font-semibold text-gray-500 hover:text-red-400 transition-colors mt-1 cursor-pointer"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
+              </div>
+            </aside>
+
+            {/* --- COLUMNA DE CONTENIDO --- */}
+            <div className="flex-grow flex flex-col min-w-0">
+              {/* --- BARRA SUPERIOR (logo solo en mobile + utilidades) --- */}
+              <header id="hub-main-header" className="sticky top-0 w-full z-40 bg-[#05101F]/90 backdrop-blur-md border-b border-gray-800/80 py-4 px-6">
+                <div className="flex items-center justify-between gap-3">
+
+                  {/* Logo E360 (solo mobile, en desktop ya vive en el sidebar) */}
+                  <div className="relative h-9 w-32 cursor-pointer md:hidden" onClick={() => setActiveTab("inicio")}>
+                    <Image
+                      src="/logo.png"
+                      alt="E360 Logo"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+
+                  {/* Info Broker / Salida (solo mobile, en desktop ya vive en el sidebar) */}
+                  <div className="flex items-center gap-3 ml-auto">
+                    <NotificationBell onNavigate={setActiveTab} />
+
+                    <button
+                      onClick={() => setIsWizardOpen(true)}
+                      className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        userLocationId
+                          ? "bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400"
+                          : "bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400"
+                      }`}
+                    >
+                      {userLocationId ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>CRM Conectado</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={14} />
+                          <span>Guía CRM</span>
+                        </>
+                      )}
+                    </button>
+
+                    <div className="text-right md:hidden">
+                      <p className="text-xs font-bold text-white leading-none">{brokerName}</p>
+                      <button
+                        onClick={handleLogout}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-red-400 transition-colors mt-1 cursor-pointer"
+                      >
+                        Cerrar Sesión
+                      </button>
+                    </div>
+                    <div
+                      onClick={() => setActiveTab("perfil")}
+                      className="md:hidden w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-[0_0_15px_rgba(0,224,240,0.1)] cursor-pointer hover:border-cyan-400 transition-colors"
+                    >
+                      {brokerName.charAt(0).toUpperCase()}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Navegación Móvil (el sidebar solo aparece en desktop) */}
+                <div className="flex md:hidden items-center justify-around pt-3 border-t border-gray-800/80 mt-3 overflow-x-auto">
+                  {[
+                    { id: "inicio", label: "Inicio" },
+                    { id: "clientes", label: "Clientes" },
+                    { id: "oficina-virtual", label: "Oficina Tax" },
+                    { id: "taxes", label: "Taxes" },
+                    { id: "revisor-credito", label: "Rev. Crédito" },
+                    { id: "soporte", label: "Soporte" },
+                    { id: "recursos", label: "Recursos" },
+                    { id: "perfil", label: "Perfil" },
+                    ...(isStaff ? [{ id: "mis-horas", label: "Mis Horas" }] : []),
+                    ...(isAdmin ? [{ id: "admin", label: "Torre Control" }] : isStaff ? [{ id: "admin", label: "Casos" }] : [])
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as ActiveTab)}
+                      className={`text-[10px] uppercase tracking-wider py-1 font-bold shrink-0 px-1 ${
+                        activeTab === tab.id ? "text-cyan-400 border-b border-cyan-400" : "text-gray-400"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
                   ))}
                 </div>
-
-                {/* Info Broker / Salida */}
-                <div className="flex items-center gap-3">
-                  <NotificationBell onNavigate={setActiveTab} />
-
-                  <button
-                    onClick={() => setIsWizardOpen(true)}
-                    className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      userLocationId 
-                        ? "bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400" 
-                        : "bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400"
-                    }`}
-                  >
-                    {userLocationId ? (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>CRM Conectado</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles size={14} />
-                        <span>Guía CRM</span>
-                      </>
-                    )}
-                  </button>
-
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-white leading-none">{brokerName}</p>
-                    <button 
-                      onClick={handleLogout}
-                      className="text-[10px] font-semibold text-gray-500 hover:text-red-400 transition-colors mt-1 cursor-pointer"
-                    >
-                      Cerrar Sesión
-                    </button>
-                  </div>
-                  <div 
-                    onClick={() => setActiveTab("perfil")}
-                    className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-[0_0_15px_rgba(0,224,240,0.1)] cursor-pointer hover:border-cyan-400 transition-colors"
-                  >
-                    {brokerName.charAt(0).toUpperCase()}
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Navegación Móvil */}
-              <div className="flex md:hidden items-center justify-around pt-3 border-t border-gray-800/80 mt-3">
-                {[
-                  { id: "inicio", label: "Inicio" },
-                  { id: "clientes", label: "Clientes" },
-                  { id: "oficina-virtual", label: "Oficina Tax" },
-                  { id: "taxes", label: "Taxes" },
-                  { id: "revisor-credito", label: "Rev. Crédito" },
-                  { id: "soporte", label: "Soporte" },
-                  { id: "recursos", label: "Recursos" },
-                  { id: "perfil", label: "Perfil" },
-                  ...(isAdmin ? [{ id: "admin", label: "Torre Control" }] : isStaff ? [{ id: "admin", label: "Casos" }] : [])
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as ActiveTab)}
-                    className={`text-[10px] uppercase tracking-wider py-1 font-bold ${
-                      activeTab === tab.id ? "text-cyan-400 border-b border-cyan-400" : "text-gray-400"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </header>
+              </header>
 
             {activeTab === "inicio" && (
               <>
@@ -819,6 +867,12 @@ export default function BrokerOnboardingClient() {
               </main>
             )}
 
+            {activeTab === "mis-horas" && isStaff && (
+              <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+                <MisHorasSection />
+              </main>
+            )}
+
             {activeTab === "admin" && canAccessAdmin && (
               <main className="flex-grow max-w-[1800px] mx-auto w-full px-6 py-8">
                 <AdminPanelSection />
@@ -831,6 +885,7 @@ export default function BrokerOnboardingClient() {
                 Emprende 360 · E360 Hub — Uso Exclusivo de Brokers
               </p>
             </footer>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

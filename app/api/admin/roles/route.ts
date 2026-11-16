@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuthToken, adminDb } from "@/lib/firebase-admin";
 import { ROLE_DEFINITIONS, resolveUserRole, type RoleDefinition } from "@/lib/roles";
 
@@ -34,6 +35,10 @@ export async function GET(request: Request) {
       role: string;
       roleDetails?: RoleDefinition;
       updatedAt?: string;
+      contractType?: "hourly" | "salary" | "commission";
+      hourlyRateUSD?: number;
+      weeklyHoursExpected?: number;
+      contractNotes?: string;
     }> = [];
 
     brokersSnap.docs.forEach((docSnap) => {
@@ -58,7 +63,11 @@ export async function GET(request: Request) {
           phone: data.phone || "",
           role,
           roleDetails: roleDef,
-          updatedAt: data.roleUpdatedAt || data.createdAt || ""
+          updatedAt: data.roleUpdatedAt || data.createdAt || "",
+          contractType: data.contractType || undefined,
+          hourlyRateUSD: typeof data.hourlyRateUSD === "number" ? data.hourlyRateUSD : undefined,
+          weeklyHoursExpected: typeof data.weeklyHoursExpected === "number" ? data.weeklyHoursExpected : undefined,
+          contractNotes: data.contractNotes || undefined
         });
       }
     });
@@ -95,7 +104,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { targetUid, role } = body;
+    const { targetUid, role, contractType, hourlyRateUSD, weeklyHoursExpected, contractNotes } = body;
 
     if (!targetUid || !role) {
       return NextResponse.json({ error: "targetUid y role son requeridos" }, { status: 400 });
@@ -106,6 +115,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "El rol especificado no es válido" }, { status: 400 });
     }
 
+    if (contractType !== undefined && !["hourly", "salary", "commission"].includes(contractType)) {
+      return NextResponse.json({ error: "contractType inválido" }, { status: 400 });
+    }
+
     const targetUserRef = adminDb.collection("brokers").doc(targetUid);
     const targetSnap = await targetUserRef.get();
 
@@ -113,11 +126,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Usuario o broker no encontrado en Firestore" }, { status: 404 });
     }
 
-    await targetUserRef.update({
+    const update: Record<string, unknown> = {
       role,
       roleUpdatedAt: new Date().toISOString(),
       roleAssignedBy: user.email || user.uid
-    });
+    };
+    // FieldValue.delete() cuando el valor viene null (ej. tarifa de alguien
+    // que deja de ser "hourly") — así no queda un hourlyRateUSD viejo
+    // huérfano confundiendo el cálculo de nómina más adelante.
+    if (contractType !== undefined) update.contractType = contractType;
+    if (hourlyRateUSD !== undefined) update.hourlyRateUSD = hourlyRateUSD === null ? FieldValue.delete() : Number(hourlyRateUSD);
+    if (weeklyHoursExpected !== undefined) update.weeklyHoursExpected = weeklyHoursExpected === null ? FieldValue.delete() : Number(weeklyHoursExpected);
+    if (contractNotes !== undefined) update.contractNotes = contractNotes === null ? FieldValue.delete() : String(contractNotes);
+
+    await targetUserRef.update(update);
 
     return NextResponse.json({
       success: true,

@@ -4,10 +4,11 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   DollarSign, Clock, Landmark, TrendingUp, Users, CheckCircle2,
-  FileText, Plus, ChevronRight, ListChecks, CalendarClock, UserPlus, AlertTriangle
+  FileText, Plus, ChevronRight, ListChecks, CalendarClock, UserPlus, AlertTriangle, Bell, FileCheck2, Zap
 } from "lucide-react";
-import { TaxCase, TaxClient, TaxLead, TaxTask, TaxAppointment, TaxCommissionItem, TaxInvoice } from "../../types";
+import { TaxCase, TaxClient, TaxLead, TaxTask, TaxAppointment, TaxCommissionItem, TaxInvoice, TaxAutomation, TaxFormSubmission } from "../../types";
 import { TaxOfficeStats } from "./mock-tax-data";
+import type { HubNotification } from "@/lib/services/notification-service";
 
 type TaxOfficeSubTab = "dashboard" | "cases" | "clients" | "workflow" | "tasks" | "appointments" | "invoices" | "commissions" | "templates" | "automations";
 
@@ -22,6 +23,9 @@ interface TaxOfficeDashboardProps {
   tasks: TaxTask[];
   appointments: TaxAppointment[];
   commissions: TaxCommissionItem[];
+  automations: TaxAutomation[];
+  submissions: TaxFormSubmission[];
+  notifications: HubNotification[];
   onNewCase: () => void;
   onNavigateTab: (tab: TaxOfficeSubTab) => void;
   onSelectCase: (c: TaxCase) => void;
@@ -61,6 +65,9 @@ export default function TaxOfficeDashboard({
   tasks,
   appointments,
   commissions,
+  automations,
+  submissions,
+  notifications,
   onNewCase,
   onNavigateTab,
   onSelectCase,
@@ -192,6 +199,20 @@ export default function TaxOfficeDashboard({
 
   // --- Collaborator commissions ---
   const totalCommissionsOwed = commissions.filter((c) => c.status === "pending").reduce((acc, c) => acc + c.netCommission, 0);
+
+  // --- Submitted documents (envíos reales de Forms & Contracts) ---
+  const recentSubmissions = useMemo(() => submissions.slice().sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)).slice(0, 4), [submissions]);
+
+  // --- Automation activity ---
+  const activeAutomationsCount = automations.filter((a) => a.status === "active").length;
+  const lastAutomationRun = useMemo(() => {
+    const ran = automations.filter((a) => a.lastRunAt).sort((a, b) => (b.lastRunAt || "").localeCompare(a.lastRunAt || ""));
+    return ran[0]?.lastRunAt;
+  }, [automations]);
+
+  // --- Notifications ---
+  const recentNotifications = useMemo(() => notifications.slice(0, 4), [notifications]);
+  const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
 
   // --- Cases by preparer ---
   const casesByPreparer = useMemo(() => {
@@ -438,6 +459,77 @@ export default function TaxOfficeDashboard({
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Notifications + Submitted documents + Automation activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="p-5 rounded-2xl bg-[#0A182D]/80 border border-gray-800">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-1.5">
+              <Bell size={14} className="text-cyan-400" />
+              Notifications
+            </h3>
+            {unreadNotificationsCount > 0 && (
+              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">{unreadNotificationsCount}</span>
+            )}
+          </div>
+          {recentNotifications.length === 0 ? (
+            <p className="text-xs text-gray-500 italic">No notifications yet.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {recentNotifications.map((n) => (
+                <li key={n.id} className="text-xs text-gray-300 truncate">
+                  • {n.title}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[#0A182D]/80 border border-gray-800">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-1.5">
+              <FileCheck2 size={14} className="text-cyan-400" />
+              Submitted documents
+            </h3>
+            <button onClick={() => onNavigateTab("templates")} className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer">
+              Ver todos
+            </button>
+          </div>
+          {recentSubmissions.length === 0 ? (
+            <p className="text-xs text-gray-500 italic">No documents submitted yet.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {recentSubmissions.map((s) => (
+                <li key={s.id} className="text-xs text-gray-300 truncate">
+                  • {s.clientName || "Cliente"} — {new Date(s.submittedAt).toLocaleDateString("es-US")}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[#0A182D]/80 border border-gray-800">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-1.5">
+              <Zap size={14} className="text-cyan-400" />
+              Automation activity
+            </h3>
+            <button onClick={() => onNavigateTab("automations")} className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer">
+              Ver todas
+            </button>
+          </div>
+          {activeAutomationsCount === 0 ? (
+            <p className="text-xs text-gray-500 italic">Nothing here yet.</p>
+          ) : (
+            <>
+              <p className="text-xs text-gray-300">{activeAutomationsCount} automatización{activeAutomationsCount !== 1 ? "es" : ""} activa{activeAutomationsCount !== 1 ? "s" : ""}</p>
+              <p className="text-[10px] text-gray-500 mt-1">
+                {lastAutomationRun ? `Última corrida: ${new Date(lastAutomationRun).toLocaleDateString("es-US")}` : "Todavía no ha corrido ninguna."}
+              </p>
+            </>
           )}
         </div>
       </div>
