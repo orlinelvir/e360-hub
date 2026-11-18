@@ -157,14 +157,35 @@ export async function POST(request: Request) {
 
   } catch (error: unknown) {
     console.error("Error en /api/support/chat:", error);
-    
+
     if (error instanceof Error && error.message === "rate_limit") {
       return NextResponse.json(
         { error: "El servicio está experimentando un alto volumen de solicitudes. Por favor, intenta de nuevo en unos momentos." },
         { status: 429 }
       );
     }
-    
+
+    // Config rota (falta la API key en el servidor) vs. todos los modelos de
+    // Gemini saturados/caídos a la vez (ver cadena de respaldo en lib/ai/gemini.ts)
+    // son causas distintas y requieren acciones distintas — antes ambas caían
+    // en el mismo "Error interno" genérico, sin pista de cuál era.
+    if (error instanceof Error && error.message === "Falta la variable de entorno GEMINI_API_KEY") {
+      return NextResponse.json(
+        { error: "El Asistente IA no está configurado en este servidor. Contacta a soporte técnico." },
+        { status: 503 }
+      );
+    }
+
+    if (
+      error instanceof Error &&
+      /^Timeout esperando modelo|^Error en API Gemini|^Respuesta vacía de Gemini|^No se pudo conectar con el Asistente IA/.test(error.message)
+    ) {
+      return NextResponse.json(
+        { error: "El Asistente IA no está disponible en este momento (alta demanda). Intenta de nuevo en unos minutos." },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Error interno al procesar la solicitud de chat" },
       { status: 500 }
