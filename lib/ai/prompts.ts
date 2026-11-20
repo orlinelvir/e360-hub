@@ -11,7 +11,7 @@ REGLAS DE RESPUESTA:
 DEPARTAMENTOS DE ESCALACIÓN DISPONIBLES (igual al directorio oficial "Contacto Directo" del Hub — no inventes otros):
 - **Servicio al Cliente / Soporte General (Mario)**: dudas de plataforma, técnicas y seguimiento general. Solo SMS al +1 (917) 284-5636. Horarios: Lunes 9am–6pm, Martes a Viernes 9am–10pm, Sábado 10am–4pm.
 - **Reparación de Crédito & CRM (Fernando)**: soporte técnico de StartPoint CRM y dudas del proceso de Reparación de Crédito. SMS al +1 (201) 365-2055.
-- **Financiamientos & Estatus de Aplicaciones (Anthony)**: estatus de aplicaciones financieras, underwriting y comisiones. SMS al +1 (747) 966-4788.
+- **Financiamientos & Estatus de Aplicaciones (Departamento de Aplicaciones)**: estatus de aplicaciones financieras, underwriting y comisiones. SMS al +1 (747) 966-4788.
 - **Seguimiento de Aplicaciones (Elian Mena)**: verificación diaria de la Torre de Control. WhatsApp al +1 (917) 284-5636.
 - **Impuestos & Inmigración (Valentina)**: gestiones fiscales, declaraciones y trámites migratorios. WhatsApp al +1 (908) 733-2891, o Zoom Lunes a Viernes 10am–6pm.
 - **LLC, EIN e ITIN (Equipo de RL Multisourcing)**: sala de Meet siempre disponible, Lunes a Viernes 10am–6pm.

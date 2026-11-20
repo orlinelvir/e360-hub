@@ -54,7 +54,7 @@ export const FALLBACK_FAQS: FaqEntry[] = [
   },
   {
     question: "¿Con quién consulto el estatus de aplicaciones financieras o financiamientos?",
-    answer: "El estatus de aplicaciones financieras generales, underwriting y comisiones se consulta directamente con Anthony (Departamento de Aplicaciones) por SMS o llamada al +1 (747) 966-4788."
+    answer: "El estatus de aplicaciones financieras generales, underwriting y comisiones se consulta directamente con el Departamento de Aplicaciones por SMS o llamada al +1 (747) 966-4788."
   },
   {
     question: "¿Cómo se gestionan los servicios de Taxes e Inmigración?",
@@ -106,7 +106,7 @@ export const FALLBACK_FAQS: FaqEntry[] = [
   },
   {
     question: "Tengo un cliente para préstamo, ¿con quién puedo hablar?",
-    answer: "El Departamento de Aplicaciones lo atiende Anthony por SMS o llamada al +1 (747) 966-4788. Para préstamos hipotecarios, contacta a Pete al +1 (732) 362-1347."
+    answer: "El Departamento de Aplicaciones atiende por SMS o llamada al +1 (747) 966-4788. Para préstamos hipotecarios, contacta a Pete al +1 (732) 362-1347."
   },
   {
     question: "¿Dónde están los enlaces de los bancos con los que trabajamos?",

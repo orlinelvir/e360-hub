@@ -5,17 +5,18 @@ import { deriveCaseStatus } from "@/lib/services/case-status";
 import { createNotification } from "@/lib/services/notification-service";
 import { businessHoursElapsed, highestThresholdReached } from "@/lib/services/business-hours";
 
-// Los 3 nombres que Fernando pidió explícitamente que reciban estas alertas
+// Los nombres que Fernando pidió explícitamente que reciban estas alertas
 // (reunión del 21 de septiembre 2026) — no es un rol genérico, son estas
 // personas puntuales, así que se apunta por uid en vez de por permiso.
+// Anthony Elvir salió del equipo (19 nov 2026) — se quitó de esta lista para
+// que deje de recibir estas alertas automáticas.
 const ALERT_RECIPIENT_UIDS: { uid: string; name: string }[] = [
-  { uid: "ckCwUSr3O6bXsfSgtejo92AcPMq2", name: "Anthony Elvir" },
   { uid: "8xcFRaAleNUWe7B3d9Wt577pAtZ2", name: "Elian Mena Santana" },
   { uid: "VMh1anllGxNlyMLh9Y19QODGB1h2", name: "Mario Chavez" }
 ];
 
 /**
- * Cron diario (ver vercel.json) que alerta a Anthony, Elian y Mario cuando un
+ * Cron diario (ver vercel.json) que alerta a Elian y Mario cuando un
  * caso lleva 24/48/72 horas hábiles sin salir de "Pendiente de Documentos" o
  * "En Revisión" — cada umbral se notifica una sola vez por caso (se guarda en
  * `lastPendingAlertHours`), para no repetir el aviso cada día que pasa.

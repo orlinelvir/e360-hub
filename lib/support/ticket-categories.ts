@@ -13,8 +13,8 @@ export interface TicketCategoryDef {
   extraField?: TicketCategoryExtraField;
 }
 
-// Alineado 1:1 con los 8 departamentos reales de Contacto Directo (Mario, Fernando,
-// Anthony, Laura, Samantha, Valentina) para que cada ticket tenga un dueño claro.
+// Alineado 1:1 con los departamentos reales de Contacto Directo (Mario, Fernando,
+// Departamento de Aplicaciones, Laura, Samantha, Valentina) para que cada ticket tenga un dueño claro.
 export const TICKET_CATEGORIES: TicketCategoryDef[] = [
   { id: "general", label: "Soporte General / Plataforma" },
   {

@@ -85,7 +85,14 @@ export async function getGHLContacts(locationId?: string, query?: string, custom
 }
 
 /**
- * Registra un nuevo cliente/lead directamente en la subcuenta del broker en GHL
+ * Registra (o reutiliza, si ya existe por email/teléfono en esa location) un
+ * cliente/lead en GHL. Usa el endpoint /contacts/upsert en vez de /contacts —
+ * antes esto SIEMPRE creaba un contacto nuevo aunque ya existiera uno con el
+ * mismo correo, duplicando el contacto en GHL cada vez que un broker
+ * resometía una solicitud (ver investigación del 19 nov 2026, reclamos de
+ * brokers por duplicados en "Mis Clientes"). La forma de la respuesta
+ * ({ contact: {...} }) es la misma que la del endpoint de creación, así que
+ * ningún caller necesita cambiar cómo lee el resultado.
  */
 export async function createGHLContact(contactData: GHLContactPayload, locationId?: string, customApiKey?: string) {
   const locId = (locationId || "").trim();
@@ -100,7 +107,7 @@ export async function createGHLContact(contactData: GHLContactPayload, locationI
     source: contactData.source || "E360 Broker Onboarding Hub"
   };
 
-  const response = await fetch(`${GHL_API_BASE}/contacts`, {
+  const response = await fetch(`${GHL_API_BASE}/contacts/upsert`, {
     method: "POST",
     headers: getHeaders(customApiKey),
     body: JSON.stringify(payload)

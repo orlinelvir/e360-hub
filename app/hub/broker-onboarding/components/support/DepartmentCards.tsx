@@ -64,7 +64,7 @@ const departments: Department[] = [
   },
   {
     id: "aplicaciones",
-    name: "Anthony",
+    name: "Aplicaciones",
     title: "Departamento de Aplicaciones",
     desc: "Atención exclusiva para estatus de aplicaciones financieras, underwriting y comisiones.",
     phone: "+1 (747) 966-4788",

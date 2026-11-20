@@ -7,6 +7,14 @@
         { "fieldPath": "clientEmail", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "clients",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "emailNormalized", "order": "ASCENDING" },
+        { "fieldPath": "serviceId", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

@@ -119,33 +119,68 @@ export async function POST(request: Request) {
       ? Math.round(amountNum * commissionRate)
       : (hasCustomRate ? 0 : 250);
 
-    const leadRef = await adminDb.collection("brokers").doc(user.uid).collection("clients").add({
+    const resolvedServiceId = serviceId || "hub-admision";
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Antes de crear un cliente nuevo: si este broker ya tiene un caso SIN
+    // RESOLVER (no aprobado/declinado/fondeado) para el mismo correo y el
+    // mismo servicio, tratamos esto como un reenvío accidental (ej. se le fue
+    // el internet al broker y no vio la confirmación, así que le dio
+    // "Someter" otra vez) y actualizamos ese caso en vez de duplicarlo — esto
+    // es justo lo que estaba generando los contactos duplicados en "Mis
+    // Clientes" que reportaron los brokers (19 nov 2026). Si el caso anterior
+    // ya se resolvió, sí es un intento legítimamente nuevo y se crea uno.
+    const RESOLVED_STATUSES = new Set(["approved", "rejected", "funded"]);
+    const clientsCollection = adminDb.collection("brokers").doc(user.uid).collection("clients");
+    const existingSnap = await clientsCollection
+      .where("emailNormalized", "==", normalizedEmail)
+      .where("serviceId", "==", resolvedServiceId)
+      .get();
+    const existingDoc = existingSnap.docs.find((d) => !RESOLVED_STATUSES.has(d.data().status));
+
+    const sharedClientFields = {
       name: fullName,
       firstName,
       lastName: lastName || "",
       email,
+      emailNormalized: normalizedEmail,
       phone: phone || "",
-      serviceId: serviceId || "hub-admision",
+      serviceId: resolvedServiceId,
       serviceName: service || "General",
       service: service || "General",
       amount: amountNum,
       estimatedCommission,
-      stage: "lead",
       notes: notes || "",
-      createdAt: new Date().toISOString(),
-      lastActivity: "Admitido desde E360 Hub",
-      ghlContactId: "",
-      ghlOpportunityId: "",
-      // Este endpoint es el formulario real de "Admitir Cliente" — para
-      // servicios de financiamiento ya se validó arriba que hay confirmación
-      // del formulario oficial o un PDF adjunto, así que el caso nace
-      // directamente "en revisión", no como un lead sin verificar.
-      status: "in_review",
-      syncStatus: "pending",
       brokerId: user.uid,
       brokerName,
       brokerEmail
-    });
+    };
+
+    const leadRef = existingDoc ? existingDoc.ref : clientsCollection.doc();
+
+    if (existingDoc) {
+      await leadRef.update({
+        ...sharedClientFields,
+        lastActivity: "Solicitud reenviada desde E360 Hub",
+        // Este endpoint es el formulario real de "Admitir Cliente" — para
+        // servicios de financiamiento ya se validó arriba que hay confirmación
+        // del formulario oficial o un PDF adjunto, así que el caso vuelve
+        // directamente a "en revisión", no a un lead sin verificar.
+        status: "in_review",
+        syncStatus: "pending"
+      });
+    } else {
+      await leadRef.set({
+        ...sharedClientFields,
+        stage: "lead",
+        createdAt: new Date().toISOString(),
+        lastActivity: "Admitido desde E360 Hub",
+        ghlContactId: "",
+        ghlOpportunityId: "",
+        status: "in_review",
+        syncStatus: "pending"
+      });
+    }
 
     if (applicationFile && adminStorage) {
       try {
@@ -199,10 +234,13 @@ export async function POST(request: Request) {
 
     const { locationId: brokerLocationId, apiKey: brokerApiKey } = await resolveBrokerCredentials(user.uid, request);
 
-    let brokerContactId: string | null = null;
-    let brokerOpportunityId: string | null = null;
+    // En un reenvío (existingDoc), reusa el contacto/oportunidad que ya se
+    // había creado antes en vez de generar uno nuevo — mismo patrón que ya
+    // usa app/api/admin/retry-sync/route.ts para este problema exacto.
+    let brokerContactId: string | null = existingDoc?.data().brokerContactId || null;
+    let brokerOpportunityId: string | null = existingDoc?.data().brokerOpportunityId || null;
 
-    if (brokerLocationId && brokerApiKey) {
+    if (brokerLocationId && brokerApiKey && !brokerContactId) {
       try {
         const contactData = {
           firstName,
@@ -249,10 +287,10 @@ export async function POST(request: Request) {
 
     console.log("Central department resolved:", { serviceId: serviceId || null, service, centralDepartment, pipelineCluster, hasCredentials: Boolean(centralLocationId && centralApiKey) });
 
-    let centralContactId: string | null = null;
-    let centralOpportunityId: string | null = null;
+    let centralContactId: string | null = existingDoc?.data().centralContactId || null;
+    let centralOpportunityId: string | null = existingDoc?.data().centralOpportunityId || null;
 
-    if (centralLocationId && centralApiKey) {
+    if (centralLocationId && centralApiKey && !centralContactId) {
       try {
         const contactData = {
           firstName,
