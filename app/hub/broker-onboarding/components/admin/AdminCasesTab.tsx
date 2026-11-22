@@ -315,6 +315,7 @@ function DuplicateCaseRow({
   selected,
   onSelect,
   onArchiveIndividual,
+  onDeleteIndividual,
   getStatusBadge,
   formatMoney
 }: {
@@ -323,6 +324,7 @@ function DuplicateCaseRow({
   selected?: boolean;
   onSelect?: () => void;
   onArchiveIndividual?: () => void;
+  onDeleteIndividual?: () => void;
   getStatusBadge: (st: string) => React.ReactNode;
   formatMoney: (n: number) => string;
 }) {
@@ -356,6 +358,110 @@ function DuplicateCaseRow({
           <span>Archivar</span>
         </button>
       )}
+      {onDeleteIndividual && (
+        <button
+          type="button"
+          onClick={onDeleteIndividual}
+          className="shrink-0 px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1"
+        >
+          <Trash2 size={12} />
+          <span>Eliminar</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Confirmación para el borrado PERMANENTE de uno o varios duplicados — a
+// diferencia del borrado de un solo caso en el modal de detalle (que pide
+// escribir el nombre exacto), aquí puede haber varios nombres a la vez, así
+// que la fricción equivalente es escribir la palabra "ELIMINAR". Se usa
+// tanto para el borrado masivo (grupo de alta confianza) como para el
+// borrado individual (fila de media confianza).
+function ConfirmDeleteModal({
+  casesToDelete,
+  keepCase,
+  deleting,
+  error,
+  onCancel,
+  onConfirm
+}: {
+  casesToDelete: CaseItem[];
+  keepCase?: CaseItem;
+  deleting: boolean;
+  error: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const [confirmText, setConfirmText] = useState("");
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-[#0A182D] border border-red-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
+      >
+        <div className="flex items-center gap-2 text-red-400">
+          <AlertTriangle size={18} />
+          <h4 className="font-extrabold text-sm">Eliminar permanentemente</h4>
+        </div>
+
+        {keepCase && (
+          <p className="text-xs text-gray-400 leading-relaxed">
+            Se conservará: <strong className="text-white">{keepCase.name}</strong> ({keepCase.serviceName})
+          </p>
+        )}
+
+        <div className="space-y-1.5">
+          <p className="text-xs text-gray-400">
+            Se borrarán <strong className="text-red-300">{casesToDelete.length}</strong> caso(s), con todas sus notas,
+            documentos y archivos adjuntos. <strong className="text-red-300">No se puede deshacer.</strong>
+          </p>
+          <div className="bg-[#05101F] border border-gray-800 rounded-xl p-2.5 space-y-1 max-h-32 overflow-y-auto">
+            {casesToDelete.map((c) => (
+              <p key={c.id} className="text-[11px] text-gray-300 truncate">
+                • {c.name} ({c.serviceName})
+              </p>
+            ))}
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg p-2.5">{error}</p>}
+
+        <div>
+          <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">
+            Escribe ELIMINAR para confirmar
+          </label>
+          <input
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="ELIMINAR"
+            className="w-full bg-[#05101F] border border-gray-800 focus:border-red-400 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-600 outline-none transition-colors text-xs"
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-1">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 rounded-xl border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors text-xs font-semibold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={deleting || confirmText.trim().toUpperCase() !== "ELIMINAR"}
+            className="px-4 py-2 bg-red-500 hover:bg-red-400 text-black rounded-xl text-xs font-extrabold transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            <span>{deleting ? "Eliminando..." : "Eliminar Definitivamente"}</span>
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -365,7 +471,9 @@ function DuplicatesCenter({
   mediumGroups,
   onArchiveGroup,
   onArchiveCase,
+  onDeleteCases,
   archivingKey,
+  isFullAdmin,
   formatMoney,
   getStatusBadge
 }: {
@@ -373,7 +481,9 @@ function DuplicatesCenter({
   mediumGroups: DuplicateGroup[];
   onArchiveGroup: (group: DuplicateGroup, keepId: string) => void;
   onArchiveCase: (c: CaseItem) => void;
+  onDeleteCases: (casesToDelete: CaseItem[]) => Promise<void>;
   archivingKey: string | null;
+  isFullAdmin?: boolean;
   formatMoney: (n: number) => string;
   getStatusBadge: (st: string) => React.ReactNode;
 }) {
@@ -383,6 +493,27 @@ function DuplicatesCenter({
     [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0].id;
 
   const [keepSelections, setKeepSelections] = useState<Record<string, string>>({});
+
+  // Borrado permanente — pendingDelete guarda qué se va a borrar (y, si
+  // viene de un grupo de alta confianza, cuál se conserva) hasta que se
+  // confirme o cancele en ConfirmDeleteModal.
+  const [pendingDelete, setPendingDelete] = useState<{ casesToDelete: CaseItem[]; keepCase?: CaseItem } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await onDeleteCases(pendingDelete.casesToDelete);
+      setPendingDelete(null);
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : "Error al eliminar los casos");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (highGroups.length === 0 && mediumGroups.length === 0) {
     return (
@@ -406,6 +537,8 @@ function DuplicatesCenter({
             {highGroups.map((group) => {
               const keepId = keepSelections[group.key] ?? defaultKeepId(group.cases);
               const archiving = archivingKey === group.key;
+              const keepCase = group.cases.find((c) => c.id === keepId);
+              const restOfGroup = group.cases.filter((c) => c.id !== keepId);
               return (
                 <div key={group.key} className="bg-[#0A182D]/70 border border-amber-500/20 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center justify-between gap-3">
@@ -413,15 +546,28 @@ function DuplicatesCenter({
                       <strong className="text-white">{group.cases.length}</strong> casos duplicados de{" "}
                       <strong className="text-white">{group.brokerName}</strong>
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => onArchiveGroup(group, keepId)}
-                      disabled={archiving}
-                      className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-lg text-[11px] font-extrabold transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                    >
-                      {archiving ? <Loader2 size={13} className="animate-spin" /> : <Archive size={13} />}
-                      <span>{archiving ? "Archivando..." : "Archivar duplicados"}</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {isFullAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => setPendingDelete({ casesToDelete: restOfGroup, keepCase })}
+                          disabled={archiving}
+                          className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-[11px] font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          <Trash2 size={13} />
+                          <span>Eliminar duplicados</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onArchiveGroup(group, keepId)}
+                        disabled={archiving}
+                        className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-lg text-[11px] font-extrabold transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {archiving ? <Loader2 size={13} className="animate-spin" /> : <Archive size={13} />}
+                        <span>{archiving ? "Archivando..." : "Archivar duplicados"}</span>
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     {group.cases.map((c) => (
@@ -465,6 +611,7 @@ function DuplicatesCenter({
                       c={c}
                       selectable={false}
                       onArchiveIndividual={() => onArchiveCase(c)}
+                      onDeleteIndividual={isFullAdmin ? () => setPendingDelete({ casesToDelete: [c] }) : undefined}
                       getStatusBadge={getStatusBadge}
                       formatMoney={formatMoney}
                     />
@@ -475,6 +622,20 @@ function DuplicatesCenter({
           </div>
         )}
       </div>
+
+      {pendingDelete && (
+        <ConfirmDeleteModal
+          casesToDelete={pendingDelete.casesToDelete}
+          keepCase={pendingDelete.keepCase}
+          deleting={deleting}
+          error={deleteError}
+          onCancel={() => {
+            setPendingDelete(null);
+            setDeleteError("");
+          }}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
     </div>
   );
 }
@@ -643,6 +804,26 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
       }
     },
     [archiveCase]
+  );
+
+  // Borrado permanente de uno o varios duplicados — mismo endpoint DELETE
+  // que ya usa handleDeleteCase (requiere isFullAdmin, ver botón en
+  // DuplicatesCenter). Secuencial (no Promise.all) para que un error en un
+  // caso puntual no deje confusión sobre cuáles sí se borraron.
+  const deleteCasesPermanently = useCallback(
+    async (casesToDelete: CaseItem[]) => {
+      for (const c of casesToDelete) {
+        const res = await fetch("/api/admin/cases", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ brokerId: c.brokerId, clientId: c.id, confirmName: c.name }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Error al eliminar "${c.name}"`);
+      }
+      onRefresh();
+    },
+    [onRefresh]
   );
 
   // Filtrado reactivo
@@ -1203,7 +1384,9 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
               alert(e instanceof Error ? e.message : "Error al archivar el caso")
             )
           }
+          onDeleteCases={deleteCasesPermanently}
           archivingKey={archivingGroupKey}
+          isFullAdmin={isFullAdmin}
           formatMoney={formatMoney}
           getStatusBadge={getStatusBadge}
         />
