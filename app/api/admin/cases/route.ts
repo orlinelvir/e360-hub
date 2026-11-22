@@ -1,4 +1,5 @@
 import { NextResponse, after } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";
 import { verifyAuthToken, adminDb, adminAuth } from "@/lib/firebase-admin";
 import { resolveUserRole, hasPermission, getRoleDefinition } from "@/lib/roles";
 import { resolvePipelineCluster } from "@/lib/service-routing";
@@ -71,6 +72,11 @@ export async function GET(request: Request) {
       );
     }
 
+    // Por defecto NUNCA se devuelven casos archivados (ver PATCH abajo) — la
+    // vista "Archivados" del Master de Casos pide esto explícito.
+    const { searchParams } = new URL(request.url);
+    const includeArchived = searchParams.get("includeArchived") === "true";
+
     // Determinar qué clusters puede ver el usuario según su rol (admin ve todos, sin filtrar).
     const allowedClusters: string[] | null = userRole === "admin" ? null : (getRoleDefinition(userRole)?.allowedClusters ?? []);
 
@@ -101,6 +107,10 @@ export async function GET(request: Request) {
       feeRoundStatus?: string;
       creditRepairStatus?: string;
       officialFormConfirmed?: boolean;
+      archived?: boolean;
+      archivedAt?: string;
+      archivedBy?: string;
+      archivedReason?: string;
     }> = [];
 
     await Promise.all(
@@ -134,6 +144,13 @@ export async function GET(request: Request) {
           // conveniencia. "source" es la marca nueva; el texto fijo cubre los
           // que ya existían en Firestore antes de que existiera ese campo.
           if (c.source === "ghl_sync" || c.serviceName === "Cliente StartPoint CRM") {
+            return;
+          }
+
+          // Por defecto excluir casos archivados (duplicados/inactivos
+          // resueltos) — la vista "Archivados" del Master de Casos pide
+          // includeArchived=true explícito para verlos.
+          if (c.archived === true && !includeArchived) {
             return;
           }
 
@@ -181,6 +198,10 @@ export async function GET(request: Request) {
             feeRoundStatus: c.feeRoundStatus,
             creditRepairStatus,
             officialFormConfirmed: c.officialFormConfirmed,
+            archived: c.archived === true,
+            archivedAt: c.archivedAt,
+            archivedBy: c.archivedBy,
+            archivedReason: c.archivedReason,
           });
         });
       })
@@ -221,7 +242,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { brokerId, clientId, reviewStatus, adminNotes, estimatedCommission, statusReason } = body;
+    const { brokerId, clientId, reviewStatus, adminNotes, estimatedCommission, statusReason, archived, archivedReason } = body;
 
     if (!brokerId || !clientId) {
       return NextResponse.json({ error: "brokerId y clientId son requeridos" }, { status: 400 });
@@ -283,6 +304,22 @@ export async function PATCH(request: Request) {
     // cliente de la API pueda colarla igual.
     if (estimatedCommission !== undefined && clientCluster !== "credit_repair") {
       updatePayload.estimatedCommission = Number(estimatedCommission);
+    }
+
+    // Archivado — reversible, no es el borrado permanente (DELETE abajo).
+    // Al archivar se estampa quién/cuándo (mismo patrón que updatedByUid/
+    // updatedByName); al desarchivar se limpian esos campos.
+    if (archived !== undefined) {
+      updatePayload.archived = Boolean(archived);
+      if (archived === true) {
+        updatePayload.archivedAt = new Date().toISOString();
+        updatePayload.archivedBy = actingStaffName;
+        if (archivedReason !== undefined) updatePayload.archivedReason = archivedReason;
+      } else {
+        updatePayload.archivedAt = FieldValue.delete();
+        updatePayload.archivedBy = FieldValue.delete();
+        updatePayload.archivedReason = FieldValue.delete();
+      }
     }
 
     await clientRef.update(updatePayload);

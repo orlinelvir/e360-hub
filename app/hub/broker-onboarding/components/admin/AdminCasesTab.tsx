@@ -32,7 +32,10 @@ import {
   EyeOff,
   PauseCircle,
   PlayCircle,
-  Trash2
+  Trash2,
+  Archive,
+  ArchiveRestore,
+  Users
 } from "lucide-react";
 import { CaseNote, CaseNoteCategory, CaseDocument } from "../../types";
 import {
@@ -81,6 +84,12 @@ export interface CaseItem {
   creditRepairStatus?: string;
   // Solo Reparación de Crédito — ver checklist en el modal de detalle.
   officialFormConfirmed?: boolean;
+  // Archivado — reversible, distinto del borrado permanente. Ver
+  // "Centro de Duplicados" más abajo en este archivo.
+  archived?: boolean;
+  archivedAt?: string;
+  archivedBy?: string;
+  archivedReason?: string;
 }
 
 interface CreditRepairCredentials {
@@ -118,6 +127,128 @@ const CLUSTER_META: Record<string, { emoji: string; label: string }> = {
 };
 
 type SortKey = "name" | "amount" | "estimatedCommission" | "reviewStatus" | "createdAt";
+
+// ---- Centro de Duplicados — normalización + unión de grupos ----
+// Alta confianza: mismo correo o teléfono normalizado, dentro del mismo
+// broker. Media confianza: nombres con ≥80% de coincidencia de tokens
+// (cubre mayúsculas distintas y un nombre adicional agregado) sin contacto
+// exacto compartido. Todo client-side — `cases` ya trae todo en memoria.
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const normalizePhone = (phone: string) => phone.replace(/\D/g, "");
+const normalizeNameForMatch = (name: string) =>
+  name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+const nameTokens = (name: string) => normalizeNameForMatch(name).split(/\s+/).filter(Boolean);
+
+function nameSimilarity(a: string, b: string): number {
+  const ta = nameTokens(a);
+  const tb = nameTokens(b);
+  if (!ta.length || !tb.length) return 0;
+  const [shorter, longer] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
+  const longerSet = new Set(longer);
+  const matched = shorter.filter((t) => longerSet.has(t)).length;
+  return matched / shorter.length;
+}
+
+interface DuplicateGroup {
+  key: string;
+  brokerName: string;
+  cases: CaseItem[];
+}
+
+// Union-Find simple, por broker — evita O(n²) comparaciones de contacto
+// exacto (el O(n²) de nombre, en cambio, sí se necesita para media
+// confianza, pero se acota por broker, no por el total de casos).
+class DisjointSet {
+  private parent = new Map<string, string>();
+  add(id: string) {
+    if (!this.parent.has(id)) this.parent.set(id, id);
+  }
+  find(id: string): string {
+    let root = id;
+    while (this.parent.get(root) !== root) root = this.parent.get(root)!;
+    return root;
+  }
+  union(a: string, b: string) {
+    const ra = this.find(a);
+    const rb = this.find(b);
+    if (ra !== rb) this.parent.set(ra, rb);
+  }
+}
+
+function findDuplicateGroups(cases: CaseItem[]): { highGroups: DuplicateGroup[]; mediumGroups: DuplicateGroup[]; total: number } {
+  const activeCases = cases.filter((c) => !c.archived);
+  const byBroker = new Map<string, CaseItem[]>();
+  activeCases.forEach((c) => {
+    if (!byBroker.has(c.brokerId)) byBroker.set(c.brokerId, []);
+    byBroker.get(c.brokerId)!.push(c);
+  });
+
+  const highGroups: DuplicateGroup[] = [];
+  const mediumGroups: DuplicateGroup[] = [];
+
+  byBroker.forEach((brokerCases, brokerId) => {
+    // --- Alta confianza: mismo correo o teléfono normalizado ---
+    const highDsu = new DisjointSet();
+    brokerCases.forEach((c) => highDsu.add(c.id));
+    const emailMap = new Map<string, string>();
+    const phoneMap = new Map<string, string>();
+    brokerCases.forEach((c) => {
+      const em = normalizeEmail(c.email || "");
+      const ph = normalizePhone(c.phone || "");
+      if (em) {
+        if (emailMap.has(em)) highDsu.union(c.id, emailMap.get(em)!);
+        else emailMap.set(em, c.id);
+      }
+      if (ph && ph.length >= 7) {
+        if (phoneMap.has(ph)) highDsu.union(c.id, phoneMap.get(ph)!);
+        else phoneMap.set(ph, c.id);
+      }
+    });
+
+    const highBuckets = new Map<string, CaseItem[]>();
+    brokerCases.forEach((c) => {
+      const root = highDsu.find(c.id);
+      if (!highBuckets.has(root)) highBuckets.set(root, []);
+      highBuckets.get(root)!.push(c);
+    });
+    highBuckets.forEach((items) => {
+      if (items.length > 1) {
+        highGroups.push({ key: `h-${brokerId}-${items[0].id}`, brokerName: items[0].brokerName, cases: items });
+      }
+    });
+
+    // --- Media confianza: nombres muy similares, SIN ya estar agrupados
+    // por contacto exacto arriba (si ya comparten correo/teléfono, ya
+    // aparecieron en highGroups — no duplicar el aviso). ---
+    const mediumDsu = new DisjointSet();
+    brokerCases.forEach((c) => mediumDsu.add(c.id));
+    for (let i = 0; i < brokerCases.length; i++) {
+      for (let j = i + 1; j < brokerCases.length; j++) {
+        const a = brokerCases[i];
+        const b = brokerCases[j];
+        if (highDsu.find(a.id) === highDsu.find(b.id)) continue;
+        if (nameSimilarity(a.name, b.name) >= 0.8) mediumDsu.union(a.id, b.id);
+      }
+    }
+    const mediumBuckets = new Map<string, CaseItem[]>();
+    brokerCases.forEach((c) => {
+      const root = mediumDsu.find(c.id);
+      if (!mediumBuckets.has(root)) mediumBuckets.set(root, []);
+      mediumBuckets.get(root)!.push(c);
+    });
+    mediumBuckets.forEach((items) => {
+      if (items.length > 1) {
+        mediumGroups.push({ key: `m-${brokerId}-${items[0].id}`, brokerName: items[0].brokerName, cases: items });
+      }
+    });
+  });
+
+  return { highGroups, mediumGroups, total: highGroups.length + mediumGroups.length };
+}
 
 // Plantillas rápidas para "Notas para el Broker" en casos de Reparación de
 // Crédito — ese tab YA dispara un correo real al broker (sendBrokerNoteEmail),
@@ -175,6 +306,179 @@ function RowGroup({
   );
 }
 
+// Una fila compacta de caso dentro de una tarjeta de grupo duplicado — no es
+// la misma fila de tabla que el feed principal (ahí no caben radios de
+// selección ni hace falta tanto detalle, el grupo ya es pequeño).
+function DuplicateCaseRow({
+  c,
+  selectable,
+  selected,
+  onSelect,
+  onArchiveIndividual,
+  getStatusBadge,
+  formatMoney
+}: {
+  c: CaseItem;
+  selectable: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
+  onArchiveIndividual?: () => void;
+  getStatusBadge: (st: string) => React.ReactNode;
+  formatMoney: (n: number) => string;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-[#05101F] border border-gray-800">
+      {selectable && (
+        <input
+          type="radio"
+          checked={!!selected}
+          onChange={onSelect}
+          className="shrink-0 accent-cyan-500"
+          title="Conservar este caso"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-bold text-white truncate">{c.name || "Sin nombre"}</p>
+        <p className="text-[11px] text-gray-500 truncate">
+          {c.email || "—"} · {c.phone || "—"} · {c.serviceName}
+        </p>
+        <p className="text-[10px] text-gray-600 font-mono mt-0.5">{c.createdAt || "—"} · {c.brokerName}</p>
+      </div>
+      {c.amount > 0 && <span className="text-[11px] font-mono text-emerald-400 shrink-0">{formatMoney(c.amount)}</span>}
+      {getStatusBadge(c.reviewStatus)}
+      {onArchiveIndividual && (
+        <button
+          type="button"
+          onClick={onArchiveIndividual}
+          className="shrink-0 px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1"
+        >
+          <Archive size={12} />
+          <span>Archivar</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+function DuplicatesCenter({
+  highGroups,
+  mediumGroups,
+  onArchiveGroup,
+  onArchiveCase,
+  archivingKey,
+  formatMoney,
+  getStatusBadge
+}: {
+  highGroups: DuplicateGroup[];
+  mediumGroups: DuplicateGroup[];
+  onArchiveGroup: (group: DuplicateGroup, keepId: string) => void;
+  onArchiveCase: (c: CaseItem) => void;
+  archivingKey: string | null;
+  formatMoney: (n: number) => string;
+  getStatusBadge: (st: string) => React.ReactNode;
+}) {
+  // El que se conserva por defecto es el caso más reciente del grupo — el
+  // admin puede cambiarlo con los radios antes de confirmar.
+  const defaultKeepId = (items: CaseItem[]) =>
+    [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0].id;
+
+  const [keepSelections, setKeepSelections] = useState<Record<string, string>>({});
+
+  if (highGroups.length === 0 && mediumGroups.length === 0) {
+    return (
+      <div className="py-16 text-center text-gray-500 bg-[#0A182D]/40 border border-gray-800 rounded-2xl">
+        No se detectaron duplicados — ni por correo/teléfono exacto, ni por nombre similar.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-extrabold text-white">Alta confianza — mismo correo o teléfono</h3>
+          <span className="text-[10px] text-gray-500 font-mono">({highGroups.length})</span>
+        </div>
+        {highGroups.length === 0 ? (
+          <p className="text-xs text-gray-500">Ninguno por ahora.</p>
+        ) : (
+          <div className="space-y-4">
+            {highGroups.map((group) => {
+              const keepId = keepSelections[group.key] ?? defaultKeepId(group.cases);
+              const archiving = archivingKey === group.key;
+              return (
+                <div key={group.key} className="bg-[#0A182D]/70 border border-amber-500/20 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[11px] text-gray-400">
+                      <strong className="text-white">{group.cases.length}</strong> casos duplicados de{" "}
+                      <strong className="text-white">{group.brokerName}</strong>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onArchiveGroup(group, keepId)}
+                      disabled={archiving}
+                      className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-lg text-[11px] font-extrabold transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {archiving ? <Loader2 size={13} className="animate-spin" /> : <Archive size={13} />}
+                      <span>{archiving ? "Archivando..." : "Archivar duplicados"}</span>
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {group.cases.map((c) => (
+                      <DuplicateCaseRow
+                        key={c.id}
+                        c={c}
+                        selectable
+                        selected={c.id === keepId}
+                        onSelect={() => setKeepSelections((prev) => ({ ...prev, [group.key]: c.id }))}
+                        getStatusBadge={getStatusBadge}
+                        formatMoney={formatMoney}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-extrabold text-white">Posibles duplicados — revisar (nombre similar)</h3>
+          <span className="text-[10px] text-gray-500 font-mono">({mediumGroups.length})</span>
+        </div>
+        {mediumGroups.length === 0 ? (
+          <p className="text-xs text-gray-500">Ninguno por ahora.</p>
+        ) : (
+          <div className="space-y-4">
+            {mediumGroups.map((group) => (
+              <div key={group.key} className="bg-[#0A182D]/70 border border-gray-800 rounded-2xl p-4 space-y-3">
+                <p className="text-[11px] text-gray-400">
+                  <strong className="text-white">{group.cases.length}</strong> casos con nombre similar de{" "}
+                  <strong className="text-white">{group.brokerName}</strong> — sin correo/teléfono exacto en común, revisa manualmente.
+                </p>
+                <div className="space-y-2">
+                  {group.cases.map((c) => (
+                    <DuplicateCaseRow
+                      key={c.id}
+                      c={c}
+                      selectable={false}
+                      onArchiveIndividual={() => onArchiveCase(c)}
+                      getStatusBadge={getStatusBadge}
+                      formatMoney={formatMoney}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, onFocusCaseHandled, isFullAdmin }: AdminCasesTabProps) {
   // Solo la barra de filtros queda sticky (ver useHubHeaderOffset) — el thead
   // y los encabezados de grupo se intentaron apilar aquí antes (commit
@@ -185,7 +489,12 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
   const [search, setSearch] = useState<string>("");
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
   const [selectedServiceId, setSelectedServiceId] = useState<string>("all");
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  // "active" (Activos) es el valor por defecto — antes era "all" y los casos
+  // ya resueltos (aprobado/declinado) o archivados se quedaban mezclados con
+  // los que de verdad necesitan atención. Ver REVIEW_STATUS_META/filtrado abajo.
+  const [selectedStatus, setSelectedStatus] = useState<string>("active");
+  // Vista actual del tab: feed normal de casos, o el Centro de Duplicados.
+  const [viewMode, setViewMode] = useState<"list" | "duplicates">("list");
   const [selectedBroker, setSelectedBroker] = useState<string>("all");
   // Por defecto el más reciente primero — es el orden que ya tenían los
   // casos al llegar del backend, así que ordenar no cambia el comportamiento
@@ -220,6 +529,14 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
   const [deleting, setDeleting] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string>("");
   const [saveError, setSaveError] = useState<string>("");
+
+  // Archivado — reversible, cualquiera con permiso de edición de casos (no
+  // exige isFullAdmin como el borrado permanente de arriba). Sin pedir
+  // escribir el nombre, solo un motivo opcional.
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState<boolean>(false);
+  const [archiveReasonInput, setArchiveReasonInput] = useState<string>("");
+  const [archivingCase, setArchivingCase] = useState<boolean>(false);
+  const [archiveCaseError, setArchiveCaseError] = useState<string>("");
 
   // Expediente de Caso: notas segmentadas por audiencia + documentos
   const [activeDetailTab, setActiveDetailTab] = useState<CaseNoteCategory | "documents">("case");
@@ -284,6 +601,50 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [cases, selectedCluster]);
 
+  const duplicateGroups = useMemo(() => findDuplicateGroups(cases), [cases]);
+  const [archivingGroupKey, setArchivingGroupKey] = useState<string | null>(null);
+
+  // Único punto de entrada para archivar/desarchivar — lo usan tanto el
+  // modal de detalle como el Centro de Duplicados (bulk e individual).
+  const archiveCase = useCallback(
+    async (c: CaseItem, archived: boolean, archivedReason?: string) => {
+      const res = await fetch("/api/admin/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brokerId: c.brokerId,
+          clientId: c.id,
+          archived,
+          ...(archived && archivedReason ? { archivedReason } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al archivar el caso");
+      onRefresh();
+    },
+    [onRefresh]
+  );
+
+  // Mantiene el caso con createdAt más reciente, archiva el resto del grupo
+  // de alta confianza — el admin puede ajustar la selección antes en la UI
+  // del Centro de Duplicados (ver DuplicatesCenter/keepSelections).
+  const handleBulkArchiveGroup = useCallback(
+    async (group: DuplicateGroup, keepId: string) => {
+      setArchivingGroupKey(group.key);
+      try {
+        const toArchive = group.cases.filter((c) => c.id !== keepId);
+        await Promise.all(
+          toArchive.map((c) => archiveCase(c, true, "Duplicado — mismo correo/teléfono"))
+        );
+      } catch (e) {
+        alert(e instanceof Error ? e.message : "Error al archivar el grupo de duplicados");
+      } finally {
+        setArchivingGroupKey(null);
+      }
+    },
+    [archiveCase]
+  );
+
   // Filtrado reactivo
   const filteredCases = useMemo(() => {
     const filtered = cases.filter((c) => {
@@ -306,9 +667,19 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
       if (selectedServiceId !== "all" && c.serviceId !== selectedServiceId) {
         return false;
       }
-      // Status
-      if (selectedStatus !== "all" && c.reviewStatus !== selectedStatus) {
-        return false;
+      // Status — "archived" es el único valor que SÍ quiere ver archivados;
+      // todos los demás (incluido "all") los excluyen siempre, ya que
+      // "Todos los Estados" históricamente significa "todos los estados de
+      // revisión", no "incluidos los que ya se resolvieron y se archivaron".
+      if (selectedStatus === "archived") {
+        if (!c.archived) return false;
+      } else {
+        if (c.archived) return false;
+        if (selectedStatus === "active") {
+          if (c.reviewStatus !== "pending_docs" && c.reviewStatus !== "in_review") return false;
+        } else if (selectedStatus !== "all" && c.reviewStatus !== selectedStatus) {
+          return false;
+        }
       }
       // Broker
       if (selectedBroker !== "all" && c.brokerId !== selectedBroker) {
@@ -435,6 +806,9 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
     setShowDeleteConfirm(false);
     setDeleteConfirmName("");
     setDeleteError("");
+    setShowArchiveConfirm(false);
+    setArchiveReasonInput("");
+    setArchiveCaseError("");
     fetchCaseNotes(c.brokerId, c.id);
     fetchCaseDocuments(c.brokerId, c.id);
   };
@@ -531,6 +905,24 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
       setDeleteError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // Archivar desde el modal de detalle (reversible — a diferencia de
+  // handleDeleteCase de arriba, no pide escribir el nombre).
+  const handleArchiveToggle = async (archived: boolean) => {
+    if (!activeCase) return;
+    setArchivingCase(true);
+    setArchiveCaseError("");
+    try {
+      await archiveCase(activeCase, archived, archived ? (archiveReasonInput.trim() || undefined) : undefined);
+      setShowArchiveConfirm(false);
+      setArchiveReasonInput("");
+      setActiveCase(null);
+    } catch (err: unknown) {
+      setArchiveCaseError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setArchivingCase(false);
     }
   };
 
@@ -704,7 +1096,14 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
   const renderCaseRow = (c: CaseItem) => (
     <tr key={`${c.brokerId}-${c.id}`} className="hover:bg-[#05101F]/80 transition-colors">
       <td className="p-4">
-        <p className="font-bold text-white text-sm">{c.name}</p>
+        <p className="font-bold text-white text-sm flex items-center gap-1.5">
+          {c.name}
+          {c.archived && (
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gray-700/50 text-gray-400 border border-gray-600 inline-flex items-center gap-1">
+              <Archive size={9} /> Archivado
+            </span>
+          )}
+        </p>
         <p className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
           <Mail size={12} /> {c.email || "(sin email)"}
         </p>
@@ -766,6 +1165,50 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
 
   return (
     <div className="space-y-6">
+      {/* 0. Tabs de vista: Master Feed normal vs Centro de Duplicados */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setViewMode("list")}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 ${
+            viewMode === "list" ? "bg-cyan-500 text-black" : "bg-[#0A182D] text-gray-400 hover:text-white border border-gray-800"
+          }`}
+        >
+          📋 Casos
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("duplicates")}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 ${
+            viewMode === "duplicates" ? "bg-cyan-500 text-black" : "bg-[#0A182D] text-gray-400 hover:text-white border border-gray-800"
+          }`}
+        >
+          <Users size={13} />
+          <span>🔍 Duplicados</span>
+          {duplicateGroups.total > 0 && (
+            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono ${viewMode === "duplicates" ? "bg-black/20" : "bg-amber-500/20 text-amber-400"}`}>
+              {duplicateGroups.total}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {viewMode === "duplicates" ? (
+        <DuplicatesCenter
+          highGroups={duplicateGroups.highGroups}
+          mediumGroups={duplicateGroups.mediumGroups}
+          onArchiveGroup={handleBulkArchiveGroup}
+          onArchiveCase={(c) =>
+            archiveCase(c, true, "Posible duplicado — nombre similar").catch((e) =>
+              alert(e instanceof Error ? e.message : "Error al archivar el caso")
+            )
+          }
+          archivingKey={archivingGroupKey}
+          formatMoney={formatMoney}
+          getStatusBadge={getStatusBadge}
+        />
+      ) : (
+      <>
       {/* 1. KPIs de la Vista Filtrada */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#0A182D]/70 border border-gray-800 rounded-2xl p-4 shadow-sm">
@@ -857,10 +1300,12 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="w-full bg-[#05101F] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500"
             >
+              <option value="active">🟢 Activos</option>
               <option value="all">⚡ Todos los Estados</option>
               {VALID_REVIEW_STATUSES.map((rs) => (
                 <option key={rs} value={rs}>{REVIEW_STATUS_META[rs].label}</option>
               ))}
+              <option value="archived">📦 Archivados</option>
             </select>
           </div>
 
@@ -969,6 +1414,8 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
             </table>
           </div>
         </div>
+      )}
+      </>
       )}
 
       {/* 4. MODAL DE GESTIÓN Y EDICIÓN DEL CASO */}
@@ -1442,18 +1889,38 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
 
               {/* Botones de Acción */}
               <div className="flex items-center justify-between gap-3 pt-4 border-t border-gray-800">
-                {isFullAdmin ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
-                  >
-                    <Trash2 size={14} />
-                    <span>Eliminar Caso</span>
-                  </button>
-                ) : (
-                  <span />
-                )}
+                <div className="flex items-center gap-2">
+                  {activeCase.archived ? (
+                    <button
+                      type="button"
+                      onClick={() => handleArchiveToggle(false)}
+                      disabled={archivingCase}
+                      className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {archivingCase ? <Loader2 size={14} className="animate-spin" /> : <ArchiveRestore size={14} />}
+                      <span>{archivingCase ? "Restaurando..." : "Desarchivar"}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowArchiveConfirm(true)}
+                      className="px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
+                    >
+                      <Archive size={14} />
+                      <span>Archivar</span>
+                    </button>
+                  )}
+                  {isFullAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
+                    >
+                      <Trash2 size={14} />
+                      <span>Eliminar Caso</span>
+                    </button>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-3">
                   <button
@@ -1540,6 +2007,69 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
                     >
                       {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                       <span>{deleting ? "Eliminando..." : "Eliminar Definitivamente"}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+            {/* Confirmación de Archivado — a diferencia del borrado de
+                arriba, es reversible, así que no pide escribir el nombre. */}
+            {showArchiveConfirm && activeCase && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-[#0A182D] border border-amber-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
+                >
+                  <div className="flex items-center gap-2 text-amber-400">
+                    <Archive size={18} />
+                    <h4 className="font-extrabold text-sm">Archivar caso</h4>
+                  </div>
+
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    <strong className="text-white">{activeCase.name}</strong> ({activeCase.serviceName}) dejará de aparecer en la
+                    vista Activos. Puedes desarchivarlo en cualquier momento desde &quot;📦 Archivados&quot; — los datos no se tocan.
+                  </p>
+
+                  {archiveCaseError && (
+                    <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg p-2.5">{archiveCaseError}</p>
+                  )}
+
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">
+                      Motivo (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={archiveReasonInput}
+                      onChange={(e) => setArchiveReasonInput(e.target.value)}
+                      placeholder="Ej. duplicado, cliente inactivo..."
+                      className="w-full bg-[#05101F] border border-gray-800 focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-600 outline-none transition-colors text-xs"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowArchiveConfirm(false);
+                        setArchiveReasonInput("");
+                        setArchiveCaseError("");
+                      }}
+                      className="px-4 py-2 rounded-xl border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors text-xs font-semibold"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleArchiveToggle(true)}
+                      disabled={archivingCase}
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-xs font-extrabold transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {archivingCase ? <Loader2 size={14} className="animate-spin" /> : <Archive size={14} />}
+                      <span>{archivingCase ? "Archivando..." : "Archivar"}</span>
                     </button>
                   </div>
                 </motion.div>

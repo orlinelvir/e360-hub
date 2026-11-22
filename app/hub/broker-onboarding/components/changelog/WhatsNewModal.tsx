@@ -38,7 +38,8 @@ import {
   Zap,
   Receipt,
   Percent,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Archive
 } from "lucide-react";
 import { ChangelogEntry } from "@/lib/changelog";
 

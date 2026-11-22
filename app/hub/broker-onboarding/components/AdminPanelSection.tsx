@@ -86,7 +86,10 @@ export default function AdminPanelSection() {
     setError("");
     try {
       const token = await user.getIdToken();
-      const res = await fetch("/api/admin/cases", {
+      // Se trae todo (incluidos archivados) en una sola llamada — el Master
+      // de Casos ya no pagina, y así el filtro Activos/Archivados/Todos y el
+      // Centro de Duplicados se resuelven 100% client-side sin refetch.
+      const res = await fetch("/api/admin/cases?includeArchived=true", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

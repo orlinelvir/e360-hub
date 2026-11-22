@@ -513,6 +513,15 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Se corrigió el deslizamiento lateral que descuadraba la pantalla",
     description: "Ya no se puede arrastrar toda la pantalla hacia la derecha con el touchpad o el mouse — el menú lateral se queda fijo sin importar qué tan ancha sea la tabla que estés viendo.",
     tabHint: "Todo el Hub"
+  },
+  {
+    id: 54,
+    date: "2026-11-22",
+    audience: "staff",
+    icon: "Archive",
+    title: "Archivar casos duplicados y filtro de Activos por defecto",
+    description: "Master Feed de Casos ahora abre mostrando solo los casos activos (ya no se mezclan con aprobados/declinados). Se agregó un botón para archivar casos (reversible, no borra nada) y una nueva vista \"🔍 Duplicados\" que agrupa automáticamente casos con el mismo correo o teléfono, y señala por separado los que tienen nombres muy parecidos para que los revises.",
+    tabHint: "Torre de Control → Master Feed de Casos"
   }
 ];
 
