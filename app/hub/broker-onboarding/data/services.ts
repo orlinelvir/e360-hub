@@ -71,9 +71,9 @@ export const servicesData: ServiceDetail[] = [
       "Recopilar documentos básicos (Solicitud de financiamiento firmada, ID, EIN, 4 estados de cuenta, voided check).",
       "Revisar estados de cuenta (analizar volumen, NSF, y saldos negativos recurrentes antes de someter).",
       "Someter aplicación completa en la plataforma de Emprende 360.",
-      "Recibir oferta en 24-48 horas, presentar al cliente, firmar y fondear en 24-72 horas."
+      "Recibir oferta, presentar al cliente, firmar y fondear en un lapso de 24-72 horas laborables."
     ],
-    timeframe: "Aprobación en 24-48 horas. Fondeo en 1 a 3 días hábiles.",
+    timeframe: "Aprobación y fondeo en 24-72 horas laborables.",
     comission: "Comisión del 3% al 8% del monto financiado (Ej: $1,500 - $4,000 en un préstamo de $50,000).",
     formLink: "https://api.leadconnectorhq.com/widget/form/tvJ4AjmdXHVnOmm8DyEk?notrack=true",
     supportPhone: "tel:+16464729408",
@@ -128,9 +128,9 @@ export const servicesData: ServiceDetail[] = [
       "Consulta inicial para evaluar el reporte de crédito del cliente e ingresos.",
       "Verificación de DTI obligatoria antes de iniciar la solicitud.",
       "Llenado del formulario de aplicación y carga de pruebas de ingresos.",
-      "Revisión y pre-aprobación automática en un lapso de 24-48 horas."
+      "Revisión y pre-aprobación automática en un lapso de 24-72 horas laborables."
     ],
-    timeframe: "Precalificación inmediata. Aprobación y desembolso en 24-48 horas.",
+    timeframe: "Precalificación inmediata. Aprobación y desembolso en 24-72 horas laborables.",
     comission: "Honorario fijo garantizado por referido aprobado y financiado.",
     formLink: "https://api.leadconnectorhq.com/widget/form/Qgnp3xRhHOWeUW4dUE63?notrack=true",
     supportPhone: "tel:+19172845636",
