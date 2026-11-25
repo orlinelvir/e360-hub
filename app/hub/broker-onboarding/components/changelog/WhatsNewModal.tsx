@@ -39,7 +39,8 @@ import {
   Receipt,
   Percent,
   Image as ImageIcon,
-  Archive
+  Archive,
+  Bot
 } from "lucide-react";
 import { ChangelogEntry } from "@/lib/changelog";
 
@@ -77,7 +78,9 @@ const ICON_MAP: Record<string, typeof Sparkles> = {
   Zap,
   Receipt,
   Percent,
-  ImageIcon
+  ImageIcon,
+  Archive,
+  Bot
 };
 
 export default function WhatsNewModal() {

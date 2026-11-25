@@ -17,6 +17,15 @@ export function resolvePipelineCluster(serviceId: string | undefined, serviceNam
   if (name.includes("deuda") || name.includes("debt") || name.includes("adiosdeudas")) return "debt_consolidation";
   if (name.includes("seguro") || name.includes("insurance")) return "seguros";
   if (name.includes("incorporat") || name.includes("llc") || name.includes("tax") || name.includes("impuesto") || name.includes("inmigra") || name.includes("payroll") || name.includes("pos")) return "corporativo";
+
+  // Antes esto caía en silencio — cualquier servicio viejo/mal etiquetado que
+  // no hiciera match con nada terminaba clasificado como Financiamiento sin
+  // que nadie se enterara, ensuciando los datos de esa vertical específica.
+  // Ahora al menos queda un rastro en los logs del servidor para que el staff
+  // pueda reclasificarlo manualmente si de verdad sucede.
+  console.warn(
+    `resolvePipelineCluster: ningún catálogo ni keyword coincidió para serviceId="${serviceId}" serviceName="${serviceName}" — usando "fondeo_rapido" por defecto. Revisar manualmente.`
+  );
   return "fondeo_rapido";
 }
 

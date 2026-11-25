@@ -39,7 +39,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getBrokerClients, saveBrokerClient, ClientLeadData } from "@/lib/services/broker-service";
 import { useGHLContacts, CRMCredentials } from "@/lib/hooks/useGHLContacts";
 import { resolvePipelineCluster } from "@/lib/service-routing";
-import { deriveCaseStatus, REVIEW_STATUS_META, CREDIT_REPAIR_STATUS_META } from "@/lib/services/case-status";
+import { deriveCaseStatus, REVIEW_STATUS_META, CREDIT_REPAIR_STATUS_META, FUNDING_STAGE_META, isValidFundingStage } from "@/lib/services/case-status";
 import { servicesData } from "@/app/hub/broker-onboarding/data/services";
 import CrmDocumentPortalCard from "./crm-tools/CrmDocumentPortalCard";
 import CaseTasksSection, { getStoredTasksForClient } from "./crm-tools/CaseTasksSection";
@@ -847,6 +847,14 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                 ? CREDIT_REPAIR_STATUS_META[clientCreditRepairStatus || "pending_verification"]
                 : REVIEW_STATUS_META[clientReviewStatus];
             const showApplicationStatus = APPLICATION_STATUS_CLUSTERS.includes(cluster);
+            // Sub-etapa del prestamista — solo mientras sigue "en revisión"
+            // (una vez aprobado/declinado/fondeado, la etapa intermedia ya no
+            // aporta nada). Nunca se muestra el nombre del prestamista en sí.
+            const showFundingStage =
+              (cluster === "fondeo_rapido" || cluster === "real_estate") &&
+              clientReviewStatus === "in_review" &&
+              isValidFundingStage(client.fundingStage);
+            const fundingStageInfo = showFundingStage ? FUNDING_STAGE_META[client.fundingStage as keyof typeof FUNDING_STAGE_META] : null;
             return (
               <motion.div
                 key={client.id}
@@ -893,6 +901,14 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     <div className={`flex items-center justify-between text-[10px] font-bold px-3 py-2 rounded-xl border ${applicationStatusInfo.bg} ${applicationStatusInfo.color} ${applicationStatusInfo.border}`}>
                       <span>Estado de tu Solicitud (E360)</span>
                       <span>{applicationStatusInfo.label}</span>
+                    </div>
+                  )}
+
+                  {/* Sub-etapa del prestamista (solo Financiamiento/Real Estate, mientras sigue en revisión) */}
+                  {fundingStageInfo && (
+                    <div className={`flex items-center justify-between text-[10px] font-bold px-3 py-2 rounded-xl border ${fundingStageInfo.bg} ${fundingStageInfo.color} ${fundingStageInfo.border}`}>
+                      <span>Progreso</span>
+                      <span>{fundingStageInfo.label}</span>
                     </div>
                   )}
 
@@ -1055,6 +1071,13 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                     cluster === "credit_repair"
                       ? CREDIT_REPAIR_STATUS_META[selectedCreditRepairStatus || "pending_verification"]
                       : REVIEW_STATUS_META[selectedReviewStatus];
+                  const showSelectedFundingStage =
+                    (cluster === "fondeo_rapido" || cluster === "real_estate") &&
+                    selectedReviewStatus === "in_review" &&
+                    isValidFundingStage(selectedClient.fundingStage);
+                  const selectedFundingStageInfo = showSelectedFundingStage
+                    ? FUNDING_STAGE_META[selectedClient.fundingStage as keyof typeof FUNDING_STAGE_META]
+                    : null;
                   return (
                     <div className="mb-6 bg-[#05101F] border border-gray-800 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center justify-between">
@@ -1063,6 +1086,14 @@ export default function MisClientesSection({ brokerName, crmLocationId, crmApiKe
                           {info.label}
                         </span>
                       </div>
+                      {selectedFundingStageInfo && (
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-800">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase">Progreso</span>
+                          <span className={`px-2.5 py-1 rounded-full border text-[10px] font-extrabold uppercase tracking-wider ${selectedFundingStageInfo.bg} ${selectedFundingStageInfo.color} ${selectedFundingStageInfo.border}`}>
+                            {selectedFundingStageInfo.label}
+                          </span>
+                        </div>
+                      )}
                       {selectedClient.adminNotes && (
                         <p className="text-xs text-gray-300 leading-relaxed pt-2 border-t border-gray-800">
                           {selectedClient.adminNotes}

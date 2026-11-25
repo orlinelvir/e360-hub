@@ -47,7 +47,9 @@ import {
   VALID_REVIEW_STATUSES,
   VALID_CREDIT_REPAIR_STATUSES,
   CREDIT_REPAIR_STATUS_META,
-  isValidCreditRepairStatus
+  isValidCreditRepairStatus,
+  VALID_FUNDING_STAGES,
+  FUNDING_STAGE_META
 } from "@/lib/services/case-status";
 import { useHubHeaderOffset } from "../../hooks/useHubHeaderOffset";
 
@@ -90,6 +92,11 @@ export interface CaseItem {
   archivedAt?: string;
   archivedBy?: string;
   archivedReason?: string;
+  // Solo Financiamiento/Real Estate — sub-etapa visible también para el
+  // broker. El nombre del prestamista NUNCA viaja en este objeto a
+  // propósito — ver CreditRepairCredentials-style reveal más abajo
+  // (/api/admin/cases/financing, carga solo bajo demanda).
+  fundingStage?: string;
 }
 
 interface CreditRepairCredentials {
@@ -721,6 +728,19 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
   const [notifyPendingMsg, setNotifyPendingMsg] = useState<string>("");
   const [noteFeedback, setNoteFeedback] = useState<{ text: string; ok: boolean } | null>(null);
 
+  // Prestamista (Financiamiento/Real Estate) — mismo criterio que las
+  // credenciales de arriba: dato que se mantiene oculto del broker por
+  // decisión del negocio, así que ni siquiera se carga automáticamente acá;
+  // solo bajo un clic explícito del empleado (ver /api/admin/cases/financing).
+  const [lenderName, setLenderName] = useState<string | null>(null);
+  const [lenderNameDraft, setLenderNameDraft] = useState<string>("");
+  const [loadingLender, setLoadingLender] = useState<boolean>(false);
+  const [lenderError, setLenderError] = useState<string>("");
+  const [savingLender, setSavingLender] = useState<boolean>(false);
+  const [editFundingStage, setEditFundingStage] = useState<string>("");
+  const [savingFundingStage, setSavingFundingStage] = useState<boolean>(false);
+  const [fundingStageError, setFundingStageError] = useState<string>("");
+
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
   };
@@ -990,6 +1010,11 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
     setShowArchiveConfirm(false);
     setArchiveReasonInput("");
     setArchiveCaseError("");
+    setLenderName(null);
+    setLenderNameDraft("");
+    setLenderError("");
+    setEditFundingStage(c.fundingStage || "");
+    setFundingStageError("");
     fetchCaseNotes(c.brokerId, c.id);
     fetchCaseDocuments(c.brokerId, c.id);
   };
@@ -1007,6 +1032,64 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
       setCredentialsError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setLoadingCredentials(false);
+    }
+  };
+
+  const fetchLender = async () => {
+    if (!activeCase) return;
+    setLoadingLender(true);
+    setLenderError("");
+    try {
+      const res = await fetch(`/api/admin/cases/financing?brokerId=${activeCase.brokerId}&clientId=${activeCase.id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo cargar el prestamista.");
+      setLenderName(data.lenderName || "");
+      setLenderNameDraft(data.lenderName || "");
+    } catch (err) {
+      setLenderError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setLoadingLender(false);
+    }
+  };
+
+  const saveLender = async () => {
+    if (!activeCase) return;
+    setSavingLender(true);
+    setLenderError("");
+    try {
+      const res = await fetch("/api/admin/cases/financing", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brokerId: activeCase.brokerId, clientId: activeCase.id, lenderName: lenderNameDraft }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo guardar el prestamista.");
+      setLenderName(lenderNameDraft);
+    } catch (err) {
+      setLenderError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setSavingLender(false);
+    }
+  };
+
+  const saveFundingStage = async (value: string) => {
+    if (!activeCase) return;
+    setSavingFundingStage(true);
+    setFundingStageError("");
+    try {
+      const res = await fetch("/api/admin/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brokerId: activeCase.brokerId, clientId: activeCase.id, fundingStage: value || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo guardar la etapa.");
+      setEditFundingStage(value);
+      onRefresh();
+    } catch (err) {
+      setFundingStageError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setSavingFundingStage(false);
     }
   };
 
@@ -1263,6 +1346,7 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
   };
 
   const isCreditRepair = (c: CaseItem) => c.pipelineCluster === "credit_repair";
+  const isFinancingCase = (c: CaseItem) => c.pipelineCluster === "fondeo_rapido" || c.pipelineCluster === "real_estate";
 
   // Reparación de Crédito no tiene Monto ni Comisión reales — es una cuota
   // mensual de $10 de seguimiento, no un préstamo con comisión de broker.
@@ -1722,6 +1806,68 @@ export default function AdminCasesTab({ cases, loading, onRefresh, focusCase, on
                       )}
                     </div>
                   )}
+                </div>
+              )}
+
+              {isFinancingCase(activeCase) && (
+                <div className="bg-[#05101F] p-4 rounded-xl border border-gray-800 space-y-4 text-xs">
+                  <p className="text-[10px] text-gray-500 uppercase font-mono font-bold flex items-center gap-1.5">
+                    <Lock size={11} /> Financiamiento (interno — nunca visible para el broker)
+                  </p>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] uppercase font-bold text-gray-400">Progreso visible para el broker</label>
+                    <select
+                      value={editFundingStage}
+                      onChange={(e) => saveFundingStage(e.target.value)}
+                      disabled={savingFundingStage}
+                      className="w-full bg-[#0A182D] border border-gray-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 disabled:opacity-50"
+                    >
+                      <option value="">Sin etapa asignada</option>
+                      {VALID_FUNDING_STAGES.map((fs) => (
+                        <option key={fs} value={fs}>{FUNDING_STAGE_META[fs].label}</option>
+                      ))}
+                    </select>
+                    {fundingStageError && <p className="text-red-400">{fundingStageError}</p>}
+                  </div>
+
+                  <div className="space-y-1.5 pt-3 border-t border-gray-800">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[10px] uppercase font-bold text-gray-400">Prestamista / Fondeador</label>
+                      {lenderName === null && (
+                        <button
+                          type="button"
+                          onClick={fetchLender}
+                          disabled={loadingLender}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
+                        >
+                          {loadingLender ? <Loader2 size={13} className="animate-spin" /> : <Eye size={13} />}
+                          {loadingLender ? "Cargando..." : "Ver / Editar"}
+                        </button>
+                      )}
+                    </div>
+                    {lenderError && <p className="text-red-400">{lenderError}</p>}
+                    {lenderName !== null && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={lenderNameDraft}
+                          onChange={(e) => setLenderNameDraft(e.target.value)}
+                          placeholder="Ej. Cliq Capital"
+                          className="flex-1 bg-[#0A182D] border border-gray-800 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={saveLender}
+                          disabled={savingLender}
+                          className="px-3 py-2 bg-cyan-500 hover:bg-cyan-400 text-black rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {savingLender ? <Loader2 size={13} className="animate-spin" /> : null}
+                          Guardar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

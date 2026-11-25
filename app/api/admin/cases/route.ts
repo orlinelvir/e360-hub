@@ -13,6 +13,7 @@ import {
   justGotVerified,
   VALID_REVIEW_STATUSES,
   VALID_CREDIT_REPAIR_STATUSES,
+  VALID_FUNDING_STAGES,
   ReviewStatus,
   CreditRepairStatus
 } from "@/lib/services/case-status";
@@ -111,6 +112,10 @@ export async function GET(request: Request) {
       archivedAt?: string;
       archivedBy?: string;
       archivedReason?: string;
+      // Solo fondeo_rapido/real_estate — sub-etapa visible para el broker
+      // (ver lib/services/case-status.ts). El nombre del prestamista en sí
+      // NUNCA viaja por aquí a propósito — ver /api/admin/cases/financing.
+      fundingStage?: string;
     }> = [];
 
     await Promise.all(
@@ -202,6 +207,7 @@ export async function GET(request: Request) {
             archivedAt: c.archivedAt,
             archivedBy: c.archivedBy,
             archivedReason: c.archivedReason,
+            fundingStage: c.fundingStage,
           });
         });
       })
@@ -242,7 +248,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { brokerId, clientId, reviewStatus, adminNotes, estimatedCommission, statusReason, archived, archivedReason } = body;
+    const { brokerId, clientId, reviewStatus, adminNotes, estimatedCommission, statusReason, archived, archivedReason, fundingStage } = body;
 
     if (!brokerId || !clientId) {
       return NextResponse.json({ error: "brokerId y clientId son requeridos" }, { status: 400 });
@@ -269,6 +275,18 @@ export async function PATCH(request: Request) {
       const validStatuses: string[] = isCreditRepairCase ? VALID_CREDIT_REPAIR_STATUSES : VALID_REVIEW_STATUSES;
       if (!validStatuses.includes(reviewStatus)) {
         return NextResponse.json({ error: "reviewStatus inválido" }, { status: 400 });
+      }
+    }
+
+    // Sub-etapa de prestamista — solo tiene sentido en Financiamiento/Real
+    // Estate (ver lib/services/case-status.ts). `null` la limpia.
+    const isFinancingCluster = clientCluster === "fondeo_rapido" || clientCluster === "real_estate";
+    if (fundingStage !== undefined && fundingStage !== null) {
+      if (!isFinancingCluster) {
+        return NextResponse.json({ error: "fundingStage solo aplica a Financiamiento/Real Estate" }, { status: 400 });
+      }
+      if (!VALID_FUNDING_STAGES.includes(fundingStage)) {
+        return NextResponse.json({ error: "fundingStage inválido" }, { status: 400 });
       }
     }
 
@@ -304,6 +322,9 @@ export async function PATCH(request: Request) {
     // cliente de la API pueda colarla igual.
     if (estimatedCommission !== undefined && clientCluster !== "credit_repair") {
       updatePayload.estimatedCommission = Number(estimatedCommission);
+    }
+    if (fundingStage !== undefined) {
+      updatePayload.fundingStage = fundingStage === null ? FieldValue.delete() : fundingStage;
     }
 
     // Archivado — reversible, no es el borrado permanente (DELETE abajo).

@@ -60,6 +60,11 @@ export interface ClientLeadData {
   status?: string;
   syncStatus?: string;
   adminNotes?: string;
+  // Solo fondeo_rapido/real_estate — sub-etapa visible para el broker (ver
+  // lib/services/case-status.ts). El nombre del prestamista en sí NUNCA
+  // viaja por este tipo a propósito (decisión del negocio, se mantiene
+  // siempre oculto del broker).
+  fundingStage?: string;
   // "ghl_sync": contacto crudo importado de la subcuenta GHL del broker
   // (pestaña "Mis Clientes (CRM)") — NO es una solicitud de servicio real,
   // aunque se guarde en la misma subcolección. El Master Feed de Casos

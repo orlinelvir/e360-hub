@@ -55,6 +55,10 @@ export interface ClientLead {
   // financiamiento, que sí es un gate pero nunca se guarda) — aquí sí se
   // persiste, para que el checklist del admin refleje estado real.
   officialFormConfirmed?: boolean;
+  // Solo fondeo_rapido/real_estate — sub-etapa visible para el broker (ver
+  // lib/services/case-status.ts). El nombre del prestamista en sí NUNCA
+  // viaja por este tipo a propósito — se mantiene siempre oculto del broker.
+  fundingStage?: string;
 }
 
 // Secuencia de citas de onboarding de un broker nuevo (Ventas -> Onboarding Básico

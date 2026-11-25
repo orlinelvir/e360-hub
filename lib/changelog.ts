@@ -522,6 +522,33 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Archivar casos duplicados y filtro de Activos por defecto",
     description: "Master Feed de Casos ahora abre mostrando solo los casos activos (ya no se mezclan con aprobados/declinados). Se agregó un botón para archivar casos (reversible, no borra nada) y una nueva vista \"🔍 Duplicados\" que agrupa automáticamente casos con el mismo correo o teléfono, y señala por separado los que tienen nombres muy parecidos para que los revises.",
     tabHint: "Torre de Control → Master Feed de Casos"
+  },
+  {
+    id: 55,
+    date: "2026-11-22",
+    audience: "all",
+    icon: "Bot",
+    title: "Asistente IA ahora flotante en todo el Hub, con sonido de aviso",
+    description: "Ya no hace falta entrar a Soporte VIP para preguntarle al Asistente IA — ahora hay una burbuja flotante disponible en cualquier pantalla del Hub, con escalación a un agente humano eligiendo la categoría exacta de ayuda. Además, cuando entra un ticket nuevo (para staff) o te responden uno (para brokers), ahora suena un aviso corto — antes solo aparecía en la campana de notificaciones sin que nadie se diera cuenta.",
+    tabHint: "Todo el Hub"
+  },
+  {
+    id: 56,
+    date: "2026-11-25",
+    audience: "broker",
+    icon: "Landmark",
+    title: "Financiamiento: un solo botón para someter, y ahora ves el progreso real",
+    description: "Al admitir un cliente de Financiamiento o Real Estate ya no hay dos botones distintos — solo \"Admitir Cliente\", que siempre deja tu caso registrado en \"Mis Clientes\" (antes el link externo no dejaba ningún registro). Además, mientras tu caso está en revisión, ahora puedes ver una etiqueta de progreso (ej. \"Enviado a Revisión del Prestamista\") en vez de solo \"En Revisión\" sin más detalle.",
+    tabHint: "Mis Clientes (CRM)"
+  },
+  {
+    id: 57,
+    date: "2026-11-25",
+    audience: "staff",
+    icon: "HandCoins",
+    title: "Financiamiento: etapa de prestamista + comisión corregida en Métricas",
+    description: "El Master Feed de Casos de Financiamiento/Real Estate ahora tiene un campo para marcar la etapa visible al broker (enviado a prestamista, documentos solicitados, aprobación condicional) y un campo interno de prestamista/fondeador (nunca visible para el broker, carga bajo demanda). También se corrigió Métricas: Reparación de Crédito ya no aparece con una comisión inventada de $250 (no maneja comisión en el Hub).",
+    tabHint: "Torre de Control → Master Feed de Casos / Métricas"
   }
 ];
 

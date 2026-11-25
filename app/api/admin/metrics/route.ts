@@ -64,15 +64,23 @@ export async function GET(request: Request) {
 
           totalLeads++;
           const amt = Number(c.amount) || 0;
-          const comm = Number(c.estimatedCommission) || (amt > 0 ? Math.round(amt * 0.05) : 250);
+          const cluster = resolvePipelineCluster(c.serviceId, c.serviceName);
+          // Reparación de Crédito no maneja comisión en el Hub (suscripción
+          // de $10/mes, la decide el broker directamente) — antes el
+          // fallback de $250 planos se aplicaba igual aquí, inventando una
+          // comisión que no existe. Mismo criterio que ya usa
+          // /api/admin/cases (0, nunca un monto inventado, cuando no hay
+          // comisión real registrada).
+          const comm =
+            cluster === "credit_repair"
+              ? 0
+              : Number(c.estimatedCommission) || (amt > 0 ? Math.round(amt * 0.05) : 0);
           totalVolume += amt;
           estimatedCommissions += comm;
 
           const { syncStatus } = deriveCaseStatus(c);
           if (syncStatus === "synced") syncedCount++;
           else if (syncStatus === "failed" || syncStatus === "pending") failedSyncCount++;
-
-          const cluster = resolvePipelineCluster(c.serviceId, c.serviceName);
 
           if (clusterStats[cluster]) {
             clusterStats[cluster].count++;

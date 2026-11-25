@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Bot, User, Send, Sparkles, ArrowUpRight, Loader2, AlertCircle, FileText, Download, PlayCircle } from "lucide-react";
+import { Bot, User, Send, ArrowUpRight, Loader2, AlertCircle, FileText, Download, PlayCircle } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { ChatWelcomeIllustration } from "./illustrations";
 
 interface ChatDocument {
   title: string;
@@ -38,9 +39,14 @@ interface AIChatWidgetProps {
   // tenía que volver a escribirla desde cero.
   initialQuestion?: string;
   onInitialQuestionHandled?: () => void;
+  // "panel" (default): el look de siempre dentro de la pestaña Soporte, con
+  // su propio contenedor (borde/sombra/alto fijo). "embedded": sin ese
+  // wrapper — lo usa SupportChatBubble, que ya trae su propio chrome y
+  // tendría doble-borde si este componente insistiera en el suyo.
+  variant?: "panel" | "embedded";
 }
 
-export default function AIChatWidget({ onEscalate, initialQuestion, onInitialQuestionHandled }: AIChatWidgetProps) {
+export default function AIChatWidget({ onEscalate, initialQuestion, onInitialQuestionHandled, variant = "panel" }: AIChatWidgetProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -148,7 +154,13 @@ export default function AIChatWidget({ onEscalate, initialQuestion, onInitialQue
   }, []);
 
   return (
-    <div className="bg-[#0A182D]/60 border border-gray-800 rounded-3xl flex flex-col h-[600px] overflow-hidden shadow-2xl relative">
+    <div
+      className={
+        variant === "embedded"
+          ? "flex flex-col h-full overflow-hidden relative"
+          : "bg-[#0A182D]/60 border border-gray-800 rounded-3xl flex flex-col h-[600px] overflow-hidden shadow-2xl relative"
+      }
+    >
       <div className="absolute -top-20 -right-20 w-64 h-64 bg-cyan-500/10 blur-[80px] rounded-full pointer-events-none" />
       
       {/* Header */}
@@ -169,9 +181,7 @@ export default function AIChatWidget({ onEscalate, initialQuestion, onInitialQue
       <div className="flex-1 overflow-y-auto p-6 space-y-6 z-10 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 text-cyan-400 flex items-center justify-center shadow-[0_0_25px_rgba(0,224,240,0.15)]">
-              <Sparkles size={32} />
-            </div>
+            <ChatWelcomeIllustration size={104} />
             <div className="space-y-2">
               <h4 className="text-lg font-bold text-white">¿En qué puedo ayudarte hoy?</h4>
               <p className="text-xs text-gray-400 max-w-sm">

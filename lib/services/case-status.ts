@@ -93,6 +93,26 @@ export function isValidCreditRepairStatus(value: string | undefined): value is C
   return !!value && (VALID_CREDIT_REPAIR_STATUSES as string[]).includes(value);
 }
 
+// Sub-etapa visible para el broker, SOLO en fondeo_rapido/real_estate, mientras
+// el caso sigue "en_review" — antes el broker no tenía ninguna señal intermedia
+// entre "en revisión" y "aprobado/fondeado" y dependía de preguntar en el chat
+// de la comunidad. A propósito NUNCA menciona el nombre del prestamista (eso
+// se queda oculto del broker por decisión del negocio — ver
+// app/api/admin/cases/financing/route.ts) — son etiquetas genéricas del proceso.
+export type FundingStage = "sent_to_lender" | "docs_requested" | "conditional_approval";
+
+export const VALID_FUNDING_STAGES: FundingStage[] = ["sent_to_lender", "docs_requested", "conditional_approval"];
+
+export const FUNDING_STAGE_META: Record<FundingStage, StatusMeta> = {
+  sent_to_lender: { label: "Enviado a Revisión del Prestamista", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30" },
+  docs_requested: { label: "Prestamista Solicitó Documentos", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30" },
+  conditional_approval: { label: "Aprobación Condicional", color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30" }
+};
+
+export function isValidFundingStage(value: string | undefined): value is FundingStage {
+  return !!value && (VALID_FUNDING_STAGES as string[]).includes(value);
+}
+
 interface RawCaseStatus {
   status?: string;
   syncStatus?: string;

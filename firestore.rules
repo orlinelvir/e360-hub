@@ -81,7 +81,7 @@ service cloud.firestore {
         allow create: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
 
         allow update: if (isOwner(userId)
-            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'adminNotes']))
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'adminNotes', 'fundingStage']))
           || (isAuthenticated() && getRole() == 'admin');
 
         allow delete: if isAuthenticated() && getRole() == 'admin';
@@ -92,6 +92,16 @@ service cloud.firestore {
         match /creditRepairCase/{caseId} {
           allow read: if isOwner(userId) || (isAuthenticated() && getRole() == 'admin');
           allow write: if false;
+        }
+
+        // Nombre del prestamista/fondeador (Financiamiento/Real Estate) — a
+        // diferencia de todo lo demás en este archivo, esto se mantiene
+        // oculto incluso del broker dueño y de un admin logueado por el SDK
+        // de cliente: decisión explícita del negocio (nunca revelarle al
+        // broker con qué prestamista se trabajó). Solo /api/admin/cases/financing
+        // (Admin SDK, que ignora estas reglas) puede leer/escribir aquí.
+        match /financingInternal/{docId} {
+          allow read, write: if false;
         }
 
         // Rondas mensuales del fee de $10 de Reparación de Crédito

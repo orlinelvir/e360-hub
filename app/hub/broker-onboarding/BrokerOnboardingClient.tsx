@@ -46,9 +46,11 @@ import TaxSoftwareContent from "@/components/taxes/TaxSoftwareContent";
 import TaxOfficeSection from "./components/TaxOfficeSection";
 import CreditReportReviewSection from "./components/credit-report/CreditReportReviewSection";
 import WhatsNewModal from "./components/changelog/WhatsNewModal";
+import SupportChatBubble from "./components/support/SupportChatBubble";
 import { ActiveTab } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 import { isMasterAdminEmail } from "@/lib/roles";
+import { resolvePipelineCluster } from "@/lib/service-routing";
 
 export default function BrokerOnboardingClient() {
   const mounted = useSyncExternalStore(
@@ -1184,6 +1186,16 @@ export default function BrokerOnboardingClient() {
                       const hasValidUrl = selectedService.formLink.startsWith("http");
                       const checks = checkedServices[selectedService.id] || { reqs: false, process: false, terms: false };
                       const isUnlocked = !isUpcoming && hasValidUrl && checks.reqs && checks.process && checks.terms;
+                      // Financiamiento/Real Estate ya no ofrecen "Abrir Formulario" como
+                      // camino independiente — ese link crudo de GHL no dejaba ningún
+                      // registro en el Hub (el broker tenía que "estar pendiente en el
+                      // chat" para saber si su cliente quedó registrado). El único camino
+                      // ahora es "Admitir Cliente", que internamente ya ofrece el mismo
+                      // link oficial (Opción 1 en AdmisionFormModal) junto a la opción de
+                      // subir PDF — pero siempre guardando el caso en Firestore.
+                      const isFinancingService =
+                        resolvePipelineCluster(selectedService.id, selectedService.title) === "fondeo_rapido" ||
+                        resolvePipelineCluster(selectedService.id, selectedService.title) === "real_estate";
 
                       return (
                         <div className="pt-2">
@@ -1232,15 +1244,17 @@ export default function BrokerOnboardingClient() {
                               
                               {isUnlocked ? (
                                 <div className="flex gap-2">
-                                  <a 
-                                    href={selectedService.formLink} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-[0_0_20px_rgba(0,224,240,0.3)] cursor-pointer"
-                                  >
-                                    <span>Abrir Formulario</span>
-                                    <ChevronRight size={14} />
-                                  </a>
+                                  {!isFinancingService && (
+                                    <a
+                                      href={selectedService.formLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-[0_0_20px_rgba(0,224,240,0.3)] cursor-pointer"
+                                    >
+                                      <span>Abrir Formulario</span>
+                                      <ChevronRight size={14} />
+                                    </a>
+                                  )}
                                   <button
                                     onClick={() => setIsAdmisionOpen(true)}
                                     className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"
@@ -1260,7 +1274,7 @@ export default function BrokerOnboardingClient() {
                               )}
                             </div>
                           </div>
-                          {isUnlocked && (
+                          {isUnlocked && !isFinancingService && (
                             <div className="mt-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 flex items-start gap-2.5">
                               <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
                               <p className="text-[11px] text-amber-200/90 leading-relaxed">
@@ -1295,6 +1309,13 @@ export default function BrokerOnboardingClient() {
       </AnimatePresence>
 
       {user && profile && <WhatsNewModal />}
+
+      {/* Burbuja flotante del Asistente IA — visible en todo el Hub, salvo
+          en "Soporte VIP" donde ya está el Asistente IA de cuerpo completo
+          (mostrar ambos sería duplicado). */}
+      {isAuthenticated && activeTab !== "soporte" && (
+        <SupportChatBubble onNavigateToSupport={() => setActiveTab("soporte")} />
+      )}
 
       <GHLOnboardingWizardModal
         isOpen={isWizardOpen}

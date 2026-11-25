@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Bell, Check } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { ActiveTab } from "../types";
+import { initAudioUnlock, playNotificationChime } from "@/lib/sound";
 
 interface Notification {
   id: string;
@@ -38,6 +39,10 @@ export default function NotificationBell({ onNavigate }: NotificationBellProps) 
   const [isOpen, setIsOpen] = useState(false);
   const [isMarking, setIsMarking] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Para sonar solo cuando el conteo SUBE (ticket nuevo / respuesta nueva),
+  // nunca en la primera carga de la sesión (eso solo refleja pendientes
+  // viejos, no algo que acabe de pasar).
+  const prevUnreadCountRef = useRef<number | null>(null);
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -46,14 +51,20 @@ export default function NotificationBell({ onNavigate }: NotificationBellProps) 
       const res = await fetch("/api/notifications", { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) return;
       const data = await res.json();
+      const nextUnreadCount = data.unreadCount || 0;
       setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
+      setUnreadCount(nextUnreadCount);
+      if (prevUnreadCountRef.current !== null && nextUnreadCount > prevUnreadCountRef.current) {
+        playNotificationChime();
+      }
+      prevUnreadCountRef.current = nextUnreadCount;
     } catch {
       // silencioso: un fallo de polling no debe interrumpir la UI
     }
   };
 
   useEffect(() => {
+    initAudioUnlock();
     let interval: ReturnType<typeof setInterval> | undefined;
     const timeout = setTimeout(() => {
       if (!user) return;
