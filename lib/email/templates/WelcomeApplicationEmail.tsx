@@ -13,7 +13,7 @@ interface WelcomeApplicationEmailProps {
 export default function WelcomeApplicationEmail({ brokerName, clientName, serviceName }: WelcomeApplicationEmailProps) {
   return (
     <EmailLayout
-      previewText={`La solicitud de ${clientName} fue recibida — en 24 a 72 horas tendrás una respuesta`}
+      previewText={`La solicitud de ${clientName} fue recibida — en 24-72 horas hábiles tendrás una respuesta`}
       eyebrow="Torre de Control · Nueva Solicitud"
       audience="broker"
     >
@@ -58,7 +58,7 @@ export default function WelcomeApplicationEmail({ brokerName, clientName, servic
           ¿Qué sigue?
         </Text>
         <Text style={{ color: "#C4CBD9", fontSize: "13px", lineHeight: "21px", margin: 0 }}>
-          En un plazo de <span style={{ color: "#ffffff", fontWeight: 700 }}>24 a 72 horas</span> tendrás una respuesta
+          En un plazo de <span style={{ color: "#ffffff", fontWeight: 700 }}>24-72 horas hábiles</span> tendrás una respuesta
           o te pediremos información adicional si hace falta. Te recomendamos avisarle a tu cliente que su solicitud
           ya está en trámite.
         </Text>

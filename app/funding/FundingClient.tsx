@@ -232,7 +232,7 @@ export default function FundingClient() {
               <div className="w-full md:w-1/2 relative">
                 <div className="absolute -inset-4 bg-cyan-500/10 blur-xl rounded-full"></div>
                 <h3 className="text-4xl font-bold text-white mb-4 relative z-10">
-                  De la solicitud a la cuenta en <span className="text-cyan-400">24 a 72 hrs</span>
+                  De la solicitud a la cuenta en <span className="text-cyan-400">24-72 horas hábiles</span>
                 </h3>
                 <p className="text-gray-400 relative z-10 mb-6">
                   Nuestra tecnología agiliza el proceso de validación conectando tu perfil directamente con los fondos.
